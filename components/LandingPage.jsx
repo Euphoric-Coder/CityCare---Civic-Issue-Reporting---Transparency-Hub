@@ -11,22 +11,38 @@ import {
   Heart,
   Star,
   Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import { Leaderboard } from "./LeaderBoard";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export function LandingPage({ onGetStarted }) {
+  const router = useRouter();
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      <section className="relative overflow-hidden bg-gradient-to-br from-teal-600 via-emerald-600 to-cyan-700 text-white">
+      <section className="relative overflow-hidden bg-gradient-to-br from-teal-500 via-emerald-700 to-cyan-800 text-white">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30"></div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
           <div className="text-center">
             <div className="flex items-center justify-center mb-6">
               <div className="bg-white/10 backdrop-blur-sm rounded-full p-4 border border-white/20">
-                <MapPin size={48} className="text-white" />
+                <Image
+                  src="/logo.png"
+                  alt="CityCare Logo"
+                  width={100}
+                  height={100}
+                />
               </div>
             </div>
+
+            <h1 className="text-7xl md:text-8xl font-bold mb-6 leading-tight">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-teal-400 via-emerald-500 to-green-600">
+                CityCare
+              </span>
+            </h1>
 
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-white animate-pulse">
@@ -56,23 +72,21 @@ export function LandingPage({ onGetStarted }) {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
-                onClick={onGetStarted}
+                onClick={() => router.push("sign-in")}
                 className="group px-8 py-4 bg-white text-teal-600 rounded-full font-semibold text-lg hover:bg-teal-50 transition-all transform hover:scale-105 hover:shadow-2xl flex items-center space-x-2"
               >
                 <span>Get Started</span>
-                <svg
-                  className="w-5 h-5 group-hover:translate-x-1 transition-transform"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 8l4 4m0 0l-4 4m4-4H3"
-                  />
-                </svg>
+                <ArrowRight />
+              </button>
+
+              <button
+                onClick={() => router.push("/admin")}
+                className="group px-8 py-4 bg-white text-teal-700 rounded-full font-semibold text-lg 
+                   border-2 border-teal-600 hover:bg-teal-50 transition-all transform hover:scale-105 
+                   flex items-center space-x-2"
+              >
+                <MapPin className="text-teal-600" />
+                <span>Public Dashboard</span>
               </button>
 
               <button

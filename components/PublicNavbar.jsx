@@ -2,8 +2,9 @@ import { useState } from "react";
 import { MapPin, Menu, X, LogIn, Shield } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 
-export function PublicNavbar({ currentView = "public", onAuthClick }) {
+export function PublicNavbar() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -12,15 +13,22 @@ export function PublicNavbar({ currentView = "public", onAuthClick }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo + Title */}
-          <div className="flex items-center group cursor-pointer">
-            <Image src="/logo.png" alt="CityCare Logo" width={40} height={40} />
-            <span className="ml-3 text-xl font-bold bg-gradient-to-r from-teal-600 to-emerald-800 bg-clip-text text-transparent">
-              CityCare
-            </span>
-          </div>
+          <Link href="/">
+            <div className="flex items-center group">
+              <Image
+                src="/logo.png"
+                alt="CityCare Logo"
+                width={40}
+                height={40}
+              />
+              <span className="ml-3 text-xl font-bold bg-gradient-to-r from-teal-600 to-emerald-800 bg-clip-text text-transparent">
+                CityCare
+              </span>
+            </div>
+          </Link>
 
           {/* Desktop Buttons */}
-          <div className="hidden md:flex items-center space-x-2">
+          <div className="hidden md:flex gap-4 items-center space-x-2">
             <button
               className="flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:shadow-lg transform hover:scale-105 transition-all font-medium"
               onClick={() => router.push("/admin")}
@@ -53,7 +61,7 @@ export function PublicNavbar({ currentView = "public", onAuthClick }) {
           <div className="md:hidden py-4 border-t border-gray-200">
             <div className="space-y-2">
               <button
-                // onClick={() => onViewChange("admin")}
+                onClick={() => router.push("/admin")}
                 className="w-full flex justify-center items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:shadow-lg transform hover:scale-105 transition-all font-medium"
               >
                 <Shield size={20} className="mr-2" />
@@ -62,6 +70,7 @@ export function PublicNavbar({ currentView = "public", onAuthClick }) {
 
               <button
                 onClick={() => {
+                  router.push("/sign-in");
                   setMobileMenuOpen(false);
                 }}
                 className="w-full flex justify-center text-left px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700"
