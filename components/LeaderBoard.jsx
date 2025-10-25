@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Trophy, Medal, Award, Star, Crown } from 'lucide-react';
-import { getLeaderboard } from '../lib/gamification';
+import { useEffect, useState } from "react";
+import { Trophy, Medal, Award, Star, Crown } from "lucide-react";
+import { getLeaderboard } from "../lib/gamification";
 
 export function Leaderboard() {
   const [leaders, setLeaders] = useState([]);
@@ -35,51 +35,59 @@ export function Leaderboard() {
   const getRankBadge = (rank) => {
     switch (rank) {
       case 1:
-        return 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white';
+        return "bg-gradient-to-r from-yellow-400 to-yellow-600 text-white";
       case 2:
-        return 'bg-gradient-to-r from-gray-300 to-gray-500 text-white';
+        return "bg-gradient-to-r from-gray-300 to-gray-500 text-white";
       case 3:
-        return 'bg-gradient-to-r from-orange-400 to-orange-600 text-white';
+        return "bg-gradient-to-r from-orange-400 to-orange-600 text-white";
       default:
-        return 'bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700';
+        return "bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 text-blue-700 dark:text-blue-200";
     }
   };
 
   return (
-    <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl p-8 border-2 border-yellow-200">
+    <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 rounded-2xl shadow-2xl p-8 border-2 border-yellow-200 dark:border-yellow-700 transition-colors duration-500">
       <div className="flex items-center mb-8">
         <div className="relative">
-          <div className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500 p-4 rounded-2xl shadow-lg">
+          <div className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-orange-500 dark:from-yellow-500 dark:via-yellow-600 dark:to-orange-600 p-4 rounded-2xl shadow-lg">
             <Trophy className="text-white" size={32} />
           </div>
-          <div className="absolute -top-2 -right-2 bg-gradient-to-br from-yellow-300 to-yellow-400 rounded-full p-1">
-            <Crown className="text-yellow-700" size={16} />
+          <div className="absolute -top-2 -right-2 bg-gradient-to-br from-yellow-300 to-yellow-400 dark:from-yellow-600 dark:to-yellow-700 rounded-full p-1">
+            <Crown className="text-yellow-700 dark:text-yellow-300" size={16} />
           </div>
         </div>
         <div className="ml-4">
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">Top Contributors</h2>
-          <p className="text-sm text-gray-600 mt-1">Community heroes making a difference</p>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent dark:from-yellow-400 dark:to-orange-500">
+            Top Contributors
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+            Community heroes making a difference
+          </p>
         </div>
       </div>
 
       {loading ? (
         <div className="text-center py-8">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-200 border-t-blue-600 mb-2"></div>
-          <p className="text-gray-600 text-sm">Loading leaderboard...</p>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-200 dark:border-blue-900 border-t-blue-600 dark:border-t-blue-400 mb-2"></div>
+          <p className="text-gray-600 dark:text-gray-300 text-sm">
+            Loading leaderboard...
+          </p>
         </div>
       ) : leaders.length === 0 ? (
-        <p className="text-gray-600 text-center py-8">No contributors yet. Be the first!</p>
+        <p className="text-gray-600 dark:text-gray-300 text-center py-8">
+          No contributors yet. Be the first!
+        </p>
       ) : (
         <div className="space-y-3">
           {leaders.map((leader, index) => (
             <div
               key={leader.id}
-              className={`flex items-center justify-between p-4 rounded-xl transition-all border ${
-                getRankBadge(index + 1)
-              } ${
+              className={`flex items-center justify-between p-4 rounded-xl transition-all border ${getRankBadge(
+                index + 1
+              )} ${
                 index < 3
-                  ? 'shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
-                  : 'hover:bg-blue-50 border-gray-200'
+                  ? "shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+                  : "hover:bg-blue-50 dark:hover:bg-blue-900 border-gray-200 dark:border-gray-700"
               }`}
             >
               <div className="flex items-center space-x-4">
@@ -88,25 +96,39 @@ export function Leaderboard() {
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <p className="font-bold text-lg">{leader.full_name}</p>
-                    {index === 0 && <Star className="text-yellow-400" size={16} fill="currentColor" />}
+                    <p className="font-bold text-lg text-gray-900 dark:text-white">
+                      {leader.full_name}
+                    </p>
+                    {index === 0 && (
+                      <Star
+                        className="text-yellow-400"
+                        size={16}
+                        fill="currentColor"
+                      />
+                    )}
                   </div>
                   {leader.ward_zone && (
-                    <p className="text-xs opacity-75">Ward: {leader.ward_zone}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 opacity-75">
+                      Ward: {leader.ward_zone}
+                    </p>
                   )}
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold">{leader.points}</p>
-                <p className="text-xs opacity-75">points</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {leader.points}
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 opacity-75">
+                  points
+                </p>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <p className="text-sm text-gray-600 text-center">
+      <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
           Earn points by reporting verified issues and helping your community!
         </p>
       </div>
