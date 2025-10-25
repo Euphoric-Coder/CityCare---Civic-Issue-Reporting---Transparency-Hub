@@ -1,36 +1,115 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# CityCare — Civic Issue Reporting & Transparency Hub
 
-## Getting Started
+**CityCare** is a smart and user-friendly civic engagement platform that empowers citizens to **report, track, and resolve neighborhood issues** such as potholes, garbage, streetlight failures, and more — all while ensuring **transparency, accountability, and collaboration** between the public and authorities.
 
-First, run the development server:
+---
+
+## Overview
+
+Citizens often face challenges reporting local problems, leading to delays and lack of transparency.  
+**CityCare** bridges this gap by providing a unified digital platform for:
+
+- Citizens to **report issues** with images and location.
+- Authorities to **track, update, and resolve** complaints efficiently.
+- The public to **view resolved cases** and stay informed about civic improvements.
+
+Built with a **citizen-first design philosophy**, CityCare follows key **Human-Computer Interaction (HCI)** principles — focusing on clarity, feedback, consistency, accessibility, and intuitive interaction.
+
+---
+
+## Features
+
+### Citizen Experience
+- **Easy Complaint Logging** – Add issue title, description, and upload photos.
+- **Google Maps Integration** – Auto-detect and pin complaint location.
+- **Categorized Issues** – Roads, Lighting, Waste, Water, Parks, etc.
+- **Gamification & Leaderboard** – Earn badges and ranks for verified reports.
+- **Anonymous Reporting** – Submit issues without creating an account.
+- **Community Discussion Threads** – Comment and react on ongoing issues.
+- **Multi-Language Support** – Available in multiple regional languages.
+
+---
+
+### Intelligent Features (AI Layer)[Future Plan]
+- **Automated Issue Classification** – Detect issue type and severity from photo/text.  
+- **Smart Prioritization Engine** – Rank issues based on urgency, location, and public votes.  
+- **Predictive Analytics Dashboard** – Identify recurring issues and hotspots.  
+- **Sentiment Analysis** – Understand citizen emotions for better response management. 
+
+---
+
+### Role-Based Access Control (RBAC)
+| Role | Capabilities |
+|------|---------------|
+| **Citizen** | Report issues, view updates, and comment. |
+| **Ward Officer** | Manage issues within assigned zones. |
+| **Field Worker** | Update issue progress and upload resolution photos. |
+| **Admin** | Full access — assign tasks, manage users, and view analytics. |
+
+- **Secure Login System** – Role-based authentication via Clerk / Firebase Auth.  
+- **Data Visibility Rules** – Each role can only access relevant regional data.  
+- **Admin Dashboard** – View analytics, assign staff, and generate reports.  
+
+---
+
+### Notifications & Transparency
+- Real-time **email/push notifications** on complaint status.  
+- **Public Dashboard** for resolved issues with visual proof.  
+- **Analytics View** – Total complaints, resolved count, and response times.
+
+---
+
+### HCI-Driven UI Design
+
+CityCare emphasizes **usability and inclusivity** through design principles:
+- **Consistency** – Uniform colors, icons, and interaction patterns.  
+- **Feedback** – Visual cues (status colors, loaders, success toasts).  
+- **Accessibility** – WCAG-compliant text, ARIA labels, keyboard navigation.  
+- **Responsiveness** – Optimized for mobile and desktop. 
+
+---
+
+## Tech Stack
+
+| Layer | Technologies |
+|-------|---------------|
+| **Frontend** | React / Next.js, TailwindCSS, Google Maps API |
+| **Backend** | Node.js (Express) or FastAPI |
+| **Database** | ConvexDB |
+| **Auth & Roles** | NextAuth.js |
+| **AI Layer (Future Plan)** | Custom NLP & CV models (external API integration ready) (For now Gemini API can be used) |
+| **Notifications** | Resend / In-Built |
+
+---
+
+# Installation & Setup Guide — CityCare
+
+Follow the steps below to set up and run **CityCare** on your local machine for development or testing.
+
+---
+
+<!-- ## 🧩 Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js** (v18 or above)  
+- **npm** or **yarn** package manager  
+- **MongoDB** or **Firebase Firestore** (for backend database)  
+- **Google Maps API key** (for location tagging)  
+- **Clerk** or **Firebase Authentication** credentials (for RBAC-based login)  
+
+Optional (for AI and analytics):
+- Python (if using FastAPI backend)
+- Any preferred AI model API key (custom, not Gemini) -->
+
+---
+
+## 📥 Step 1: Clone the Repository
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/Euphoric-Coder/CityCare---Civic-Issue-Reporting---Transparency-Hub.git
+```
+```bash
+cd CityCare
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
