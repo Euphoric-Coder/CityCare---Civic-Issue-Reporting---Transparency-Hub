@@ -1,30 +1,77 @@
-import { LogIn } from "lucide-react";
+import { useState } from "react";
+import { MapPin, Menu, X, LogIn, Shield } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 
-export function PublicNavbar() {
+export function PublicNavbar({ currentView = "public", onAuthClick }) {
+  const router = useRouter();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-emerald-50">
-      {/* Navbar */}
-      <nav className="flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md shadow-md">
-        <div className="text-2xl font-bold bg-gradient-to-r from-teal-600 to-emerald-800 bg-clip-text text-transparent">
-          CityCare
+    <nav className="bg-white/95 backdrop-blur-md shadow-lg sticky top-0 z-40 border-b border-gray-100">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo + Title */}
+          <div className="flex items-center group cursor-pointer">
+            <Image src="/logo.png" alt="CityCare Logo" width={40} height={40} />
+            <span className="ml-3 text-xl font-bold bg-gradient-to-r from-teal-600 to-emerald-800 bg-clip-text text-transparent">
+              CityCare
+            </span>
+          </div>
+
+          {/* Desktop Buttons */}
+          <div className="hidden md:flex items-center space-x-2">
+            <button
+              className="flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:shadow-lg transform hover:scale-105 transition-all font-medium"
+              onClick={() => router.push("/admin")}
+            >
+              <Shield size={20} className="mr-2" />
+              Admin Dashboard
+            </button>
+
+            <button
+              className="ml-4 px-6 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-700 text-white rounded-lg font-medium hover:shadow-lg transform hover:scale-105 transition-all"
+              onClick={() => router.push("/sign-in")}
+            >
+              <LogIn size={18} className="inline-block mr-2" />
+              Sign In
+            </button>
+          </div>
+
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 text-gray-700"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
 
-        <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all">
-          <LogIn size={18} />
-          <span className="font-medium">Sign In</span>
-        </button>
-      </nav>
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden py-4 border-t border-gray-200">
+            <div className="space-y-2">
+              <button
+                // onClick={() => onViewChange("admin")}
+                className="w-full flex justify-center items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:shadow-lg transform hover:scale-105 transition-all font-medium"
+              >
+                <Shield size={20} className="mr-2" />
+                Admin Dashboard
+              </button>
 
-      {/* Simple placeholder for the dashboard section */}
-      <div className="flex flex-col items-center justify-center h-[80vh] text-center px-6">
-        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-teal-600 to-emerald-800 bg-clip-text text-transparent mb-4">
-          Welcome to CityCare
-        </h1>
-        <p className="text-gray-600 text-lg max-w-2xl">
-          Track and view civic issues in your city. Sign in to report and manage
-          issues.
-        </p>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex justify-center text-left px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700"
+              >
+                Sign In
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </nav>
   );
 }

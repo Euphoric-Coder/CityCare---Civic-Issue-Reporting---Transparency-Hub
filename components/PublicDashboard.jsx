@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { Search, Filter, Grid, List, LogIn } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Grid,
+  List,
+  LogIn,
+  MapPin,
+  Menu,
+  X,
+} from "lucide-react";
 import { getIssues } from "../lib/mockData";
 import { IssueCard } from "./IssueCard";
 import { IssueDetailModal } from "./IssueDetailModal";
