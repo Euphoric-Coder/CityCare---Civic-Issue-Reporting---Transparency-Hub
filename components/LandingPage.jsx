@@ -76,45 +76,26 @@ export function LandingPage({ onGetStarted }) {
                          dark:from-gray-100 dark:via-teal-200 dark:to-gray-50 
                          animate-pulse"
               >
-                Improve My City
+                Improve Your City
               </span>
             </h1>
 
             <p
               className="text-xl md:text-2xl text-teal-50 dark:text-teal-100 
-                    mb-4 max-w-3xl mx-auto leading-relaxed"
+                    mb-6 max-w-3xl mx-auto leading-relaxed"
             >
               Your voice matters. Report civic issues, track progress, and help
               build a better community together.
             </p>
-
-            {/* Stats Row */}
-            <div
-              className="flex items-center justify-center gap-6 mb-8 
-                      text-teal-100 dark:text-teal-200"
-            >
-              <div className="flex items-center gap-2">
-                <Star className="text-yellow-300 fill-yellow-300" size={20} />
-                <span className="font-semibold">4.9/5 Rating</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Users size={20} />
-                <span className="font-semibold">10K+ Citizens</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Award size={20} />
-                <span className="font-semibold">Award Winning</span>
-              </div>
-            </div>
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
                 onClick={() => router.push("sign-in")}
                 className="group px-8 py-4 bg-white text-teal-600 
-                     dark:bg-gray-800 dark:text-teal-300 
+                     dark:bg-gray-800 dark:text-emerald-300 
                      rounded-full font-semibold text-lg 
-                     hover:bg-teal-50 dark:hover:bg-gray-700 
+                     hover:bg-teal-100 dark:hover:bg-teal-800 
                      transition-all transform hover:scale-105 hover:shadow-2xl 
                      flex items-center space-x-2"
               >
@@ -128,7 +109,7 @@ export function LandingPage({ onGetStarted }) {
                      border-2 border-teal-600 
                      dark:bg-gray-900 dark:text-emerald-300 dark:border-emerald-600 
                      rounded-full font-semibold text-lg 
-                     hover:bg-teal-50 dark:hover:bg-gray-800 
+                     hover:bg-teal-100 dark:hover:bg-teal-800 
                      transition-all transform hover:scale-105 flex items-center space-x-2"
               >
                 <MapPin className="text-teal-600 dark:text-emerald-400" />
@@ -143,7 +124,7 @@ export function LandingPage({ onGetStarted }) {
                 className="px-8 py-4 bg-transparent border-2 border-white text-white 
                      dark:border-gray-300 dark:text-gray-100 
                      rounded-full font-semibold text-lg 
-                     hover:bg-white/20 dark:hover:bg-gray-700 
+                     hover:bg-white/20 dark:hover:bg-teal-700 
                      transition-all"
               >
                 Learn More
@@ -340,8 +321,8 @@ export function LandingPage({ onGetStarted }) {
       </section>
 
       <section
+        className="py-20 bg-gradient-to-b from-to-white to-gray-50 dark:from-gray-900 dark:to-gray-800"
         id="how-it-works"
-        className="py-20 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -484,7 +465,7 @@ export function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      <section className="py-20 bg-white dark:bg-gray-900 transition-colors duration-500">
+      <section className="py-20 bg-gradient-to-b from-gray-50 to-white dark:from-gray-800 dark:to-gray-950 transition-colors duration-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
@@ -542,7 +523,7 @@ export function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      <section className="py-20 bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 transition-colors duration-500">
+      <section className="py-20 bg-gradient-to-b from-white to-gray-50 dark:from-gray-950 dark:to-gray-900 transition-colors duration-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <div className="inline-flex items-center justify-center mb-4">
