@@ -536,9 +536,20 @@ export function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
+      <div className="bottom-0 left-0 right-0 rotate-180 bg-gradient-to-br from-teal-600 via-emerald-600 to-cyan-700 text-white dark:from-teal-800 dark:via-emerald-800 dark:to-cyan-900">
+        <svg
+          viewBox="0 0 1440 120"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z"
+            fill="white"
+            className="dark:fill-gray-900 transition-colors duration-500"
+          />
+        </svg>
+      </div>
       <section className="py-20 bg-gradient-to-br from-teal-600 via-emerald-600 to-cyan-700 text-white relative overflow-hidden dark:from-teal-800 dark:via-emerald-800 dark:to-cyan-900 transition-colors duration-500">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20 dark:opacity-10"></div>
-
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white dark:text-white">
             Ready to Make a Difference?
