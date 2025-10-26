@@ -4,6 +4,15 @@
 
 @layer base {
   :root {
+    @apply bg-white;
+  }
+  .dark:root {
+    @apply bg-black;
+  }
+}
+
+@layer base {
+  :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -67,3 +76,88 @@
   }
 }
 
+.wavet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+    line-height: 0;
+    transform: rotate(180deg);
+}
+
+.wavet svg {
+    position: relative;
+    display: block;
+    width: calc(200% + 1.3px);
+    height: 133px;
+    transform: rotateY(180deg);
+}
+
+.wavet .shape-fill {
+    fill: #FFFFFF;
+}
+
+.wavetd {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+    line-height: 0;
+    transform: rotate(180deg);
+}
+
+.wavetd svg {
+    position: relative;
+    display: block;
+    width: calc(233% + 1.3px);
+    height: 140px;
+    transform: rotateY(180deg);
+}
+
+.wavetd .shape-fill {
+    fill: #111827;
+}
+
+.waveb {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+    line-height: 0;
+}
+
+.waveb svg {
+    position: relative;
+    display: block;
+    width: calc(233% + 1.3px);
+    height: 140px;
+    transform: rotateY(180deg);
+}
+
+.waveb .shape-fill {
+    fill: #FFFFFF;
+}
+
+.wavebd {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+    line-height: 0;
+}
+
+.wavebd svg {
+    position: relative;
+    display: block;
+    width: calc(233% + 1.3px);
+    height: 140px;
+    transform: rotateY(180deg);
+}
+
+.wavebd .shape-fill {
+    fill: #111827;
+}

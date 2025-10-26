@@ -151,7 +151,7 @@ export function LandingPage({ onGetStarted }) {
             </div>
 
             {/* Quick Stats Cards */}
-            <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="my-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
               <div
                 className="bg-white/10 dark:bg-gray-800/40 backdrop-blur-md 
                         rounded-2xl p-8 border border-white/20 dark:border-gray-700 
@@ -193,7 +193,35 @@ export function LandingPage({ onGetStarted }) {
         </div>
 
         {/* Decorative Wave */}
-        <div className="bottom-0 left-0 right-0">
+        <div class="wavet dark:hidden">
+          <svg
+            data-name="Layer 1"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 1200 120"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
+              class="shape-fill"
+            ></path>
+          </svg>
+        </div>
+
+        <div class="wavetd dark:block hidden">
+          <svg
+            data-name="Layer 1"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 1200 120"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
+              class="shape-fill"
+            ></path>
+          </svg>
+        </div>
+
+        {/* <div className="bottom-0 left-0 right-0">
           <svg
             viewBox="0 0 1440 120"
             fill="none"
@@ -205,7 +233,7 @@ export function LandingPage({ onGetStarted }) {
               className="dark:fill-gray-900 transition-colors duration-500"
             />
           </svg>
-        </div>
+        </div> */}
       </section>
 
       <section
@@ -536,21 +564,36 @@ export function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      <div className="bottom-0 left-0 right-0 rotate-180 bg-gradient-to-br from-teal-600 via-emerald-600 to-cyan-700 text-white dark:from-teal-800 dark:via-emerald-800 dark:to-cyan-900">
-        <svg
-          viewBox="0 0 1440 120"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z"
-            fill="white"
-            className="dark:fill-gray-900 transition-colors duration-500"
-          />
-        </svg>
-      </div>
-      <section className="py-20 bg-gradient-to-br from-teal-600 via-emerald-600 to-cyan-700 text-white relative overflow-hidden dark:from-teal-800 dark:via-emerald-800 dark:to-cyan-900 transition-colors duration-500">
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <section className="py-20 bg-gradient-to-br from-teal-600 via-emerald-600 to-cyan-700 text-white relative dark:from-teal-800 dark:via-emerald-800 dark:to-cyan-900 transition-colors duration-500">
+        {/* Bottom Wave Design */}
+        <div class="waveb dark:hidden">
+          <svg
+            data-name="Layer 1"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 1200 120"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
+              class="shape-fill"
+            ></path>
+          </svg>
+        </div>
+        <div class="wavebd hidden dark:block">
+          <svg
+            data-name="Layer 1"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 1200 120"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
+              class="shape-fill"
+            ></path>
+          </svg>
+        </div>
+
+        <div className="relative mt-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white dark:text-white">
             Ready to Make a Difference?
           </h2>
