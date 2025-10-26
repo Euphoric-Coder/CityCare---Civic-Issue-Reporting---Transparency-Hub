@@ -104,7 +104,7 @@ export function LandingPage({ onGetStarted }) {
               </button>
 
               <button
-                onClick={() => router.push("/admin")}
+                onClick={() => router.push("/public-dashboard")}
                 className="group px-8 py-4 bg-white text-teal-700 
                      border-2 border-teal-600 
                      dark:bg-gray-900 dark:text-emerald-300 dark:border-emerald-600 
