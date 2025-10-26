@@ -1,50 +1,85 @@
 "use client";
 
-import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+import { Moon, Sun } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function ModeToggle() {
-  const { setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === "light" ? "dark" : "light");
+  };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="border-gray-300 dark:border-gray-600 
-                     bg-white/70 dark:bg-gray-800/70 
-                     text-gray-800 dark:text-gray-200 
-                     hover:bg-teal-50 dark:hover:bg-gray-700 
-                     transition-all shadow-sm hover:shadow-md"
-        >
-          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Toggle theme</span>
-        </Button>
-      </DropdownMenuTrigger>
+    <button
+      onClick={toggleTheme}
+      aria-label="Toggle theme"
+      className="
+        group relative w-10 h-10 rounded-full 
+        border border-emerald-200/60 dark:border-emerald-700/60 
+        shadow-md hover:shadow-lg 
+        transition-all duration-300 transform 
+        hover:scale-110 active:scale-95 overflow-hidden
+        focus:outline-none focus:ring-2 focus:ring-emerald-400/40
+        backdrop-blur-sm
+      "
+    >
+      {/* Gradient background */}
+      <div
+        className="
+          absolute inset-0 
+          bg-gradient-to-br from-green-400 to-emerald-500 
+          dark:from-emerald-700 dark:to-green-900 
+          transition-all duration-500
+        "
+      />
 
-      <DropdownMenuContent
-        align="end"
-        className="dark:bg-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
-      >
-        <DropdownMenuItem onClick={() => setTheme("light")}>
-          Light
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
-          Dark
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
-          System
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+      {/* Hover shimmer */}
+      <div
+        className="
+          absolute inset-0 
+          bg-gradient-to-r from-transparent via-white/30 to-transparent 
+          -translate-x-full group-hover:translate-x-full 
+          transition-transform duration-1000
+        "
+      />
+
+      {/* Icon container */}
+      <div className="relative w-full h-full flex items-center justify-center">
+        {/* Sun icon */}
+        <Sun
+          className={`absolute w-4 h-4 text-white transition-all duration-500 ${
+            resolvedTheme === "light"
+              ? "opacity-100 rotate-0 scale-100"
+              : "opacity-0 rotate-180 scale-50"
+          }`}
+          strokeWidth={2.5}
+        />
+
+        {/* Moon icon */}
+        <Moon
+          className={`absolute w-4 h-4 text-white transition-all duration-500 ${
+            resolvedTheme === "dark"
+              ? "opacity-100 rotate-0 scale-100"
+              : "opacity-0 -rotate-180 scale-50"
+          }`}
+          strokeWidth={2.5}
+        />
+      </div>
+
+      {/* Click ripple */}
+      <div
+        className="
+          absolute inset-0 rounded-full 
+          bg-white/20 scale-0 group-active:scale-100 
+          transition-transform duration-300
+        "
+      />
+    </button>
   );
 }

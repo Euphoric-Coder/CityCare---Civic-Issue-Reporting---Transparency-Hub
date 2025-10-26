@@ -23,8 +23,6 @@ export function LandingPage({ onGetStarted }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      <ModeToggle />
-
       <section
         className="relative overflow-hidden 
                     bg-gradient-to-br from-teal-500 via-emerald-700 to-cyan-800 
@@ -38,6 +36,9 @@ export function LandingPage({ onGetStarted }) {
                   opacity-30"
         ></div>
 
+        <div className="absolute top-6 right-6 z-50">
+          <ModeToggle />
+        </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
           <div className="text-center">
             {/* Logo */}
