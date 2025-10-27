@@ -201,7 +201,7 @@
   }
 
   .side-img {
-    @apply hidden h-full object-cover md:block;
+    @apply hidden min-h-screen object-cover md:block;
   }
 
   .copyright {

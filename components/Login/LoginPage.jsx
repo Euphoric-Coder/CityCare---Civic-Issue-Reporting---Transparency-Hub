@@ -41,7 +41,6 @@ const LoginPage = () => {
     latitude: "",
     longitude: "",
   });
-  const [detectedAddress, setDetectedAddress] = useState("");
   const [error, setError] = useState("");
 
   // Input handler
@@ -243,7 +242,7 @@ const LoginPage = () => {
                 </div>
               </div>
 
-              {/* Location Picker Section */}
+              {/* Location Detection Section */}
               <div className="mt-6">
                 <LocationPicker
                   onDetect={(loc) => {
@@ -261,57 +260,78 @@ const LoginPage = () => {
                 />
               </div>
 
+              {/* OR Divider */}
+              <div className="relative flex items-center justify-center my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-slate-300 dark:border-dark-500"></span>
+                </div>
+                <div className="relative px-4 bg-white dark:bg-dark-300">
+                  <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+                    OR
+                  </span>
+                </div>
+              </div>
+
               {/* Display location fields */}
-              {formData.city && (
-                <div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="shad-input-label mb-2">City</label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={formData.city}
-                        placeholder="City"
-                        readOnly
-                        className="shad-input p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
-                      />
-                    </div>
-                    <div>
-                      <label className="shad-input-label mb-2">State</label>
-                      <input
-                        type="text"
-                        name="state"
-                        value={formData.state}
-                        placeholder="State"
-                        readOnly
-                        className="shad-input p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
-                      />
-                    </div>
-                  </div>
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="shad-input-label mb-2">Region</label>
+                    <label className="shad-input-label mb-2">City</label>
                     <input
                       type="text"
-                      name="region"
-                      value={formData.region}
-                      placeholder="Region / Area"
-                      readOnly
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      placeholder="City"
                       className="shad-input p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
                     />
                   </div>
                   <div>
-                    <label className="shad-input-label mb-2">Region</label>
-                    <textarea
+                    <label className="shad-input-label mb-2">State</label>
+                    <input
                       type="text"
-                      name="fullAddress"
-                      value={formData.fullAddress}
+                      name="state"
+                      value={formData.state}
                       onChange={handleInputChange}
-                      placeholder="Full Address"
-                      className="p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
+                      placeholder="State"
+                      className="shad-input p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
                     />
                   </div>
                 </div>
-              )}
+                <div>
+                  <label className="shad-input-label mb-2">Region</label>
+                  <input
+                    type="text"
+                    name="region"
+                    value={formData.region}
+                    onChange={handleInputChange}
+                    placeholder="Region / Area"
+                    className="shad-input p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
+                  />
+                </div>
+                <div>
+                  <label className="shad-input-label mb-2">Postal Code</label>
+                  <input
+                    type="text"
+                    name="postal"
+                    value={formData.postal}
+                    onChange={handleInputChange}
+                    placeholder="Postal Code"
+                    className="shad-input p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
+                  />
+                </div>
+                <div>
+                  <label className="shad-input-label mb-2">Full Address</label>
+                  <textarea
+                    type="text"
+                    name="fullAddress"
+                    value={formData.fullAddress}
+                    onChange={handleInputChange}
+                    placeholder="Full Address"
+                    className="p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
+                  />
+                </div>
+              </div>
 
               {/* Submit */}
               <button
@@ -348,9 +368,14 @@ const LoginPage = () => {
         {/* Right Side */}
         <div className="hidden md:flex flex-1 relative overflow-hidden">
           <img
-            src="https://images.pexels.com/photos/7722560/pexels-photo-7722560.jpeg?auto=compress&cs=tinysrgb&w=1200"
+            src="/signup.jpeg"
             alt="City view"
-            className="side-img w-full max-h-screen object-cover"
+            className="side-img dark:hidden"
+          />
+          <img
+            src="/signup-dark.jpg"
+            alt="City view"
+            className="side-img dark:block hidden"
           />
           <div className="absolute inset-0 bg-gradient-to-l from-transparent to-white/40 dark:to-dark-300/20"></div>
         </div>
