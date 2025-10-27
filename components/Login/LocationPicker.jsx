@@ -16,7 +16,7 @@ const defaultCenter = { lat: 22.5726, lng: 88.3639 }; // Default: Kolkata
 export default function LocationPicker({ onDetect }) {
   const [coords, setCoords] = useState(defaultCenter);
   const [loading, setLoading] = useState(false);
-  const [fullAddress, setFullAddress] = useState("");
+  const [detectedAddress, setDetectedAddress] = useState("");
   const mapRef = useRef(null);
 
   const { isLoaded } = useJsApiLoader({
@@ -24,7 +24,7 @@ export default function LocationPicker({ onDetect }) {
     libraries: ["places"],
   });
 
-  // 🌍 Detect user’s GPS location
+  // Detect user’s GPS location
   const detectLocation = useCallback(() => {
     if (!navigator.geolocation) {
       toast.error("Geolocation not supported on this device.");
@@ -47,7 +47,7 @@ export default function LocationPicker({ onDetect }) {
     );
   }, []);
 
-  // 📍 Reverse geocode coordinates → human address
+  // Reverse geocode coordinates → human address
   const reverseGeocode = async (lat, lng) => {
     try {
       const geocoder = new google.maps.Geocoder();
@@ -58,7 +58,7 @@ export default function LocationPicker({ onDetect }) {
         return;
       }
 
-      // 🧠 Select the most complete (longest) formatted address
+      // Select the most complete (longest) formatted address
       const bestResult = results.results.reduce((a, b) =>
         a.formatted_address.length > b.formatted_address.length ? a : b
       );
@@ -83,14 +83,14 @@ export default function LocationPicker({ onDetect }) {
         "";
 
       const formatted = bestResult.formatted_address;
-      setFullAddress(formatted);
+      setDetectedAddress(formatted);
       toast.success(`📍 ${city}, ${state}`);
 
       onDetect({
         city,
         state,
         region,
-        fullAddress: formatted,
+        detectedAddress: formatted,
         postal,
         latitude: lat,
         longitude: lng,
@@ -136,13 +136,13 @@ export default function LocationPicker({ onDetect }) {
         />
       </GoogleMap>
 
-      {/* 📍 Display detected / adjusted address */}
-      {fullAddress && (
+      {/* Display detected / adjusted address */}
+      {detectedAddress && (
         <div className="p-3 bg-slate-50 dark:bg-dark-400 rounded-lg border border-slate-200 dark:border-dark-500">
           <p className="text-14-medium text-slate-700 dark:text-slate-300">
             <strong>Detected Address:</strong>
             <br />
-            {fullAddress}
+            {detectedAddress}
           </p>
         </div>
       )}

@@ -27,7 +27,6 @@ const GOOGLE_API_KEY =
 const LoginPage = () => {
   const router = useRouter();
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
-  const [loadingLocation, setLoadingLocation] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -36,88 +35,14 @@ const LoginPage = () => {
     city: "",
     state: "",
     region: "",
+    postal: "",
     wardNo: "",
+    fullAddress: "",
     latitude: "",
     longitude: "",
   });
+  const [detectedAddress, setDetectedAddress] = useState("");
   const [error, setError] = useState("");
-
-  // 🌍 Detect user's current location
-  const handleDetectLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error("Geolocation is not supported by your browser.");
-      return;
-    }
-
-    setLoadingLocation(true);
-
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        setFormData((prev) => ({
-          ...prev,
-          latitude: lat.toString(),
-          longitude: lon.toString(),
-        }));
-        await fetchLocationFromGoogle(lat, lon);
-        setLoadingLocation(false);
-      },
-      (err) => {
-        setLoadingLocation(false);
-        toast.error("Location access denied or unavailable.");
-        console.error(err);
-      }
-    );
-  };
-
-  // Reverse Geocode using Google Maps API
-  const fetchLocationFromGoogle = async (lat, lon) => {
-    try {
-      const res = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_API_KEY}`
-      );
-      const data = await res.json();
-
-      console.log("Location data", data);
-
-      if (data.status !== "OK") {
-        toast.error("Unable to fetch location details.");
-        return;
-      }
-
-      const components = data.results[0].address_components;
-
-      const city =
-        components.find((c) => c.types.includes("locality"))?.long_name ||
-        components.find((c) => c.types.includes("administrative_area_level_2"))
-          ?.long_name ||
-        "";
-      const state =
-        components.find((c) => c.types.includes("administrative_area_level_1"))
-          ?.long_name || "";
-      const region =
-        components.find((c) => c.types.includes("sublocality_level_1"))
-          ?.long_name ||
-        components.find((c) => c.types.includes("neighborhood"))?.long_name ||
-        "";
-      const wardNo =
-        components.find((c) => c.types.includes("ward"))?.long_name || "";
-
-      setFormData((prev) => ({
-        ...prev,
-        city,
-        state,
-        region,
-        wardNo: wardNo || prev.wardNo,
-      }));
-
-      toast.success(`📍 Detected: ${city}, ${state}`);
-    } catch (err) {
-      console.error(err);
-      toast.error("Error fetching location from Google Maps.");
-    }
-  };
 
   // Input handler
   const handleInputChange = (e) => {
@@ -218,7 +143,7 @@ const LoginPage = () => {
                     value={formData.fullName}
                     onChange={handleInputChange}
                     placeholder="Sagnik Dey"
-                    className="shad-input pl-10 w-full"
+                    className="shad-input pl-10 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
                     required
                   />
                 </div>
@@ -279,7 +204,7 @@ const LoginPage = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="you@example.com"
-                    className="shad-input pl-10 w-full"
+                    className="shad-input pl-10 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
                     required
                   />
                 </div>
@@ -296,7 +221,7 @@ const LoginPage = () => {
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder="Enter password"
-                    className="shad-input pl-10 w-full"
+                    className="shad-input pl-10 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
                     required
                   />
                 </div>
@@ -313,71 +238,80 @@ const LoginPage = () => {
                     value={formData.wardNo}
                     onChange={handleInputChange}
                     placeholder="Enter Ward Number (if known)"
-                    className="shad-input pl-10 w-full"
+                    className="shad-input pl-10 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
                   />
                 </div>
               </div>
 
-              {/* Detect Location */}
-              <div>
-                <button
-                  type="button"
-                  onClick={handleDetectLocation}
-                  className="flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded-lg w-full transition-colors"
-                  disabled={loadingLocation}
-                >
-                  <MapPin className="mr-2 w-5 h-5" />
-                  {loadingLocation ? "Detecting..." : "Detect My Location"}
-                </button>
-              </div>
-
-              {/* Display location fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  placeholder="City"
-                  readOnly
-                  className="shad-input w-full bg-slate-100 dark:bg-dark-500"
-                />
-                <input
-                  type="text"
-                  name="state"
-                  value={formData.state}
-                  placeholder="State"
-                  readOnly
-                  className="shad-input w-full bg-slate-100 dark:bg-dark-500"
-                />
-              </div>
-              <input
-                type="text"
-                name="region"
-                value={formData.region}
-                placeholder="Region / Area"
-                readOnly
-                className="shad-input w-full bg-slate-100 dark:bg-dark-500"
-              />
-
               {/* Location Picker Section */}
               <div className="mt-6">
-                <h3 className="text-slate-800 dark:text-slate-200 mb-2 text-sm font-semibold">
-                  📍 Verify or Adjust Your Location
-                </h3>
                 <LocationPicker
-                  onDetect={(loc) =>
+                  onDetect={(loc) => {
                     setFormData((prev) => ({
                       ...prev,
                       city: loc.city,
                       state: loc.state,
                       region: loc.region,
-                      fullAddress: loc.fullAddress,
                       latitude: loc.latitude.toString(),
                       longitude: loc.longitude.toString(),
-                    }))
-                  }
+                      fullAddress: loc.detectedAddress,
+                      postal: loc.postal,
+                    }));
+                  }}
                 />
               </div>
+
+              {/* Display location fields */}
+              {formData.city && (
+                <div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="shad-input-label mb-2">City</label>
+                      <input
+                        type="text"
+                        name="city"
+                        value={formData.city}
+                        placeholder="City"
+                        readOnly
+                        className="shad-input p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
+                      />
+                    </div>
+                    <div>
+                      <label className="shad-input-label mb-2">State</label>
+                      <input
+                        type="text"
+                        name="state"
+                        value={formData.state}
+                        placeholder="State"
+                        readOnly
+                        className="shad-input p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="shad-input-label mb-2">Region</label>
+                    <input
+                      type="text"
+                      name="region"
+                      value={formData.region}
+                      placeholder="Region / Area"
+                      readOnly
+                      className="shad-input p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
+                    />
+                  </div>
+                  <div>
+                    <label className="shad-input-label mb-2">Region</label>
+                    <textarea
+                      type="text"
+                      name="fullAddress"
+                      value={formData.fullAddress}
+                      onChange={handleInputChange}
+                      placeholder="Full Address"
+                      className="p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Submit */}
               <button
