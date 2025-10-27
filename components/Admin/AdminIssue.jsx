@@ -1,4 +1,4 @@
-import { X, Calendar, MapPin, Tag, Clock, User, MessageSquare, Save } from 'lucide-react';
+import { X, Calendar, MapPin, Tag, Clock, User, MessageSquare, Save, Construction, Lightbulb, Trash2, Droplets, ClipboardList } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const statusColors = {
@@ -22,11 +22,11 @@ const categoryLabels = {
 };
 
 const categoryIcons = {
-  road: '🛣️',
-  lighting: '💡',
-  waste: '🗑️',
-  water: '💧',
-  other: '📋',
+  road: <Construction className="w-4 h-4 text-gray-700" />,
+  lighting: <Lightbulb className="w-4 h-4 text-yellow-500" />,
+  waste: <Trash2 className="w-4 h-4 text-green-600" />,
+  water: <Droplets className="w-4 h-4 text-blue-600" />,
+  other: <ClipboardList className="w-4 h-4 text-gray-600" />,
 };
 
 export function AdminIssueModal({ issue, onClose, onUpdated }) {
