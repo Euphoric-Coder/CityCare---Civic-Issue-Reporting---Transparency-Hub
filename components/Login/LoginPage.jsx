@@ -19,10 +19,7 @@ import Link from "next/link";
 import RedirectPage from "./Redirect";
 import { ModeToggle } from "../ModeToggle";
 import LocationPicker from "./LocationPicker";
-
-const GOOGLE_API_KEY =
-  process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ||
-  process.env.GOOGLE_MAPS_API_KEY;
+import { hash } from "bcryptjs";
 
 const LoginPage = () => {
   const router = useRouter();
@@ -62,43 +59,50 @@ const LoginPage = () => {
       city: formData.city,
       state: formData.state,
       region: formData.region,
+      postal: formData.postal,
       fullAddress: formData.fullAddress,
       wardNo: formData.wardNo,
       latitude: formData.latitude,
       longitude: formData.longitude,
     });
 
-    // const res = await signUp({
-    //   fullName: formData.fullName,
-    //   email: formData.email,
-    //   password: formData.password,
-    //   role: formData.role,
-    //   city: formData.city,
-    //   state: formData.state,
-    //   region: formData.region,
-    //   wardNo: formData.wardNo,
-    //   latitude: formData.latitude,
-    //   longitude: formData.longitude,
-    // });
+    const hashedPassword = await hash(formData.password, 10);
 
-    // if (!res.success) {
-    //   toast.error(res.error || "Sign up failed. Please try again.");
-    //   setError(res.error);
-    //   return;
-    // }
+    const res = await signUp({
+      fullName: formData.fullName,
+      email: formData.email,
+      password: hashedPassword,
+      role: formData.role,
+      city: formData.city,
+      state: formData.state,
+      region: formData.region,
+      postal: formData.postal,
+      fullAddress: formData.fullAddress,
+      wardNo: formData.wardNo,
+      latitude: formData.latitude,
+      longitude: formData.longitude,
+    });
 
-    // const result = await signIn("credentials", {
-    //   email: formData.email,
-    //   password: formData.password,
-    //   redirect: false,
-    // });
+    console.log(res);
 
-    // if (result?.error) {
-    //   toast.error("Login failed. Please try again.");
-    //   setError("Login failed. Please try again.");
-    // } else {
-    //   router.push(`/${formData.role}/dashboard`);
-    // }
+    if (!res.success) {
+      toast.error(res.error || "Sign up failed. Please try again.");
+      setError(res.error);
+      return;
+    }
+
+    const result = await signIn("credentials", {
+      email: formData.email,
+      password: formData.password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      toast.error("Login failed. Please try again.");
+      setError("Login failed. Please try again.");
+    } else {
+      router.push(`/${formData.role}/dashboard`);
+    }
   };
 
   return (

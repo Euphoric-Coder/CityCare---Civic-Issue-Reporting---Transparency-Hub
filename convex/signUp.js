@@ -1,6 +1,5 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { hash } from "bcryptjs";
 
 export const signUp = mutation({
   args: {
@@ -16,33 +15,35 @@ export const signUp = mutation({
     city: v.optional(v.string()),
     state: v.optional(v.string()),
     region: v.optional(v.string()),
+    postal: v.optional(v.string()),
     fullAddress: v.optional(v.string()),
     wardNo: v.optional(v.string()),
     latitude: v.optional(v.string()),
     longitude: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Check for existing user
     const existing = await ctx.db
       .query("users")
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .unique();
 
-    if (existing) return { success: false, error: "User already exists" };
+    if (existing) return { success: false, error: "User already exists." };
 
-    const hashed = await hash(args.password, 10);
-
+    // Insert user record
     await ctx.db.insert("users", {
       fullName: args.fullName,
       email: args.email,
-      password: hashed,
+      password: args.password,
       role: args.role,
-      city: args.city,
-      state: args.state,
-      region: args.region,
-      fullAddress: args.fullAddress,
-      wardNo: args.wardNo,
-      latitude: args.latitude,
-      longitude: args.longitude,
+      city: args.city || "",
+      state: args.state || "",
+      region: args.region || "",
+      postal: args.postal || "",
+      fullAddress: args.fullAddress || "",
+      wardNo: args.wardNo || "",
+      latitude: args.latitude || "",
+      longitude: args.longitude || "",
       notificationEnabled: true,
       points: 0,
       languagePreference: "en",

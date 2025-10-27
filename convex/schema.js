@@ -3,23 +3,29 @@ import { v } from "convex/values";
 
 export default defineSchema({
   users: defineTable({
-    userId: v.string(), // from NextAuth (e.g., session.user.id)
     fullName: v.string(),
+    email: v.string(),
+    password: v.string(),
     role: v.union(
       v.literal("citizen"),
-      v.literal("admin"),
       v.literal("ward_officer"),
-      v.literal("field_worker")
+      v.literal("field_worker"),
+      v.literal("admin")
     ),
-    email: v.string(),
+    city: v.optional(v.string()),
+    state: v.optional(v.string()),
+    region: v.optional(v.string()),
+    postal: v.optional(v.string()),
+    fullAddress: v.optional(v.string()),
+    wardNo: v.optional(v.string()),
+    latitude: v.optional(v.string()),
+    longitude: v.optional(v.string()),
     notificationEnabled: v.boolean(),
-    wardZone: v.optional(v.string()),
     points: v.number(),
     languagePreference: v.string(),
     createdAt: v.string(),
   })
-    .index("by_userId", ["userId"])
     .index("by_email", ["email"])
     .index("by_role", ["role"])
-    .index("by_ward_zone", ["wardZone"]),
+    .index("by_ward_zone", ["wardNo"]), 
 });
