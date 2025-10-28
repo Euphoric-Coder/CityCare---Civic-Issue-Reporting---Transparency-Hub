@@ -11,7 +11,7 @@ import {
 import { mockUsers, getIssues } from "@/lib/mockData";
 
 export function MessagesCenter() {
-  const user = { id: "2" };
+  const user = { id: "3" };
   const [threads, setThreads] = useState([]);
   const [selectedThread, setSelectedThread] = useState(null);
   const [replyText, setReplyText] = useState("");
