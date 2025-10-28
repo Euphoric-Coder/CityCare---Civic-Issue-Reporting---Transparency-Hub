@@ -6,10 +6,21 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession, signIn, signOut } from "next-auth/react";
+import { format } from "date-fns";
 
 export function PublicNavbar() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  if (status === "authenticated" && session?.expires) {
+    try {
+      const formatted = format(new Date(session.expires), "PPpp");
+      console.log("Session expires at:", formatted);
+    } catch (err) {
+      console.error("Error formatting date:", err);
+    }
+  } else {
+    console.log("Session not loaded yet or user not authenticated.");
+  }
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const userName = session?.user?.name?.split(" ")[0] || "User";

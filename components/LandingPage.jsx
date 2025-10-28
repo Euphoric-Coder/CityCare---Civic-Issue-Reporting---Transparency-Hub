@@ -91,7 +91,7 @@ export function LandingPage({ onGetStarted }) {
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button
-                onClick={() => router.push("sign-in")}
+                onClick={() => router.push("sign-up")}
                 className="group px-8 py-4 bg-white text-teal-600 
                      dark:bg-gray-800 dark:text-emerald-300 
                      rounded-full font-semibold text-lg 

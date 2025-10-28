@@ -21,7 +21,7 @@ import { ModeToggle } from "../ModeToggle";
 import LocationPicker from "./LocationPicker";
 import { hash } from "bcryptjs";
 
-const LoginPage = () => {
+const SignUp = () => {
   const router = useRouter();
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [formData, setFormData] = useState({
@@ -388,4 +388,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default SignUp;
