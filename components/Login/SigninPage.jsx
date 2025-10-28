@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { Mail, Lock, ChevronDown, Check } from "lucide-react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { Mail, Lock, ChevronDown, Check, AlertTriangle } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, signOut } from "next-auth/react";
 import { toast } from "sonner";
 import Image from "next/image";
@@ -11,9 +11,12 @@ import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import RedirectPage from "./Redirect";
 import { ModeToggle } from "../ModeToggle";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const SignInPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [showAlert, setShowAlert] = useState(false);
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -22,6 +25,14 @@ const SignInPage = () => {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Check for session expired query
+  useEffect(() => {
+    const expired = searchParams.get("expired");
+    if (expired === "true") {
+      setShowAlert(true);
+    }
+  }, [searchParams]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -110,6 +121,19 @@ const SignInPage = () => {
                 Sign in to manage and track your city issues.
               </p>
             </div>
+
+            {/* Session Expired Alert */}
+            {showAlert && (
+              <Alert className="mb-6 border-yellow-400 bg-yellow-50 text-yellow-900 dark:bg-yellow-950 dark:border-yellow-800 dark:text-yellow-100">
+                <AlertTriangle className="h-5 w-5 text-yellow-500 dark:text-yellow-300" />
+                <div>
+                  <AlertTitle>Session Expired</AlertTitle>
+                  <AlertDescription>
+                    Your session has expired. Please sign in again to continue.
+                  </AlertDescription>
+                </div>
+              </Alert>
+            )}
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
