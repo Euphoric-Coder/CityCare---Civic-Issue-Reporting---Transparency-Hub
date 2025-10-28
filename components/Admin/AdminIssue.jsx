@@ -1,16 +1,19 @@
-import { X, Calendar, MapPin, Tag, Clock, User, MessageSquare, Save, Construction, Lightbulb, Trash2, Droplets, ClipboardList } from 'lucide-react';
+import { getMockUser } from '@/lib/mockData';
+import { X, Calendar, MapPin, Tag, Clock, User, MessageSquare, Save, XCircle, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const statusColors = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
   in_progress: 'bg-blue-100 text-blue-800 border-blue-300',
-  resolved: 'bg-green-100 text-green-800 border-green-300',
+  resolved: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+  rejected: 'bg-red-100 text-red-800 border-red-300',
 };
 
 const statusLabels = {
   pending: 'Pending',
   in_progress: 'In Progress',
   resolved: 'Resolved',
+  rejected: 'Rejected',
 };
 
 const categoryLabels = {
@@ -22,110 +25,80 @@ const categoryLabels = {
 };
 
 const categoryIcons = {
-  road: <Construction className="w-4 h-4 text-gray-700" />,
-  lighting: <Lightbulb className="w-4 h-4 text-yellow-500" />,
-  waste: <Trash2 className="w-4 h-4 text-green-600" />,
-  water: <Droplets className="w-4 h-4 text-blue-600" />,
-  other: <ClipboardList className="w-4 h-4 text-gray-600" />,
+  road: '🛣️',
+  lighting: '💡',
+  waste: '🗑️',
+  water: '💧',
+  other: '📋',
 };
 
 export function AdminIssueModal({ issue, onClose, onUpdated }) {
-  const [updates, setUpdates] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [updating, setUpdating] = useState(false);
-  const [newStatus, setNewStatus] = useState("pending");
-  const [comment, setComment] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [action, setAction] = useState('status');
+  const [newStatus, setNewStatus] = useState('pending');
+  const [assignTo, setAssignTo] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
+  const [comment, setComment] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const wardOfficers = getMockUser().filter(u => u.role === 'ward_officer');
+  const fieldOfficers = getMockUser().filter(u => u.role === 'field_officer');
 
   useEffect(() => {
     if (issue) {
       setNewStatus(issue.status);
-      loadUpdates();
+      setAssignTo(issue.assigned_to || '');
     }
   }, [issue]);
 
-  // Load updates (dummy)
-  async function loadUpdates() {
-    if (!issue) return;
-    setLoading(true);
-
-    try {
-      // Simulate a network delay
-      await new Promise((res) => setTimeout(res, 400));
-
-      // Load dummy updates from issue prop or fallback
-      const dummyUpdates = issue.updates || [
-        {
-          id: 1,
-          status: issue.status,
-          comment: "Initial report created",
-          created_at: issue.created_at,
-          updater: { full_name: "Citizen User", role: "user" },
-        },
-      ];
-
-      setUpdates(dummyUpdates);
-    } catch (error) {
-      console.error("Error loading updates:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Handle status/comment update (dummy)
-  async function handleUpdate() {
+  function handleUpdate() {
     if (!issue) return;
 
-    setError("");
-    setSuccess("");
-    setUpdating(true);
+    setSuccess('');
 
-    try {
-      // Simulate a delay
-      await new Promise((res) => setTimeout(res, 800));
-
-      // Create a new local update
-      const newUpdate = {
-        id: Date.now(),
+    if (action === 'reject') {
+      if (!rejectReason.trim()) {
+        alert('Please provide a reason for rejection');
+        return;
+      }
+      onUpdated(issue.id, {
+        status: 'rejected',
+        rejection_reason: rejectReason,
+        updated_at: new Date().toISOString()
+      });
+      setSuccess('Issue rejected successfully!');
+    } else if (action === 'assign') {
+      if (!assignTo) {
+        alert('Please select an officer to assign');
+        return;
+      }
+      onUpdated(issue.id, {
+        assigned_to: assignTo,
+        status: 'in_progress',
+        updated_at: new Date().toISOString()
+      });
+      setSuccess('Issue assigned successfully!');
+    } else {
+      onUpdated(issue.id, {
         status: newStatus,
-        comment: comment || null,
-        created_at: new Date().toISOString(),
-        updater: { full_name: "Admin User", role: "admin" },
-      };
-
-      // Add update locally
-      setUpdates((prev) => [...prev, newUpdate]);
-
-      // Update issue status locally (non-persistent)
-      issue.status = newStatus;
-
-      setSuccess("Issue updated successfully!");
-      setComment("");
-
-      // Optionally call parent refresh
-      setTimeout(() => {
-        if (onUpdated) onUpdated();
-      }, 800);
-    } catch (err) {
-      console.error("Error updating issue:", err);
-      setError("Failed to update issue");
-    } finally {
-      setUpdating(false);
+        updated_at: new Date().toISOString()
+      });
+      setSuccess('Status updated successfully!');
     }
+
+    setTimeout(() => {
+      onClose();
+    }, 1000);
   }
 
   if (!issue) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-start">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">{issue.title}</h2>
-            <p className="text-sm text-gray-500 mt-1 font-mono">
-              {issue.ticket_id}
-            </p>
+            <p className="text-sm text-gray-500 mt-1 font-mono">{issue.ticket_id}</p>
           </div>
           <button
             onClick={onClose}
@@ -137,58 +110,141 @@ export function AdminIssueModal({ issue, onClose, onUpdated }) {
         </div>
 
         <div className="p-6 space-y-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">
-              Update Status
-            </h3>
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-5">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Admin Actions</h3>
+
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setAction('status')}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                  action === 'status'
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <Save size={18} className="inline mr-2" />
+                Update Status
+              </button>
+              <button
+                onClick={() => setAction('assign')}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                  action === 'assign'
+                    ? 'bg-teal-600 text-white'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <UserPlus size={18} className="inline mr-2" />
+                Assign Officer
+              </button>
+              <button
+                onClick={() => setAction('reject')}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                  action === 'reject'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <XCircle size={18} className="inline mr-2" />
+                Reject Issue
+              </button>
+            </div>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  New Status
-                </label>
-                <select
-                  value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="resolved">Resolved</option>
-                </select>
-              </div>
+              {action === 'status' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    New Status
+                  </label>
+                  <select
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                  </select>
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Comment (Optional)
+                    </label>
+                    <textarea
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 h-24"
+                      placeholder="Add a comment about this update..."
+                    />
+                  </div>
+                </div>
+              )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Comment (Optional)
-                </label>
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
-                  placeholder="Add a comment about this update..."
-                />
-              </div>
+              {action === 'assign' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Assign To
+                  </label>
+                  <select
+                    value={assignTo}
+                    onChange={(e) => setAssignTo(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="">Select an officer...</option>
+                    <optgroup label="Ward Officers">
+                      {wardOfficers.map(officer => (
+                        <option key={officer.id} value={officer.id}>
+                          {officer.full_name} ({officer.email})
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Field Officers">
+                      {fieldOfficers.map(officer => (
+                        <option key={officer.id} value={officer.id}>
+                          {officer.full_name} ({officer.email})
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                  <p className="mt-2 text-sm text-gray-600">
+                    This will assign the issue and automatically change status to "In Progress"
+                  </p>
+                </div>
+              )}
 
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
-                  {error}
+              {action === 'reject' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rejection Reason <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 h-32"
+                    placeholder="Provide a clear reason why this issue is being rejected..."
+                    required
+                  />
+                  <p className="mt-2 text-sm text-gray-600">
+                    The reporter will be notified with this reason. Rejected issues will only be visible to the reporter.
+                  </p>
                 </div>
               )}
 
               {success && (
-                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md text-sm">
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-md text-sm">
                   {success}
                 </div>
               )}
 
               <button
                 onClick={handleUpdate}
-                disabled={updating || newStatus === issue.status}
-                className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className={`w-full flex items-center justify-center px-4 py-3 rounded-md text-white font-medium transition-colors ${
+                  action === 'reject'
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : 'bg-teal-600 hover:bg-teal-700'
+                }`}
               >
-                <Save size={20} className="mr-2" />
-                {updating ? "Updating..." : "Update Issue"}
+                {action === 'status' && <><Save size={20} className="mr-2" />Update Status</>}
+                {action === 'assign' && <><UserPlus size={20} className="mr-2" />Assign Officer</>}
+                {action === 'reject' && <><XCircle size={20} className="mr-2" />Reject Issue</>}
               </button>
             </div>
           </div>
@@ -196,10 +252,10 @@ export function AdminIssueModal({ issue, onClose, onUpdated }) {
           <div className="flex items-center space-x-4">
             <span
               className={`px-3 py-1 rounded-full text-sm font-medium border ${
-                statusColors[issue.status]
+                statusColors[issue.status] || statusColors.pending
               }`}
             >
-              {statusLabels[issue.status]}
+              {statusLabels[issue.status] || issue.status}
             </span>
             <div className="flex items-center text-sm text-gray-600">
               <Tag size={16} className="mr-1" />
@@ -212,32 +268,24 @@ export function AdminIssueModal({ issue, onClose, onUpdated }) {
               <img
                 src={issue.photo_url}
                 alt={issue.title}
-                className="w-full rounded-lg"
+                className="w-full rounded-lg max-h-96 object-cover"
               />
             </div>
           )}
 
           <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
-              Description
-            </h3>
-            <p className="text-gray-700 whitespace-pre-wrap">
-              {issue.description}
-            </p>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
+            <p className="text-gray-700 whitespace-pre-wrap">{issue.description}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center text-sm text-gray-600">
               <Calendar size={16} className="mr-2" />
-              <span>
-                Reported: {new Date(issue.created_at).toLocaleString()}
-              </span>
+              <span>Reported: {new Date(issue.created_at).toLocaleString()}</span>
             </div>
             <div className="flex items-center text-sm text-gray-600">
               <Clock size={16} className="mr-2" />
-              <span>
-                Updated: {new Date(issue.updated_at).toLocaleString()}
-              </span>
+              <span>Updated: {new Date(issue.updated_at).toLocaleString()}</span>
             </div>
           </div>
 
@@ -248,47 +296,28 @@ export function AdminIssueModal({ issue, onClose, onUpdated }) {
             </div>
           )}
 
-          {updates.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                <MessageSquare size={20} className="mr-2" />
-                Timeline
-              </h3>
-              <div className="space-y-4">
-                {updates.map((update) => (
-                  <div
-                    key={update.id}
-                    className="border-l-4 border-blue-500 pl-4 py-2"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium border ${
-                          statusColors[update.status]
-                        }`}
-                      >
-                        {statusLabels[update.status]}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(update.created_at).toLocaleString()}
-                      </span>
-                    </div>
-                    {update.comment && (
-                      <p className="text-sm text-gray-700 mt-2">
-                        {update.comment}
-                      </p>
-                    )}
-                    {update.updater && (
-                      <div className="flex items-center text-xs text-gray-500 mt-2">
-                        <User size={12} className="mr-1" />
-                        <span>
-                          Updated by {update.updater.full_name}
-                          {update.updater.role === "admin" && " (Admin)"}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                ))}
+          {issue.reporter && (
+            <div className="flex items-center text-sm text-gray-600">
+              <User size={16} className="mr-2" />
+              <span>Reported by: {issue.reporter.full_name} ({issue.reporter.email})</span>
+            </div>
+          )}
+
+          {issue.assigned_to && issue.assignee && (
+            <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+              <div className="flex items-center text-sm text-teal-800">
+                <UserPlus size={16} className="mr-2" />
+                <span className="font-medium">
+                  Assigned to: {issue.assignee.full_name} ({issue.assignee.role.replace('_', ' ')})
+                </span>
               </div>
+            </div>
+          )}
+
+          {issue.rejection_reason && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-red-800 mb-2">Rejection Reason:</h3>
+              <p className="text-sm text-red-700">{issue.rejection_reason}</p>
             </div>
           )}
         </div>

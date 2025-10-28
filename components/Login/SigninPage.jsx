@@ -45,7 +45,7 @@ const SignInPage = () => {
     setLoading(true);
 
     try {
-      // Step 1️⃣ — Sign in with NextAuth
+      // Sign in with NextAuth
       const result = await signIn("credentials", {
         redirect: false,
         email: formData.email,
@@ -59,7 +59,7 @@ const SignInPage = () => {
         return;
       }
 
-      // Step 2️⃣ — Fetch user record from Convex
+      // Fetch user record from Convex
       const user = await fetchQuery(api.users.getUserByEmail, {
         email: formData.email,
       });
@@ -72,7 +72,7 @@ const SignInPage = () => {
         return;
       }
 
-      // Step 3️⃣ — Check role match
+      // Check role match
       if (user.role !== formData.role) {
         toast.error("Role mismatch. Please select the correct role.");
         setError("Role mismatch. Please select the correct role.");
@@ -81,7 +81,7 @@ const SignInPage = () => {
         return;
       }
 
-      // ✅ Step 4️⃣ — Success → redirect
+      // Success → redirect
       toast.success(`Welcome back, ${user.fullName}!`);
       router.push(`/${formData.role}/dashboard`);
     } catch (err) {

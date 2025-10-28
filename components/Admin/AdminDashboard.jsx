@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Search, Filter, RefreshCw, Shield } from 'lucide-react';
-import { AdminIssueModal } from './AdminIssue';
 import { getIssues } from '@/lib/mockData';
+import { AdminIssueModal } from './AdminIssue';
 import { IssueCard } from '../IssueCard';
 
 export function AdminDashboard() {
@@ -58,9 +58,11 @@ export function AdminDashboard() {
     setFilteredIssues(filtered);
   }
 
-  function handleIssueUpdated() {
+  function handleIssueUpdated(issueId, updates) {
+    setIssues(issues.map(issue =>
+      issue.id === issueId ? { ...issue, ...updates } : issue
+    ));
     setSelectedIssue(null);
-    loadIssues();
   }
 
   const stats = {
