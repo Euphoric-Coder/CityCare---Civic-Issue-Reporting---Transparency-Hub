@@ -1,12 +1,15 @@
-import SignInPage from '@/components/Login/SigninPage'
-import React from 'react'
+import { Suspense } from "react";
+import SignInPage from "@/components/Login/SigninPage";
+import React from "react";
 
 const page = () => {
   return (
     <div>
-      <SignInPage />
+      <Suspense fallback={<div className="text-center mt-10">Loading...</div>}>
+        <SignInPage />
+      </Suspense>
     </div>
-  )
-}
+  );
+};
 
-export default page
+export default page;
