@@ -7,12 +7,11 @@ import { fetchQuery } from "convex/nextjs";
 const handler = NextAuth({
   session: {
     strategy: "jwt",
-    // maxAge: 24 * 60 * 60, // 1 day in seconds
-    maxAge: 60 * 3, // now for testing purpose
+    maxAge: 60 * 3, // 3 minutes for testing (change to 24*60*60 for prod)
+    updateAge: 0, // prevent NextAuth from extending expiry automatically
   },
   jwt: {
-    // maxAge: 24 * 60 * 60, // 1 day in seconds
-    maxAge: 60 * 3, // now for testing purpose
+    maxAge: 60 * 3, // match same expiry
   },
 
   providers: [
@@ -26,7 +25,7 @@ const handler = NextAuth({
         try {
           if (!credentials?.email || !credentials?.password) return null;
 
-          // Fetch user by email from Convex (using your indexed query)
+          // Fetch user by email from Convex
           const user = await fetchQuery(api.users.getUserByEmail, {
             email: credentials.email,
           });
@@ -34,10 +33,10 @@ const handler = NextAuth({
           if (!user) return null;
 
           // Verify hashed password
-          const isValid = await compare(credentials.password, user.password);
-          if (!isValid) return null;
+          const valid = await compare(credentials.password, user.password);
+          if (!valid) return null;
 
-          // Return user object for session
+          // Create and return user payload
           return {
             id: user._id,
             email: user.email,
@@ -58,23 +57,45 @@ const handler = NextAuth({
 
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
+      // Only set exp and user info when signing in
+      if (user && !token.realExp) {
+        const exp = Math.floor(Date.now() / 1000) + 3 * 60; // 3 minutes (in seconds)
         token.id = user.id;
         token.name = user.name;
         token.role = user.role;
+        token.realExp = exp;
       }
+
+      // End session if expired
+      if (token.realExp && Date.now() / 1000 > token.realExp) {
+        console.log("Token expired — clearing session");
+        return {};
+      }
+
       return token;
     },
 
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id;
-        session.user.name = token.name;
-        session.user.role = token.role;
+      if (token?.id) {
+        session.user = {
+          id: token.id,
+          name: token.name,
+          role: token.role,
+          email: token.email,
+        };
+
+        // Fixed expiry time for frontend
+        session.realExpiry = new Date(token.realExp * 1000).toISOString();
+      } else {
+        session = null; // force logout on expiry
       }
+
       return session;
     },
   },
+
+  // Custom secret for stable JWT signing (important for testing)
+  secret: process.env.NEXTAUTH_SECRET || "dev-secret",
 });
 
 export { handler as GET, handler as POST };

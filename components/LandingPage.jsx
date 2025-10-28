@@ -174,7 +174,7 @@ export function LandingPage({ onGetStarted }) {
         </div>
 
         {/* Decorative Wave */}
-        <div class="wavet dark:hidden">
+        <div className="wavet dark:hidden">
           <svg
             data-name="Layer 1"
             xmlns="http://www.w3.org/2000/svg"
@@ -183,12 +183,12 @@ export function LandingPage({ onGetStarted }) {
           >
             <path
               d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
-              class="shape-fill"
+              className="shape-fill"
             ></path>
           </svg>
         </div>
 
-        <div class="wavetd dark:block hidden">
+        <div className="wavetd dark:block hidden">
           <svg
             data-name="Layer 1"
             xmlns="http://www.w3.org/2000/svg"
@@ -197,7 +197,7 @@ export function LandingPage({ onGetStarted }) {
           >
             <path
               d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
-              class="shape-fill"
+              className="shape-fill"
             ></path>
           </svg>
         </div>
@@ -547,7 +547,7 @@ export function LandingPage({ onGetStarted }) {
 
       <section className="py-20 bg-gradient-to-br from-teal-600 via-emerald-600 to-cyan-700 text-white relative dark:from-teal-800 dark:via-emerald-800 dark:to-cyan-900 transition-colors duration-500">
         {/* Bottom Wave Design */}
-        <div class="waveb dark:hidden">
+        <div className="waveb dark:hidden">
           <svg
             data-name="Layer 1"
             xmlns="http://www.w3.org/2000/svg"
@@ -556,11 +556,11 @@ export function LandingPage({ onGetStarted }) {
           >
             <path
               d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
-              class="shape-fill"
+              className="shape-fill"
             ></path>
           </svg>
         </div>
-        <div class="wavebd hidden dark:block">
+        <div className="wavebd hidden dark:block">
           <svg
             data-name="Layer 1"
             xmlns="http://www.w3.org/2000/svg"
@@ -569,7 +569,7 @@ export function LandingPage({ onGetStarted }) {
           >
             <path
               d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
-              class="shape-fill"
+              className="shape-fill"
             ></path>
           </svg>
         </div>
