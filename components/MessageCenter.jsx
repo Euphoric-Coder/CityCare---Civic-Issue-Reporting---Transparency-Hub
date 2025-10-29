@@ -19,7 +19,7 @@ export function MessagesCenter() {
 
   useEffect(() => {
     loadMessages();
-  }, [user]);
+  }, []);
 
   function loadMessages() {
     if (!user) return;
