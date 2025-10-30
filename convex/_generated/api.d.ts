@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as issues from "../issues.js";
 import type * as signUp from "../signUp.js";
 import type * as users from "../users.js";
 
@@ -26,6 +27,7 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  issues: typeof issues;
   signUp: typeof signUp;
   users: typeof users;
 }>;
