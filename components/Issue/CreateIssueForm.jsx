@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MapPin, Upload, CheckCircle2 } from 'lucide-react';
+import { MapPin, Upload, CheckCircle2, HeartHandshake } from 'lucide-react';
 import ProgressBar from './ProgressBar';
 import DetailsCard from './DetailsCard';
 import Location from './Location';
