@@ -1,41 +1,142 @@
-import { useState } from 'react';
-import { MapPin, Navigation, AlertCircle } from 'lucide-react';
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { MapPin, Navigation, AlertCircle } from "lucide-react";
 
 const Location = ({ formData, setFormData, errors }) => {
-  const [markerPosition, setMarkerPosition] = useState({ x: 50, y: 50 });
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
+  const autocompleteContainerRef = useRef(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
 
-  const handleMapClick = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
+  // ✅ Load Google Maps JS API dynamically
+  useEffect(() => {
+    if (window.google?.maps) {
+      setMapLoaded(true);
+      return;
+    }
 
-    setMarkerPosition({ x, y });
+    const script = document.createElement("script");
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${
+      process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    }&libraries=places,marker`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setMapLoaded(true);
+    document.body.appendChild(script);
+  }, []);
 
-    const lat = 40.7128 + (y - 50) * 0.001;
-    const lng = -74.0060 + (x - 50) * 0.001;
+  // ✅ Initialize map, marker, and autocomplete
+  useEffect(() => {
+    if (!mapLoaded || !window.google) return;
 
-    setFormData({
-      ...formData,
-      latitude: parseFloat(lat.toFixed(6)),
-      longitude: parseFloat(lng.toFixed(6)),
-    });
-  };
+    const center = {
+      lat: formData.latitude || 40.7128,
+      lng: formData.longitude || -74.006,
+    };
 
-  const handleCurrentLocation = () => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setFormData({
-            ...formData,
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            address: `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`,
-          });
-          setMarkerPosition({ x: 50, y: 50 });
+    const map = new google.maps.Map(mapRef.current, {
+      center,
+      zoom: 14,
+      mapId: process.env.NEXT_PUBLIC_GOOGLE_MAP_ID || "YOUR_MAP_ID",
+      disableDefaultUI: true,
+      zoomControl: true,
+      styles: [
+        {
+          featureType: "poi",
+          elementType: "labels",
+          stylers: [{ visibility: "off" }],
         },
-        (error) => {
-          console.error('Error getting location:', error);
+      ],
+    });
+
+    google.maps.importLibrary("marker").then(({ AdvancedMarkerElement }) => {
+      const marker = new AdvancedMarkerElement({
+        map,
+        position: center,
+        gmpDraggable: true,
+      });
+      markerRef.current = marker;
+
+      marker.addListener("dragend", () => {
+        const pos = marker.position;
+        if (pos) {
+          const lat = pos.lat();
+          const lng = pos.lng();
+          setFormData((prev) => ({
+            ...prev,
+            latitude: lat,
+            longitude: lng,
+          }));
         }
+      });
+    });
+
+    // ✅ PlaceAutocompleteElement (modern)
+    const placeAutocomplete = new google.maps.places.PlaceAutocompleteElement();
+    placeAutocomplete.id = "place-autocomplete";
+    placeAutocomplete.className =
+      "w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none text-gray-800 bg-white shadow-sm";
+    placeAutocomplete.placeholder = "Search address or landmark...";
+    autocompleteContainerRef.current?.appendChild(placeAutocomplete);
+
+    // ✅ Apply light theme manually to fix black patch
+    placeAutocomplete.style.setProperty("--gmpx-color-surface", "#ffffff");
+    placeAutocomplete.style.setProperty("--gmpx-color-on-surface", "#1f2937");
+    placeAutocomplete.style.setProperty("--gmpx-color-outline", "#d1d5db");
+    placeAutocomplete.style.setProperty("--gmpx-color-primary", "#059669");
+    placeAutocomplete.style.setProperty("--gmpx-border-radius", "12px");
+    placeAutocomplete.style.setProperty(
+      "--gmpx-shadow",
+      "0 1px 3px rgba(0,0,0,0.1)"
+    );
+
+    // ✅ Handle place select
+    placeAutocomplete.addEventListener("gmp-placeselect", async () => {
+      const place = await placeAutocomplete.getPlace();
+      if (!place || !place.location) {
+        setManualMode(true);
+        return;
+      }
+
+      const lat = place.location.lat();
+      const lng = place.location.lng();
+
+      if (markerRef.current) markerRef.current.position = place.location;
+      map.panTo(place.location);
+      map.setZoom(15);
+
+      setFormData((prev) => ({
+        ...prev,
+        latitude: lat,
+        longitude: lng,
+        address:
+          place.formattedAddress || place.displayName || "Selected location",
+      }));
+      setManualMode(false);
+    });
+  }, [mapLoaded]);
+
+  // ✅ Current location
+  const handleCurrentLocation = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          const loc = new google.maps.LatLng(latitude, longitude);
+          if (markerRef.current) {
+            markerRef.current.position = loc;
+            markerRef.current.map.panTo(loc);
+          }
+          setFormData((prev) => ({
+            ...prev,
+            latitude,
+            longitude,
+            address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+          }));
+        },
+        (err) => console.error("Error getting location:", err)
       );
     }
   };
@@ -48,10 +149,11 @@ const Location = ({ formData, setFormData, errors }) => {
       </h2>
 
       <div className="space-y-6">
+        {/* 🔍 Autocomplete */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="block text-sm font-semibold text-gray-700">
-              Interactive Map
+              Search Address or Landmark
             </label>
             <button
               onClick={handleCurrentLocation}
@@ -61,86 +163,77 @@ const Location = ({ formData, setFormData, errors }) => {
               Use Current Location
             </button>
           </div>
-
-          <div
-            onClick={handleMapClick}
-            className="relative w-full h-80 rounded-xl overflow-hidden border-2 border-gray-200 cursor-crosshair bg-gradient-to-br from-teal-50 to-emerald-100 shadow-inner"
-          >
-            <div className="absolute inset-0 opacity-20">
-              <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <line x1="0" y1="25" x2="100" y2="25" stroke="#94a3b8" strokeWidth="0.2" />
-                <line x1="0" y1="50" x2="100" y2="50" stroke="#94a3b8" strokeWidth="0.2" />
-                <line x1="0" y1="75" x2="100" y2="75" stroke="#94a3b8" strokeWidth="0.2" />
-                <line x1="25" y1="0" x2="25" y2="100" stroke="#94a3b8" strokeWidth="0.2" />
-                <line x1="50" y1="0" x2="50" y2="100" stroke="#94a3b8" strokeWidth="0.2" />
-                <line x1="75" y1="0" x2="75" y2="100" stroke="#94a3b8" strokeWidth="0.2" />
-              </svg>
-            </div>
-
-            <div
-              className="absolute w-10 h-10 transform -translate-x-1/2 -translate-y-full transition-all duration-200 hover:scale-110"
-              style={{ left: `${markerPosition.x}%`, top: `${markerPosition.y}%` }}
-            >
-              <MapPin className="w-10 h-10 text-red-500 drop-shadow-lg" fill="currentColor" />
-            </div>
-
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-md">
-                <p className="text-sm text-gray-600 font-medium">Click anywhere to set location</p>
-              </div>
-            </div>
-
-            <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-sm p-3 rounded-lg shadow-md">
-              <div className="flex items-center gap-2 text-xs text-gray-600">
-                <span className="font-semibold">Coordinates:</span>
-                <span className="font-mono">
-                  {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <p className="mt-2 text-xs text-gray-500">
-            Click or drag on the map to pinpoint the exact location
-          </p>
-        </div>
-
-        <div>
-          <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-2">
-            Address or Landmark *
-          </label>
-          <input
-            type="text"
-            id="address"
-            value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            className={`w-full px-4 py-3 rounded-xl border-2 ${
-              errors.address ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-emerald-500'
-            } focus:outline-none focus:ring-4 focus:ring-emerald-100 transition-all`}
-            placeholder="e.g., 123 Main Street, near Central Park"
-          />
+          <div ref={autocompleteContainerRef}></div>
           {errors.address && (
             <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
               <AlertCircle size={14} />
               {errors.address}
             </p>
           )}
-          <p className="mt-1 text-xs text-gray-500">
-            Help us locate the issue quickly and accurately
-          </p>
         </div>
 
-        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-4">
-          <div className="flex gap-3">
-            <MapPin className="text-emerald-600 flex-shrink-0 mt-0.5" size={20} />
+        {/* 🧭 Manual Coordinates */}
+        {manualMode && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             <div>
-              <h3 className="font-semibold text-emerald-900 mb-1">Location Tips</h3>
-              <ul className="text-sm text-emerald-800 space-y-1">
-                <li>• Be as specific as possible with landmarks</li>
-                <li>• Double-check coordinates match the description</li>
-                <li>• Include nearby intersections if applicable</li>
-              </ul>
+              <label className="text-sm font-semibold text-gray-700">
+                Latitude
+              </label>
+              <input
+                type="number"
+                step="0.000001"
+                value={formData.latitude || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    latitude: parseFloat(e.target.value) || 0,
+                  })
+                }
+                className="w-full mt-1 px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none"
+                placeholder="Enter latitude"
+              />
             </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-700">
+                Longitude
+              </label>
+              <input
+                type="number"
+                step="0.000001"
+                value={formData.longitude || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    longitude: parseFloat(e.target.value) || 0,
+                  })
+                }
+                className="w-full mt-1 px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none"
+                placeholder="Enter longitude"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 🗺️ Map */}
+        <div className="relative w-full h-80 rounded-xl overflow-hidden border-2 border-gray-200 shadow-inner">
+          {!mapLoaded ? (
+            <div className="flex items-center justify-center h-full text-gray-500 text-sm">
+              Loading map...
+            </div>
+          ) : (
+            <div ref={mapRef} className="w-full h-full" />
+          )}
+        </div>
+
+        {/* 📍 Coordinates */}
+        <div className="flex flex-wrap gap-6 text-sm text-gray-700">
+          <div>
+            <span className="font-semibold">Latitude:</span>{" "}
+            {formData.latitude?.toFixed(6) || "—"}
+          </div>
+          <div>
+            <span className="font-semibold">Longitude:</span>{" "}
+            {formData.longitude?.toFixed(6) || "—"}
           </div>
         </div>
       </div>

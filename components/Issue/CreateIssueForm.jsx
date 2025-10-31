@@ -1,27 +1,27 @@
-import { useState } from 'react';
-import { MapPin, Upload, CheckCircle2, HeartHandshake } from 'lucide-react';
-import ProgressBar from './ProgressBar';
-import DetailsCard from './DetailsCard';
-import Location from './Location';
-import AnonymityToggle from './AnonymityToggle';
-import PreviewModal from './Preview';
+import { useState } from "react";
+import { CheckCircle2, HeartHandshake } from "lucide-react";
+import ProgressBar from "./ProgressBar";
+import DetailsCard from "./DetailsCard";
+import Location from "./Location";
+import AnonymityToggle from "./AnonymityToggle";
+import PreviewModal from "./Preview";
 
-const IssueForm = ({ onSuccess }) => {
+const IssueForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [showPreview, setShowPreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category: '',
-    severity: '',
+    title: "",
+    description: "",
+    category: "",
+    severity: "",
     photoUrl: null,
     latitude: 40.7128,
-    longitude: -74.0060,
-    address: '',
+    longitude: -74.006,
+    address: "",
     isAnonymous: false,
-    email: '',
+    email: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -31,29 +31,30 @@ const IssueForm = ({ onSuccess }) => {
 
     if (step === 1) {
       if (!formData.title.trim()) {
-        newErrors.title = 'Title is required';
+        newErrors.title = "Title is required";
       } else if (formData.title.length < 5) {
-        newErrors.title = 'Title must be at least 5 characters';
+        newErrors.title = "Title must be at least 5 characters";
       }
 
       if (!formData.description.trim()) {
-        newErrors.description = 'Description is required';
+        newErrors.description = "Description is required";
       } else if (formData.description.length < 20) {
-        newErrors.description = 'Please provide more details (min 20 characters)';
+        newErrors.description =
+          "Please provide more details (min 20 characters)";
       }
 
       if (!formData.category) {
-        newErrors.category = 'Please select a category';
+        newErrors.category = "Please select a category";
       }
 
       if (!formData.severity) {
-        newErrors.severity = 'Please select a severity level';
+        newErrors.severity = "Please select a severity level";
       }
     }
 
     if (step === 2) {
       if (!formData.address.trim()) {
-        newErrors.address = 'Address is required';
+        newErrors.address = "Address is required";
       }
     }
 
@@ -80,11 +81,25 @@ const IssueForm = ({ onSuccess }) => {
   const handleSubmit = async () => {
     setIsSubmitting(true);
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
+    console.log("Form submitted:", formData);
     setIsSubmitting(false);
     setShowPreview(false);
-    onSuccess();
+    setFormData({
+      title: "",
+      description: "",
+      category: "",
+      severity: "",
+      photoUrl: null,
+      latitude: 40.7128,
+      longitude: -74.006,
+      address: "",
+      isAnonymous: false,
+      email: "",
+    });
+    setCurrentStep(1);
+    // onSuccess();
   };
 
   return (
