@@ -1,47 +1,72 @@
-import { Home, RotateCcw } from 'lucide-react';
+import { Home, RotateCcw, Trash2 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ModeToggle } from "../ModeToggle";
 
-const Navbar = ({ onBackToDashboard, onClear }) => {
+const Navbar = ({ setFormData, setCurrentStep }) => {
+  const router = useRouter();
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-white/70 dark:bg-gray-900/70 border-b border-gray-200/50 dark:border-gray-800/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 via-emerald-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 dark:shadow-emerald-400/20">
-              <svg
-                className="w-6 h-6 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
-              </svg>
+          <Link href="/">
+            <div className="flex items-center group gap-2">
+              <Image
+                src="/logo.png"
+                alt="CityCare Logo"
+                width={40}
+                height={40}
+              />
+              <span className="text-2xl font-bold bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 dark:from-teal-400 dark:via-emerald-400 dark:to-cyan-500 bg-clip-text text-transparent">
+                CityCare
+              </span>
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 dark:from-teal-400 dark:via-emerald-400 dark:to-cyan-500 bg-clip-text text-transparent">
-              StepTracker
-            </span>
-          </div>
+          </Link>
 
           {/* Action Buttons */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-5">
+            <ModeToggle />
             <button
-              onClick={onBackToDashboard}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 bg-gray-100/80 hover:bg-gray-200/80 dark:bg-gray-800/80 dark:hover:bg-gray-700/80 text-gray-700 dark:text-gray-300 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50"
+              onClick={() => router.push("/citizen/dashboard")}
+              className="flex items-center space-x-2 px-4 py-2 rounded-3xl font-medium transition-all duration-200 bg-gray-100/80 hover:bg-gray-200/80 dark:bg-gray-800/80 dark:hover:bg-gray-700/80 text-gray-700 dark:text-gray-300 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50"
             >
               <Home className="w-4 h-4" />
               <span className="hidden sm:inline">Dashboard</span>
             </button>
 
             <button
-              onClick={onClear}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-600 hover:from-teal-600 hover:via-emerald-600 hover:to-cyan-700 text-white shadow-lg shadow-emerald-500/30 dark:shadow-emerald-400/20 backdrop-blur-sm"
+              onClick={() => {
+                setFormData({
+                  // --- Issue details ---
+                  title: "",
+                  description: "",
+                  category: "",
+                  severity: "",
+                  photoUrl: null,
+
+                  // --- Location details ---
+                  searchQuery: "", // Raw search text typed or selected
+                  address: "", // Full formatted address
+                  city: "", // City or locality
+                  state: "", // State / region
+                  postal: "", // Postal code
+                  latitude: 20.5937, // Default center (India)
+                  longitude: 78.9629,
+                  mapUrl: "", // Google Maps URL for location
+
+                  // Reporter details
+                  isAnonymous: false,
+                  email: "",
+
+                  createdAt: Date.now(),
+                });
+                setCurrentStep(1);
+              }}
+              className="flex items-center space-x-2 px-4 py-2 rounded-3xl font-medium transition-all duration-200 bg-gradient-to-r from-teal-500 via-emerald-500 to-cyan-600 hover:from-teal-600 hover:via-emerald-600 hover:to-cyan-700 text-white shadow-lg shadow-emerald-500/30 dark:shadow-emerald-400/20 backdrop-blur-sm"
             >
-              <RotateCcw className="w-4 h-4" />
+              <Trash2 className="w-4 h-4" />
               <span className="hidden sm:inline">Clear</span>
             </button>
           </div>

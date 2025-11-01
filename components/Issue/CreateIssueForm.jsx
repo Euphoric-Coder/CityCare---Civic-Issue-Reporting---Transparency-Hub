@@ -6,6 +6,7 @@ import Location from "./Location";
 import AnonymityToggle from "./AnonymityToggle";
 import PreviewModal from "./Preview";
 import { ModeToggle } from "../ModeToggle";
+import Navbar from "./Navbar";
 
 const IssueForm = () => {
   const [currentStep, setCurrentStep] = useState(2);
@@ -117,8 +118,8 @@ const IssueForm = () => {
 
   return (
     <>
-      <div className="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <ModeToggle />
+      <Navbar setFormData={setFormData} setCurrentStep={setCurrentStep} />
+      <div className="mt-20 max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 shadow-lg mb-4">
             <HeartHandshake className="w-8 h-8 text-white" />
