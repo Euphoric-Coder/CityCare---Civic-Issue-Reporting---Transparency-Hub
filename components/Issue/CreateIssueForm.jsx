@@ -5,6 +5,7 @@ import DetailsCard from "./DetailsCard";
 import Location from "./Location";
 import AnonymityToggle from "./AnonymityToggle";
 import PreviewModal from "./Preview";
+import { ModeToggle } from "../ModeToggle";
 
 const IssueForm = () => {
   const [currentStep, setCurrentStep] = useState(2);
@@ -33,9 +34,8 @@ const IssueForm = () => {
     isAnonymous: false,
     email: "",
 
-    createdAt: Date.now(), 
+    createdAt: Date.now(),
   });
-
 
   const [errors, setErrors] = useState({});
 
@@ -118,6 +118,7 @@ const IssueForm = () => {
   return (
     <>
       <div className="max-w-4xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <ModeToggle />
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 shadow-lg mb-4">
             <HeartHandshake className="w-8 h-8 text-white" />
@@ -133,7 +134,7 @@ const IssueForm = () => {
           </p>
         </div>
 
-        <ProgressBar currentStep={currentStep} totalSteps={3} />
+        <ProgressBar currentStep={currentStep} />
 
         <div className="mt-8">
           {currentStep === 1 && (
