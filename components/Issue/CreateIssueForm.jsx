@@ -7,22 +7,35 @@ import AnonymityToggle from "./AnonymityToggle";
 import PreviewModal from "./Preview";
 
 const IssueForm = () => {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(2);
   const [showPreview, setShowPreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
+    // --- Issue details ---
     title: "",
     description: "",
     category: "",
     severity: "",
     photoUrl: null,
-    latitude: 40.7128,
-    longitude: -74.006,
-    address: "",
+
+    // --- Location details ---
+    searchQuery: "", // Raw search text typed or selected
+    address: "", // Full formatted address
+    city: "", // City or locality
+    state: "", // State / region
+    postal: "", // Postal code
+    latitude: 20.5937, // Default center (India)
+    longitude: 78.9629,
+    mapUrl: "", // Google Maps URL for location
+
+    // Reporter details
     isAnonymous: false,
     email: "",
+
+    createdAt: Date.now(), 
   });
+
 
   const [errors, setErrors] = useState({});
 
