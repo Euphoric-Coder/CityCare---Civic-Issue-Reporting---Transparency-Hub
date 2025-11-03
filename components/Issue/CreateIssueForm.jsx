@@ -5,11 +5,10 @@ import DetailsCard from "./DetailsCard";
 import Location from "./Location";
 import AnonymityToggle from "./AnonymityToggle";
 import PreviewModal from "./Preview";
-import { ModeToggle } from "../ModeToggle";
 import Navbar from "./Navbar";
 
 const IssueForm = () => {
-  const [currentStep, setCurrentStep] = useState(2);
+  const [currentStep, setCurrentStep] = useState(1);
   const [showPreview, setShowPreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -69,6 +68,18 @@ const IssueForm = () => {
     if (step === 2) {
       if (!formData.address.trim()) {
         newErrors.address = "Address is required";
+      }
+
+      if (!formData.city.trim()) {
+        newErrors.city = "City is required";
+      }
+
+      if (!formData.state.trim()) {
+        newErrors.state = "State is required";
+      }
+
+      if (!formData.postal.trim()) {
+        newErrors.postal = "Postal Code is required";
       }
     }
 

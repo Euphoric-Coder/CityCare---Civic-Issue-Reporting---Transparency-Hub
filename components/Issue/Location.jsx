@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Navigation, Link2 } from "lucide-react";
+import { MapPin, Navigation, Link2, AlertCircle } from "lucide-react";
 import { useTheme } from "next-themes";
 
-export default function Location({ formData, setFormData }) {
+export default function Location({ formData, setFormData, errors }) {
   const mapRef = useRef(null);
   const inputRef = useRef(null);
   const markerRef = useRef(null);
@@ -288,8 +288,20 @@ export default function Location({ formData, setFormData }) {
               onChange={(e) =>
                 setFormData({ ...formData, [key]: e.target.value })
               }
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none"
+              className={`w-full px-4 py-3 rounded-xl
+                ${
+                  errors[key]
+                    ? "border-red-300 focus:border-red-500"
+                    : "border-gray-200 dark:border-gray-700 focus:border-emerald-500 "
+                }
+                border-2 border-gray-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-4 focus:ring-emerald-100 outline-none`}
             />
+            {errors[key] && (
+              <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                <AlertCircle size={14} />
+                {errors[key]}
+              </p>
+            )}
           </div>
         ))}
         <div className="sm:col-span-2">
