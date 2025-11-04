@@ -1,17 +1,32 @@
-import { AlertCircle, Camera, NotebookText, X } from 'lucide-react';
+import { AlertCircle, Camera, NotebookText, X } from "lucide-react";
 
 const categories = [
-  { value: 'road', label: 'Road & Infrastructure', icon: '🛣️' },
-  { value: 'lighting', label: 'Street Lighting', icon: '💡' },
-  { value: 'water', label: 'Water & Drainage', icon: '💧' },
-  { value: 'waste', label: 'Waste Management', icon: '🗑️' },
-  { value: 'other', label: 'Other', icon: '📋' },
+  { value: "road", label: "Road & Infrastructure", icon: "🛣️" },
+  { value: "lighting", label: "Street Lighting", icon: "💡" },
+  { value: "water", label: "Water & Drainage", icon: "💧" },
+  { value: "waste", label: "Waste Management", icon: "🗑️" },
+  { value: "other", label: "Other", icon: "📋" },
 ];
 
 const severityLevels = [
-  { value: 'low', label: 'Low', color: 'bg-blue-100 text-blue-700 border-blue-400 ring-blue-300' },
-  { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-700 border-yellow-400 ring-yellow-300' },
-  { value: 'high', label: 'High', color: 'bg-red-100 text-red-700 border-red-400 ring-red-300' },
+  {
+    value: "low",
+    label: "Low",
+    color:
+      "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-400 dark:border-blue-600 ring-blue-300 dark:ring-blue-700",
+  },
+  {
+    value: "medium",
+    label: "Medium",
+    color:
+      "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 border-yellow-400 dark:border-yellow-600 ring-yellow-300 dark:ring-yellow-700",
+  },
+  {
+    value: "high",
+    label: "High",
+    color:
+      "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-400 dark:border-red-600 ring-red-300 dark:ring-red-700",
+  },
 ];
 
 const DetailsCard = ({ formData, setFormData, errors }) => {
@@ -31,17 +46,18 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-100">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-100 dark:border-gray-800 transition-colors duration-300">
       <h2 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mb-6 flex items-center gap-2">
         <NotebookText />
         Issue Details
       </h2>
 
       <div className="space-y-6">
+        {/* Title */}
         <div>
           <label
             htmlFor="title"
-            className="block text-sm font-semibold text-gray-700 mb-2"
+            className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
           >
             Issue Title *
           </label>
@@ -52,26 +68,29 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
             onChange={(e) =>
               setFormData({ ...formData, title: e.target.value })
             }
-            className={`w-full px-4 py-3 rounded-xl border-2 ${
+            className={`w-full px-4 py-3 rounded-xl border-2 transition-all outline-none focus:ring-4 ${
               errors.title
-                ? "border-red-300 focus:border-red-500"
-                : "border-gray-200 focus:border-emerald-500"
-            } focus:outline-none focus:ring-4 focus:ring-emerald-100 transition-all`}
+                ? "border-red-300 dark:border-red-500 focus:border-red-500 focus:ring-red-200 dark:focus:ring-red-800"
+                : "border-gray-200 dark:border-gray-700 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-emerald-100 dark:focus:ring-emerald-800"
+            } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
             placeholder="e.g., Broken streetlight on Main Street"
           />
           {errors.title && (
-            <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
               <AlertCircle size={14} />
               {errors.title}
             </p>
           )}
-          <p className="mt-1 text-xs text-gray-500">Be specific and concise</p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Be specific and concise
+          </p>
         </div>
 
+        {/* Description */}
         <div>
           <label
             htmlFor="description"
-            className="block text-sm font-semibold text-gray-700 mb-2"
+            className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
           >
             Description *
           </label>
@@ -82,29 +101,31 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
             onChange={(e) =>
               setFormData({ ...formData, description: e.target.value })
             }
-            className={`w-full px-4 py-3 rounded-xl border-2 ${
+            className={`w-full px-4 py-3 rounded-xl border-2 resize-none transition-all outline-none focus:ring-4 ${
               errors.description
-                ? "border-red-300 focus:border-red-500"
-                : "border-gray-200 focus:border-emerald-500"
-            } focus:outline-none focus:ring-4 focus:ring-emerald-100 transition-all resize-none`}
+                ? "border-red-300 dark:border-red-500 focus:border-red-500 focus:ring-red-200 dark:focus:ring-red-800"
+                : "border-gray-200 dark:border-gray-700 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-emerald-100 dark:focus:ring-emerald-800"
+            } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
             placeholder="Describe the issue in detail. What happened? When did you notice it?"
           />
           {errors.description && (
-            <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
               <AlertCircle size={14} />
               {errors.description}
             </p>
           )}
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             {formData.description.length}/500 characters (min 20)
           </p>
         </div>
 
+        {/* Category & Severity */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Category */}
           <div>
             <label
               htmlFor="category"
-              className="block text-sm font-semibold text-gray-700 mb-2"
+              className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
             >
               Category *
             </label>
@@ -114,11 +135,11 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
               onChange={(e) =>
                 setFormData({ ...formData, category: e.target.value })
               }
-              className={`w-full px-4 py-3 rounded-xl border-2 ${
+              className={`w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none focus:ring-4 ${
                 errors.category
-                  ? "border-red-300 focus:border-red-500"
-                  : "border-gray-200 focus:border-emerald-500"
-              } focus:outline-none focus:ring-4 focus:ring-emerald-100 transition-all bg-white`}
+                  ? "border-red-300 dark:border-red-500 focus:border-red-500 focus:ring-red-200 dark:focus:ring-red-800"
+                  : "border-gray-200 dark:border-gray-700 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-emerald-100 dark:focus:ring-emerald-800"
+              } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
             >
               <option value="">Select a category</option>
               {categories.map((cat) => (
@@ -128,15 +149,16 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
               ))}
             </select>
             {errors.category && (
-              <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+              <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
                 <AlertCircle size={14} />
                 {errors.category}
               </p>
             )}
           </div>
 
+          {/* Severity */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
               Severity Level *
             </label>
             <div className="flex gap-4">
@@ -149,8 +171,8 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
                   }
                   className={`flex-1 py-3 rounded-xl border-2 font-medium transition-all ${
                     formData.severity === level.value
-                      ? level.color + " ring-4 ring-opacity-60 scale-105"
-                      : "bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-300"
+                      ? `${level.color} ring-4 ring-opacity-60 scale-105`
+                      : "bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500"
                   }`}
                 >
                   {level.label}
@@ -158,7 +180,7 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
               ))}
             </div>
             {errors.severity && (
-              <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+              <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
                 <AlertCircle size={14} />
                 {errors.severity}
               </p>
@@ -166,19 +188,20 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
           </div>
         </div>
 
+        {/* Photo Upload */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
             Photo (Optional)
           </label>
 
           {!formData.photoUrl ? (
-            <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-xl hover:border-emerald-500 cursor-pointer transition-all bg-gray-50 hover:bg-emerald-50 group">
+            <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-xl transition-all cursor-pointer bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 group">
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <Camera className="w-10 h-10 text-gray-400 group-hover:text-emerald-600 transition-colors mb-2" />
-                <p className="text-sm text-gray-600 font-medium">
+                <Camera className="w-10 h-10 text-gray-400 dark:text-gray-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-2" />
+                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
                   Click to upload or drag and drop
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   PNG, JPG up to 10MB
                 </p>
               </div>
@@ -190,7 +213,7 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
               />
             </label>
           ) : (
-            <div className="relative rounded-xl overflow-hidden border-2 border-emerald-200">
+            <div className="relative rounded-xl overflow-hidden border-2 border-emerald-200 dark:border-emerald-700 shadow-md">
               <img
                 src={formData.photoUrl}
                 alt="Preview"
@@ -198,7 +221,7 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
               />
               <button
                 onClick={removePhoto}
-                className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-full transition-colors shadow-lg"
               >
                 <X size={16} />
               </button>

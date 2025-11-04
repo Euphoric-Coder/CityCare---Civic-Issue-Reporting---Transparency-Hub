@@ -41,16 +41,79 @@ export default function Location({ formData, setFormData, errors }) {
 
     const mapObj = new window.google.maps.Map(mapRef.current, {
       center,
-      zoom: 13,
+      zoom: 20,
       styles:
         theme === "dark"
           ? [
-              { elementType: "geometry", stylers: [{ color: "#1d2c4d" }] },
+              { elementType: "geometry", stylers: [{ color: "#1a1a1a" }] },
+              {
+                elementType: "labels.text.stroke",
+                stylers: [{ color: "#1a1a1a" }],
+              },
               {
                 elementType: "labels.text.fill",
-                stylers: [{ color: "#8ec3b9" }],
+                stylers: [{ color: "#e0e0e0" }],
               },
-              { featureType: "water", stylers: [{ color: "#0e1626" }] },
+              {
+                featureType: "administrative",
+                elementType: "geometry",
+                stylers: [{ visibility: "off" }],
+              },
+              {
+                featureType: "poi",
+                elementType: "labels.text.fill",
+                stylers: [{ color: "#d6d6d6" }],
+              },
+              {
+                featureType: "poi.park",
+                elementType: "geometry",
+                stylers: [{ color: "#182d1c" }],
+              },
+              {
+                featureType: "poi.park",
+                elementType: "labels.text.fill",
+                stylers: [{ color: "#88c9a1" }],
+              },
+              {
+                featureType: "road",
+                elementType: "geometry",
+                stylers: [{ color: "#2c2c2c" }],
+              },
+              {
+                featureType: "road",
+                elementType: "labels.text.fill",
+                stylers: [{ color: "#e2e2e2" }],
+              },
+              {
+                featureType: "road.arterial",
+                elementType: "geometry",
+                stylers: [{ color: "#383838" }],
+              },
+              {
+                featureType: "road.highway",
+                elementType: "geometry",
+                stylers: [{ color: "#444444" }],
+              },
+              {
+                featureType: "road.highway",
+                elementType: "geometry.stroke",
+                stylers: [{ color: "#1f1f1f" }],
+              },
+              {
+                featureType: "transit",
+                elementType: "geometry",
+                stylers: [{ color: "#1a1a1a" }],
+              },
+              {
+                featureType: "water",
+                elementType: "geometry",
+                stylers: [{ color: "#0f1b29" }],
+              },
+              {
+                featureType: "water",
+                elementType: "labels.text.fill",
+                stylers: [{ color: "#8cb4d1" }],
+              },
             ]
           : [],
     });
@@ -266,7 +329,7 @@ export default function Location({ formData, setFormData, errors }) {
             setFormData({ ...formData, searchQuery: e.target.value })
           }
           onKeyDown={(e) => e.key === "Enter" && handleManualSearch()}
-          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none"
+          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-800 outline-none transition-all duration-300"
         />
       </div>
 
@@ -288,13 +351,15 @@ export default function Location({ formData, setFormData, errors }) {
               onChange={(e) =>
                 setFormData({ ...formData, [key]: e.target.value })
               }
-              className={`w-full px-4 py-3 rounded-xl
-                ${
-                  errors[key]
-                    ? "border-red-300 focus:border-red-500"
-                    : "border-gray-200 dark:border-gray-700 focus:border-emerald-500 "
-                }
-                border-2 border-gray-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-4 focus:ring-emerald-100 outline-none`}
+              placeholder={`Type ${key === "postal" ? "postal code" : key}...`}
+              className={`w-full px-4 py-3 rounded-xl border-2 
+              ${
+                errors[key]
+                  ? "border-red-300 dark:border-red-500 focus:border-red-500 dark:focus:border-red-400 focus:ring-red-100 dark:focus:ring-red-900/40"
+                  : "border-gray-200 dark:border-gray-700 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-emerald-100 dark:focus:ring-emerald-800"
+              }
+              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-4 outline-none transition-all duration-300
+`}
             />
             {errors[key] && (
               <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
@@ -314,10 +379,11 @@ export default function Location({ formData, setFormData, errors }) {
           </label>
           <input
             value={formData.mapUrl || ""}
+            placeholder="Paste Google Maps URL..."
             onChange={(e) =>
               setFormData({ ...formData, mapUrl: e.target.value })
             }
-            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none"
+            className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-800 outline-none transition-all duration-300"
           />
         </div>
       </div>
