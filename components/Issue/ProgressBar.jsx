@@ -1,33 +1,52 @@
-import { Check, FileText, MapPin, Send, Sparkles } from 'lucide-react';
+import {
+  Check,
+  CircleCheck,
+  FileText,
+  MapPin,
+  Send,
+  Sparkles,
+} from "lucide-react";
 
 const ProgressBar = ({ currentStep }) => {
   const steps = [
-    { number: 1, label: "Details", description: "Basic information", icon: FileText },
-    { number: 2, label: "Location", description: "Address details", icon: MapPin },
+    {
+      number: 1,
+      label: "Details",
+      description: "Basic information",
+      icon: FileText,
+    },
+    {
+      number: 2,
+      label: "Location",
+      description: "Address details",
+      icon: MapPin,
+    },
     { number: 3, label: "Submit", description: "Review & confirm", icon: Send },
   ];
 
   const getStepColor = (stepNum) => {
-    if (stepNum === 1) return {
-      from: 'from-teal-500 dark:from-teal-400',
-      to: 'to-teal-600 dark:to-teal-500',
-      shadow: 'shadow-teal-500/50 dark:shadow-teal-400/60',
-      glow: 'from-teal-400/40 dark:from-teal-300/50',
-      glowVia: 'via-teal-400/40 dark:via-teal-300/50'
-    };
-    if (stepNum === 2) return {
-      from: 'from-emerald-500 dark:from-emerald-400',
-      to: 'to-emerald-600 dark:to-emerald-500',
-      shadow: 'shadow-emerald-500/50 dark:shadow-emerald-400/60',
-      glow: 'from-emerald-400/40 dark:from-emerald-300/50',
-      glowVia: 'via-emerald-400/40 dark:via-emerald-300/50'
-    };
+    if (stepNum === 1)
+      return {
+        from: "from-teal-500 dark:from-teal-400",
+        to: "to-teal-600 dark:to-teal-500",
+        shadow: "shadow-teal-500/50 dark:shadow-teal-400/60",
+        glow: "from-teal-400/40 dark:from-teal-300/50",
+        glowVia: "via-teal-400/40 dark:via-teal-300/50",
+      };
+    if (stepNum === 2)
+      return {
+        from: "from-emerald-500 dark:from-emerald-400",
+        to: "to-emerald-600 dark:to-emerald-500",
+        shadow: "shadow-emerald-500/50 dark:shadow-emerald-400/60",
+        glow: "from-emerald-400/40 dark:from-emerald-300/50",
+        glowVia: "via-emerald-400/40 dark:via-emerald-300/50",
+      };
     return {
-      from: 'from-cyan-500 dark:from-cyan-400',
-      to: 'to-cyan-600 dark:to-cyan-500',
-      shadow: 'shadow-cyan-500/50 dark:shadow-cyan-400/60',
-      glow: 'from-cyan-400/40 dark:from-cyan-300/50',
-      glowVia: 'via-cyan-400/40 dark:via-cyan-300/50'
+      from: "from-cyan-500 dark:from-cyan-400",
+      to: "to-cyan-600 dark:to-cyan-500",
+      shadow: "shadow-cyan-500/50 dark:shadow-cyan-400/60",
+      glow: "from-cyan-400/40 dark:from-cyan-300/50",
+      glowVia: "via-cyan-400/40 dark:via-cyan-300/50",
     };
   };
 
@@ -54,9 +73,15 @@ const ProgressBar = ({ currentStep }) => {
                   {/* Multi-layer Glow Effects */}
                   {isActive && (
                     <>
-                      <div className={`absolute -top-4 w-32 h-32 rounded-full bg-gradient-to-r ${colors.glow} ${colors.glowVia} to-cyan-500/40 dark:to-cyan-400/50 blur-3xl animate-pulse`} />
-                      <div className={`absolute -top-2 w-28 h-28 rounded-full bg-gradient-to-r ${colors.glow} ${colors.glowVia} to-cyan-500/30 dark:to-cyan-400/40 blur-2xl animate-ping opacity-75`} />
-                      <div className={`absolute top-0 w-24 h-24 rounded-full bg-gradient-to-r ${colors.glow} ${colors.glowVia} to-cyan-500/20 dark:to-cyan-400/30 blur-xl`} />
+                      <div
+                        className={`absolute -top-4 w-32 h-32 rounded-full bg-gradient-to-r ${colors.glow} ${colors.glowVia} to-cyan-500/40 dark:to-cyan-400/50 blur-3xl animate-pulse`}
+                      />
+                      <div
+                        className={`absolute -top-2 w-28 h-28 rounded-full bg-gradient-to-r ${colors.glow} ${colors.glowVia} to-cyan-500/30 dark:to-cyan-400/40 blur-2xl animate-ping opacity-75`}
+                      />
+                      <div
+                        className={`absolute top-0 w-24 h-24 rounded-full bg-gradient-to-r ${colors.glow} ${colors.glowVia} to-cyan-500/20 dark:to-cyan-400/30 blur-xl`}
+                      />
                     </>
                   )}
 
@@ -70,7 +95,9 @@ const ProgressBar = ({ currentStep }) => {
                       }`}
                       style={{ animationDuration: "3s" }}
                     >
-                      {isActive && <div className="w-full h-full rounded-3xl bg-transparent" />}
+                      {isActive && (
+                        <div className="w-full h-full rounded-3xl bg-transparent" />
+                      )}
                     </div>
 
                     {/* Step Container with Gradient Border */}
@@ -79,8 +106,8 @@ const ProgressBar = ({ currentStep }) => {
                         isCompleted
                           ? `bg-gradient-to-br ${colors.from} via-emerald-500 dark:via-emerald-400 ${colors.to}`
                           : isActive
-                          ? "bg-gradient-to-br from-teal-400 dark:from-teal-300 via-emerald-400 dark:via-emerald-300 to-cyan-500 dark:to-cyan-400"
-                          : "bg-gray-300 dark:bg-gray-600/80"
+                            ? "bg-gradient-to-br from-teal-400 dark:from-teal-300 via-emerald-400 dark:via-emerald-300 to-cyan-500 dark:to-cyan-400"
+                            : "bg-gray-300 dark:bg-gray-600/80"
                       }`}
                     >
                       {/* Inner Step Circle */}
@@ -89,8 +116,8 @@ const ProgressBar = ({ currentStep }) => {
                           isCompleted
                             ? `bg-gradient-to-br ${colors.from} via-emerald-500 dark:via-emerald-400 ${colors.to} text-white shadow-2xl ${colors.shadow}`
                             : isActive
-                            ? "bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-300 shadow-2xl shadow-emerald-500/40 dark:shadow-emerald-400/60"
-                            : "bg-white dark:bg-gray-800 text-gray-300 dark:text-gray-600 shadow-lg dark:shadow-gray-900/50"
+                              ? "bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-300 shadow-2xl shadow-emerald-500/40 dark:shadow-emerald-400/60"
+                              : "bg-white dark:bg-gray-800 text-gray-300 dark:text-gray-600 shadow-lg dark:shadow-gray-900/50"
                         } ${isActive ? "scale-110" : isCompleted ? "scale-100" : "scale-95 group-hover:scale-100"}`}
                       >
                         {/* Sparkle Effect for Active */}
@@ -102,7 +129,10 @@ const ProgressBar = ({ currentStep }) => {
                         {isCompleted ? (
                           <div className="relative">
                             <div className="absolute inset-0 bg-white/20 rounded-full blur-md" />
-                            <Check className="w-12 h-12 relative" strokeWidth={3} />
+                            <Check
+                              className="w-12 h-12 relative"
+                              strokeWidth={3}
+                            />
                           </div>
                         ) : (
                           <div className="flex flex-col items-center">
@@ -112,7 +142,9 @@ const ProgressBar = ({ currentStep }) => {
                               }`}
                               strokeWidth={2}
                             />
-                            <span className="text-xs font-bold tracking-wider">{step.number}</span>
+                            <span className="text-xs font-bold tracking-wider">
+                              {step.number}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -144,9 +176,13 @@ const ProgressBar = ({ currentStep }) => {
                   {/* Enhanced Status Badge */}
                   {isCompleted && (
                     <div className="mt-4 relative">
-                      <div className={`absolute inset-0 bg-gradient-to-r ${colors.from} ${colors.to} opacity-20 dark:opacity-30 blur-lg rounded-full`} />
-                      <div className={`relative px-4 py-1.5 rounded-full bg-gradient-to-r ${colors.from} ${colors.to} text-white text-xs font-bold shadow-lg ${colors.shadow}`}>
-                        Completed
+                      <div
+                        className={`absolute inset-0 bg-gradient-to-r ${colors.from} ${colors.to} opacity-20 dark:opacity-30 blur-lg rounded-full`}
+                      />
+                      <div
+                        className={`flex items-center gap-1 relative px-4 py-1.5 rounded-full bg-gradient-to-r ${colors.from} ${colors.to} text-white text-xs font-bold shadow-lg ${colors.shadow}`}
+                      >
+                        <CircleCheck className="w-5 h-5" /> Completed
                       </div>
                     </div>
                   )}
@@ -171,9 +207,7 @@ const ProgressBar = ({ currentStep }) => {
                       {/* Animated Progress */}
                       <div
                         className={`h-full rounded-full transition-all duration-1000 ease-out relative ${
-                          currentStep > step.number
-                            ? "w-full"
-                            : "w-0"
+                          currentStep > step.number ? "w-full" : "w-0"
                         }`}
                       >
                         {currentStep > step.number && (
@@ -217,8 +251,12 @@ const ProgressBar = ({ currentStep }) => {
                 <div className="relative flex-shrink-0">
                   {isActive && (
                     <>
-                      <div className={`absolute inset-0 w-20 h-20 rounded-2xl bg-gradient-to-r ${colors.glow} ${colors.glowVia} to-cyan-500/40 dark:to-cyan-400/50 blur-2xl animate-pulse`} />
-                      <div className={`absolute inset-0 w-18 h-18 rounded-2xl bg-gradient-to-r ${colors.glow} ${colors.glowVia} to-cyan-500/30 dark:to-cyan-400/40 blur-xl animate-ping`} />
+                      <div
+                        className={`absolute inset-0 w-20 h-20 rounded-2xl bg-gradient-to-r ${colors.glow} ${colors.glowVia} to-cyan-500/40 dark:to-cyan-400/50 blur-2xl animate-pulse`}
+                      />
+                      <div
+                        className={`absolute inset-0 w-18 h-18 rounded-2xl bg-gradient-to-r ${colors.glow} ${colors.glowVia} to-cyan-500/30 dark:to-cyan-400/40 blur-xl animate-ping`}
+                      />
                     </>
                   )}
 
@@ -227,8 +265,8 @@ const ProgressBar = ({ currentStep }) => {
                       isCompleted
                         ? `bg-gradient-to-br ${colors.from} via-emerald-500 dark:via-emerald-400 ${colors.to}`
                         : isActive
-                        ? "bg-gradient-to-br from-teal-400 dark:from-teal-300 via-emerald-400 dark:via-emerald-300 to-cyan-500 dark:to-cyan-400"
-                        : "bg-gray-200 dark:bg-gray-700/80"
+                          ? "bg-gradient-to-br from-teal-400 dark:from-teal-300 via-emerald-400 dark:via-emerald-300 to-cyan-500 dark:to-cyan-400"
+                          : "bg-gray-200 dark:bg-gray-700/80"
                     }`}
                   >
                     <div
@@ -236,8 +274,8 @@ const ProgressBar = ({ currentStep }) => {
                         isCompleted
                           ? `bg-gradient-to-br ${colors.from} via-emerald-500 dark:via-emerald-400 ${colors.to} text-white shadow-xl ${colors.shadow}`
                           : isActive
-                          ? "bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-300 shadow-xl dark:shadow-emerald-400/60"
-                          : "bg-white dark:bg-gray-800 text-gray-300 dark:text-gray-600 shadow-lg dark:shadow-gray-900/50"
+                            ? "bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-300 shadow-xl dark:shadow-emerald-400/60"
+                            : "bg-white dark:bg-gray-800 text-gray-300 dark:text-gray-600 shadow-lg dark:shadow-gray-900/50"
                       }`}
                     >
                       {isActive && (
@@ -248,8 +286,13 @@ const ProgressBar = ({ currentStep }) => {
                         <Check className="w-10 h-10" strokeWidth={2.5} />
                       ) : (
                         <>
-                          <Icon className={`w-8 h-8 mb-0.5 ${isActive ? "animate-bounce" : ""}`} strokeWidth={2} />
-                          <span className="text-xs font-bold">{step.number}</span>
+                          <Icon
+                            className={`w-8 h-8 mb-0.5 ${isActive ? "animate-bounce" : ""}`}
+                            strokeWidth={2}
+                          />
+                          <span className="text-xs font-bold">
+                            {step.number}
+                          </span>
                         </>
                       )}
                     </div>
@@ -278,8 +321,12 @@ const ProgressBar = ({ currentStep }) => {
                   </p>
                   {isCompleted && (
                     <div className="mt-3 inline-block relative">
-                      <div className={`absolute inset-0 bg-gradient-to-r ${colors.from} ${colors.to} opacity-20 dark:opacity-30 blur-md rounded-full`} />
-                      <div className={`relative px-4 py-1.5 rounded-full bg-gradient-to-r ${colors.from} ${colors.to} text-white text-xs font-bold shadow-lg ${colors.shadow}`}>
+                      <div
+                        className={`absolute inset-0 bg-gradient-to-r ${colors.from} ${colors.to} opacity-20 dark:opacity-30 blur-md rounded-full`}
+                      />
+                      <div
+                        className={`relative px-4 py-1.5 rounded-full bg-gradient-to-r ${colors.from} ${colors.to} text-white text-xs font-bold shadow-lg ${colors.shadow}`}
+                      >
                         Completed
                       </div>
                     </div>
@@ -303,9 +350,7 @@ const ProgressBar = ({ currentStep }) => {
                 <div className="absolute left-[2.5rem] top-24 w-1 h-16 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
                   <div
                     className={`w-full transition-all duration-1000 relative ${
-                      currentStep > step.number
-                        ? "h-full"
-                        : "h-0"
+                      currentStep > step.number ? "h-full" : "h-0"
                     }`}
                   >
                     {currentStep > step.number && (
