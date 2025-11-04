@@ -9,7 +9,7 @@ import Navbar from "./Navbar";
 import SuccessModal from "./Success";
 
 const IssueForm = () => {
-  const [currentStep, setCurrentStep] = useState(2);
+  const [currentStep, setCurrentStep] = useState(3);
   const [showPreview, setShowPreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -82,6 +82,14 @@ const IssueForm = () => {
 
       if (!formData.postal.trim()) {
         newErrors.postal = "Postal Code is required";
+      }
+    }
+
+    if (step === 3) {
+      if (!formData.isAnonymous) {
+        if (!formData.email.trim()) {
+          newErrors.email = "Email is required";
+        }
       }
     }
 
