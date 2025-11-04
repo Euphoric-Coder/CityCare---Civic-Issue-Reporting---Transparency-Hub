@@ -1,4 +1,4 @@
-import { AlertCircle, Camera, X } from 'lucide-react';
+import { AlertCircle, Camera, NotebookText, X } from 'lucide-react';
 
 const categories = [
   { value: 'road', label: 'Road & Infrastructure', icon: '🛣️' },
@@ -9,9 +9,9 @@ const categories = [
 ];
 
 const severityLevels = [
-  { value: 'low', label: 'Low', color: 'bg-blue-100 text-blue-700 border-blue-300' },
-  { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
-  { value: 'high', label: 'High', color: 'bg-red-100 text-red-700 border-red-300' },
+  { value: 'low', label: 'Low', color: 'bg-blue-100 text-blue-700 border-blue-400 ring-blue-300' },
+  { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-700 border-yellow-400 ring-yellow-300' },
+  { value: 'high', label: 'High', color: 'bg-red-100 text-red-700 border-red-400 ring-red-300' },
 ];
 
 const DetailsCard = ({ formData, setFormData, errors }) => {
@@ -32,23 +32,30 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
 
   return (
     <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-100">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-        <span className="text-2xl">📝</span>
+      <h2 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mb-6 flex items-center gap-2">
+        <NotebookText />
         Issue Details
       </h2>
 
       <div className="space-y-6">
         <div>
-          <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-2">
+          <label
+            htmlFor="title"
+            className="block text-sm font-semibold text-gray-700 mb-2"
+          >
             Issue Title *
           </label>
           <input
             type="text"
             id="title"
             value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, title: e.target.value })
+            }
             className={`w-full px-4 py-3 rounded-xl border-2 ${
-              errors.title ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-emerald-500'
+              errors.title
+                ? "border-red-300 focus:border-red-500"
+                : "border-gray-200 focus:border-emerald-500"
             } focus:outline-none focus:ring-4 focus:ring-emerald-100 transition-all`}
             placeholder="e.g., Broken streetlight on Main Street"
           />
@@ -62,16 +69,23 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
         </div>
 
         <div>
-          <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2">
+          <label
+            htmlFor="description"
+            className="block text-sm font-semibold text-gray-700 mb-2"
+          >
             Description *
           </label>
           <textarea
             id="description"
             rows={5}
             value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, description: e.target.value })
+            }
             className={`w-full px-4 py-3 rounded-xl border-2 ${
-              errors.description ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-emerald-500'
+              errors.description
+                ? "border-red-300 focus:border-red-500"
+                : "border-gray-200 focus:border-emerald-500"
             } focus:outline-none focus:ring-4 focus:ring-emerald-100 transition-all resize-none`}
             placeholder="Describe the issue in detail. What happened? When did you notice it?"
           />
@@ -88,15 +102,22 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="category" className="block text-sm font-semibold text-gray-700 mb-2">
+            <label
+              htmlFor="category"
+              className="block text-sm font-semibold text-gray-700 mb-2"
+            >
               Category *
             </label>
             <select
               id="category"
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, category: e.target.value })
+              }
               className={`w-full px-4 py-3 rounded-xl border-2 ${
-                errors.category ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-emerald-500'
+                errors.category
+                  ? "border-red-300 focus:border-red-500"
+                  : "border-gray-200 focus:border-emerald-500"
               } focus:outline-none focus:ring-4 focus:ring-emerald-100 transition-all bg-white`}
             >
               <option value="">Select a category</option>
@@ -118,16 +139,18 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Severity Level *
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-4">
               {severityLevels.map((level) => (
                 <button
                   key={level.value}
                   type="button"
-                  onClick={() => setFormData({ ...formData, severity: level.value })}
+                  onClick={() =>
+                    setFormData({ ...formData, severity: level.value })
+                  }
                   className={`flex-1 py-3 rounded-xl border-2 font-medium transition-all ${
                     formData.severity === level.value
-                      ? level.color + ' ring-4 ring-opacity-20 scale-105'
-                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-300'
+                      ? level.color + " ring-4 ring-opacity-60 scale-105"
+                      : "bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-300"
                   }`}
                 >
                   {level.label}
@@ -155,7 +178,9 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
                 <p className="text-sm text-gray-600 font-medium">
                   Click to upload or drag and drop
                 </p>
-                <p className="text-xs text-gray-500 mt-1">PNG, JPG up to 10MB</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  PNG, JPG up to 10MB
+                </p>
               </div>
               <input
                 type="file"

@@ -80,7 +80,7 @@ const ProgressBar = ({ currentStep }) => {
                           ? `bg-gradient-to-br ${colors.from} via-emerald-500 dark:via-emerald-400 ${colors.to}`
                           : isActive
                           ? "bg-gradient-to-br from-teal-400 dark:from-teal-300 via-emerald-400 dark:via-emerald-300 to-cyan-500 dark:to-cyan-400"
-                          : "bg-gray-200 dark:bg-gray-700/80"
+                          : "bg-gray-300 dark:bg-gray-600/80"
                       }`}
                     >
                       {/* Inner Step Circle */}
@@ -125,7 +125,7 @@ const ProgressBar = ({ currentStep }) => {
                       className={`text-lg font-bold tracking-tight transition-all duration-500 ${
                         isCompleted || isActive
                           ? "text-gray-900 dark:text-gray-50"
-                          : "text-gray-400 dark:text-gray-500"
+                          : "text-gray-500 dark:text-gray-400"
                       } ${isActive ? "scale-105" : ""}`}
                     >
                       {step.label}
@@ -134,7 +134,7 @@ const ProgressBar = ({ currentStep }) => {
                       className={`text-xs font-medium tracking-wide transition-all duration-500 ${
                         isCompleted || isActive
                           ? "text-gray-600 dark:text-gray-300"
-                          : "text-gray-400 dark:text-gray-600"
+                          : "text-gray-500 dark:text-gray-400"
                       }`}
                     >
                       {step.description}
