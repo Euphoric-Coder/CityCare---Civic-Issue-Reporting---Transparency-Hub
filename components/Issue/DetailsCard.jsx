@@ -1,11 +1,49 @@
-import { AlertCircle, Camera, NotebookText, X } from "lucide-react";
+import {
+  AlertCircle,
+  Camera,
+  NotebookText,
+  X,
+  Map,
+  Lightbulb,
+  Trash2,
+  Clipboard,
+  ChevronDown,
+  Check,
+  Droplets,
+} from "lucide-react";
+import { useState } from "react";
 
 const categories = [
-  { value: "road", label: "Road & Infrastructure", icon: "🛣️" },
-  { value: "lighting", label: "Street Lighting", icon: "💡" },
-  { value: "water", label: "Water & Drainage", icon: "💧" },
-  { value: "waste", label: "Waste Management", icon: "🗑️" },
-  { value: "other", label: "Other", icon: "📋" },
+  {
+    value: "road",
+    label: "Road & Infrastructure",
+    icon: Map,
+    color: "text-blue-600 dark:text-blue-400",
+  },
+  {
+    value: "lighting",
+    label: "Street Lighting",
+    icon: Lightbulb,
+    color: "text-yellow-600 dark:text-yellow-400",
+  },
+  {
+    value: "water",
+    label: "Water & Drainage",
+    icon: Droplets,
+    color: "text-cyan-600 dark:text-cyan-400",
+  },
+  {
+    value: "waste",
+    label: "Waste Management",
+    icon: Trash2,
+    color: "text-green-600 dark:text-green-400",
+  },
+  {
+    value: "other",
+    label: "Other",
+    icon: Clipboard,
+    color: "text-gray-600 dark:text-gray-400",
+  },
 ];
 
 const severityLevels = [
@@ -29,7 +67,9 @@ const severityLevels = [
   },
 ];
 
-const DetailsCard = ({ formData, setFormData, errors }) => {
+const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
+  const [showDropdown, setShowDropdown] = useState(false);
+
   const handlePhotoUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -43,6 +83,16 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
 
   const removePhoto = () => {
     setFormData({ ...formData, photoUrl: null });
+  };
+
+  const handleInput = (name, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Reset the error for that field (if any)
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   return (
@@ -65,9 +115,7 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
             type="text"
             id="title"
             value={formData.title}
-            onChange={(e) =>
-              setFormData({ ...formData, title: e.target.value })
-            }
+            onChange={(e) => handleInput("title", e.target.value)}
             className={`w-full px-4 py-3 rounded-xl border-2 transition-all outline-none focus:ring-4 ${
               errors.title
                 ? "border-red-300 dark:border-red-500 focus:border-red-500 focus:ring-red-200 dark:focus:ring-red-800"
@@ -98,9 +146,7 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
             id="description"
             rows={5}
             value={formData.description}
-            onChange={(e) =>
-              setFormData({ ...formData, description: e.target.value })
-            }
+            onChange={(e) => handleInput("description", e.target.value)}
             className={`w-full px-4 py-3 rounded-xl border-2 resize-none transition-all outline-none focus:ring-4 ${
               errors.description
                 ? "border-red-300 dark:border-red-500 focus:border-red-500 focus:ring-red-200 dark:focus:ring-red-800"
@@ -122,32 +168,79 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
         {/* Category & Severity */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Category */}
-          <div>
-            <label
-              htmlFor="category"
-              className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
-            >
+          <div className="relative">
+            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
               Category *
             </label>
-            <select
-              id="category"
-              value={formData.category}
-              onChange={(e) =>
-                setFormData({ ...formData, category: e.target.value })
-              }
-              className={`w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none focus:ring-4 ${
+
+            <button
+              type="button"
+              onClick={() => setShowDropdown((prev) => !prev)}
+              onBlur={() => setTimeout(() => setShowDropdown(false), 150)} // small delay
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all outline-none focus:ring-4 ${
                 errors.category
                   ? "border-red-300 dark:border-red-500 focus:border-red-500 focus:ring-red-200 dark:focus:ring-red-800"
                   : "border-gray-200 dark:border-gray-700 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-emerald-100 dark:focus:ring-emerald-800"
               } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
             >
-              <option value="">Select a category</option>
-              {categories.map((cat) => (
-                <option key={cat.value} value={cat.value}>
-                  {cat.icon} {cat.label}
-                </option>
-              ))}
-            </select>
+              <span className="flex items-center gap-2">
+                {formData.category ? (
+                  <>
+                    {(() => {
+                      const selected = categories.find(
+                        (cat) => cat.value === formData.category
+                      );
+                      const Icon = selected?.icon;
+                      return Icon ? (
+                        <>
+                          <Icon className={`w-5 h-5 ${selected.color}`} />
+                          {selected.label}
+                        </>
+                      ) : (
+                        "Select a category"
+                      );
+                    })()}
+                  </>
+                ) : (
+                  "Select a category"
+                )}
+              </span>
+              <ChevronDown className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+            </button>
+
+            {/* Dropdown Menu */}
+            {showDropdown && (
+              <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden animate-fadeIn">
+                {categories.map((cat) => {
+                  const Icon = cat.icon;
+                  const isSelected = formData.category === cat.value;
+                  return (
+                    <button
+                      key={cat.value}
+                      type="button"
+                      onClick={() => {
+                        handleInput("category", cat.value);
+                        setShowDropdown(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-4 py-3 text-left text-sm transition-all ${
+                        isSelected
+                          ? "bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
+                          : "text-gray-700 dark:text-gray-200 hover:bg-emerald-50/50 dark:hover:bg-gray-700/50"
+                      }`}
+                    >
+                      <span className="flex items-center gap-3">
+                        <Icon className={`w-5 h-5 ${cat.color}`} />
+                        {cat.label}
+                      </span>
+                      {isSelected && (
+                        <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {errors.category && (
               <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
                 <AlertCircle size={14} />
@@ -166,9 +259,7 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
                 <button
                   key={level.value}
                   type="button"
-                  onClick={() =>
-                    setFormData({ ...formData, severity: level.value })
-                  }
+                  onClick={() => handleInput("severity", level.value)}
                   className={`flex-1 py-3 rounded-xl border-2 font-medium transition-all ${
                     formData.severity === level.value
                       ? `${level.color} ring-4 ring-opacity-60 scale-105`
@@ -186,6 +277,40 @@ const DetailsCard = ({ formData, setFormData, errors }) => {
               </p>
             )}
           </div>
+
+          {formData.category === "other" && (
+            <div className="md:col-span-2">
+              <label
+                htmlFor="otherCategoryName"
+                className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
+              >
+                Other Category (If Applicable) *
+              </label>
+              <input
+                type="text"
+                id="otherCategoryName"
+                value={formData.otherCategoryName}
+                onChange={(e) =>
+                  handleInput("otherCategoryName", e.target.value)
+                }
+                className={`w-full px-4 py-3 rounded-xl border-2 transition-all outline-none focus:ring-4 ${
+                  errors.otherCategoryName
+                    ? "border-red-300 dark:border-red-500 focus:border-red-500 focus:ring-red-200 dark:focus:ring-red-800"
+                    : "border-gray-200 dark:border-gray-700 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-emerald-100 dark:focus:ring-emerald-800"
+                } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
+                placeholder="e.g., Broken streetlight on Main Street"
+              />
+              {errors.otherCategoryName && (
+                <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                  <AlertCircle size={14} />
+                  {errors.otherCategoryName}
+                </p>
+              )}
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Be specific and concise
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Photo Upload */}

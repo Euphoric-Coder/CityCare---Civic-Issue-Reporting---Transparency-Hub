@@ -4,12 +4,12 @@ import ProgressBar from "./ProgressBar";
 import DetailsCard from "./DetailsCard";
 import Location from "./Location";
 import AnonymityToggle from "./AnonymityToggle";
-import PreviewModal from "./Preview";
 import Navbar from "./Navbar";
 import SuccessModal from "./Success";
+import PreviewModal from "./Preview";
 
 const IssueForm = () => {
-  const [currentStep, setCurrentStep] = useState(3);
+  const [currentStep, setCurrentStep] = useState(1);
   const [showPreview, setShowPreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -19,6 +19,7 @@ const IssueForm = () => {
     title: "",
     description: "",
     category: "",
+    otherCategoryName: "",
     severity: "",
     photoUrl: null,
 
@@ -177,6 +178,7 @@ const IssueForm = () => {
               formData={formData}
               setFormData={setFormData}
               errors={errors}
+              setErrors={setErrors}
             />
           )}
 
