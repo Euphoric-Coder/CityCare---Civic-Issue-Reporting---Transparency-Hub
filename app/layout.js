@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Providers from "./provider";
 import { Toaster } from "@/components/ui/sonner";
+import SessionWatcher from "@/components/SessionWatcher";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -26,15 +27,12 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-        >
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Providers>
             {children}
+            <SessionWatcher />
           </Providers>
-          <Toaster richColors/>
+          <Toaster richColors />
         </ThemeProvider>
       </body>
     </html>
