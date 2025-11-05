@@ -8,10 +8,10 @@ const handler = NextAuth({
   session: {
     strategy: "jwt",
     maxAge: 24 * 60 * 60, // 1 day = 86400 seconds
-    updateAge: 0, // prevents silent session extension, keeping expiry strict
+    updateAge: 0, // prevent silent session extension
   },
   jwt: {
-    maxAge: 24 * 60 * 60, // match session maxAge (1 day)
+    maxAge: 24 * 60 * 60, // match same expiry
   },
 
   providers: [
@@ -32,11 +32,10 @@ const handler = NextAuth({
 
           if (!user) return null;
 
-          // Verify hashed password
+          // Verify password
           const valid = await compare(credentials.password, user.password);
           if (!valid) return null;
 
-          // Create and return user payload
           return {
             id: user._id,
             email: user.email,
@@ -57,19 +56,20 @@ const handler = NextAuth({
 
   callbacks: {
     async jwt({ token, user }) {
-      // Only set exp and user info when signing in
-      if (user && !token.realExp) {
-        const exp = Math.floor(Date.now() / 1000) + 3 * 60; // 3 minutes (in seconds)
+      // When user first logs in, attach expiry and user data
+      if (user) {
+        const exp = Math.floor(Date.now() / 1000) + 24 * 60 * 60; // 1 day from now
         token.id = user.id;
         token.name = user.name;
         token.role = user.role;
+        token.email = user.email;
         token.realExp = exp;
       }
 
-      // End session if expired
+      // Expire token if time passed
       if (token.realExp && Date.now() / 1000 > token.realExp) {
-        console.log("Token expired — clearing session");
-        return {};
+        console.warn("JWT expired — clearing session");
+        return {}; // clears session
       }
 
       return token;
@@ -84,17 +84,16 @@ const handler = NextAuth({
           email: token.email,
         };
 
-        // Fixed expiry time for frontend
+        // Provide expiry timestamp to frontend
         session.realExpiry = new Date(token.realExp * 1000).toISOString();
       } else {
-        session = null; // force logout on expiry
+        session = null; // clear expired sessions
       }
 
       return session;
     },
   },
 
-  // Custom secret for stable JWT signing (important for testing)
   secret: process.env.NEXTAUTH_SECRET || "dev-secret",
 });
 
