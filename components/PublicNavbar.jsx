@@ -12,7 +12,7 @@ export function PublicNavbar() {
   const { data: session, status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // 🧭 Auto logout when session expires
+  // Auto logout when session expires
   useEffect(() => {
     if (!session?.realExpiry) return;
 
@@ -32,13 +32,13 @@ export function PublicNavbar() {
     }
   }, [session?.realExpiry]);
 
-  // 🧩 Defensive: avoid null object access
+  // Defensive: avoid null object access
   const safeSession = session && typeof session === "object" ? session : null;
   const user = safeSession?.user;
   const userName = user?.name?.split(" ")[0] || "User";
   const userRole = user?.role || "citizen";
 
-  // 🕐 Loading
+  // Loading
   if (status === "loading") {
     return (
       <nav className="bg-white/95 backdrop-blur-md shadow-lg sticky top-0 z-40 border-b border-gray-100 p-4">

@@ -159,9 +159,16 @@ const SignUp = () => {
                   <button
                     type="button"
                     onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+                    onBlur={() =>
+                      setTimeout(() => {
+                        setShowRoleDropdown(false);
+                      }, 150)
+                    }
                     className="w-full bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-lg px-4 py-3 text-left flex items-center justify-between"
                   >
-                    <span className="capitalize">{formData.role}</span>
+                    <span className="capitalize">
+                      {formData.role.replace("_", " ")}
+                    </span>
                     <ChevronDown
                       className={`w-5 h-5 text-slate-500 transition-transform ${
                         showRoleDropdown ? "rotate-180" : ""
@@ -171,6 +178,11 @@ const SignUp = () => {
 
                   {showRoleDropdown && (
                     <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-lg shadow-lg z-10">
+                      <div className="p-3 border-b border-slate-200 dark:border-dark-500">
+                        <span className="text-14-medium text-slate-600 dark:text-dark-700">
+                          Select Role
+                        </span>
+                      </div>
                       {["citizen", "ward_officer", "field_worker", "admin"].map(
                         (role) => (
                           <button

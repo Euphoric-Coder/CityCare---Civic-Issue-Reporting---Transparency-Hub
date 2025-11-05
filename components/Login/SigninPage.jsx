@@ -146,9 +146,16 @@ const SignInPage = () => {
                   <button
                     type="button"
                     onClick={() => setShowRoleDropdown(!showRoleDropdown)}
+                    onBlur={() =>
+                      setTimeout(() => {
+                        setShowRoleDropdown(false);
+                      }, 150)
+                    }
                     className="w-full bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-lg px-4 py-3 text-left text-slate-900 dark:text-white flex items-center justify-between hover:border-emerald-500 transition-colors"
                   >
-                    <span className="capitalize">{formData.role}</span>
+                    <span className="capitalize">
+                      {formData.role.replace("_", " ")}
+                    </span>
                     <ChevronDown
                       className={`w-5 h-5 text-slate-500 dark:text-dark-600 transition-transform ${
                         showRoleDropdown ? "rotate-180" : ""
