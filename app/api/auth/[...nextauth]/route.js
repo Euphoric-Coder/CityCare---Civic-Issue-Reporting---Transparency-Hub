@@ -7,11 +7,11 @@ import { fetchQuery } from "convex/nextjs";
 const handler = NextAuth({
   session: {
     strategy: "jwt",
-    maxAge: 60 * 3, // 3 minutes for testing (change to 24*60*60 for prod)
-    updateAge: 0, // prevent NextAuth from extending expiry automatically
+    maxAge: 24 * 60 * 60, // 1 day = 86400 seconds
+    updateAge: 0, // prevents silent session extension, keeping expiry strict
   },
   jwt: {
-    maxAge: 60 * 3, // match same expiry
+    maxAge: 24 * 60 * 60, // match session maxAge (1 day)
   },
 
   providers: [
