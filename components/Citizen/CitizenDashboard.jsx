@@ -17,6 +17,7 @@ import { IssueDetailModal } from "@/components/IssueDetailModal";
 import { IssueCard } from "@/components/IssueCard";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { ModeToggle } from "../ModeToggle";
 
 export function CitizenDashboard({
   onReportIssue,
@@ -121,8 +122,9 @@ export function CitizenDashboard({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white/95 backdrop-blur-md shadow-lg sticky top-0 z-40 border-b border-gray-100 p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+      {/* Navbar */}
+      <nav className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-lg sticky top-0 z-40 border-b border-gray-200 dark:border-gray-700 p-4 transition-colors duration-300">
         <div className="max-w-8xl mx-auto flex justify-between items-center">
           {/* Logo + Brand */}
           <div
@@ -144,43 +146,52 @@ export function CitizenDashboard({
               <PlusCircle size={18} />
               <span className="hidden sm:inline">Report Issue</span>
             </button>
+
             <button
-              className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              onClick={onNotificationsClick}
+              className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               aria-label="Notifications"
             >
-              <Bell className="text-emerald-700" size={20} />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                3
-              </span>
+              <Bell
+                className="text-emerald-700 dark:text-emerald-400"
+                size={20}
+              />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </button>
+
+            <ModeToggle />
 
             {/* Profile dropdown */}
             <div className="relative">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-all"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
               >
                 <div className="bg-gradient-to-br from-emerald-600 to-teal-700 p-2 rounded-full">
                   <User size={16} className="text-white" />
                 </div>
-                <span className="text-sm font-medium text-gray-700 hidden md:block">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden md:block">
                   {profile.full_name}
                 </span>
               </button>
 
               {showProfileMenu && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
-                  <div className="px-4 py-3 border-b border-gray-200">
-                    <p className="text-sm font-medium text-gray-900">
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                  <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       {profile.full_name}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       {profile.email}
                     </p>
                   </div>
                   <button
                     onClick={() => console.log("Sign Out")}
-                    className="w-full flex items-center px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    className="w-full flex items-center px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
                   >
                     <LogOut size={16} className="mr-3" />
                     Sign Out
@@ -194,97 +205,98 @@ export function CitizenDashboard({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-10">
-        <section className="max-w-8xl mx-auto px-6 py-12">
-          {/* Greeting + Description */}
-          <div className="text-center mb-12">
-            <h1 className="text-5xl font-extrabold bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 bg-clip-text text-transparent tracking-tight">
-              Hello, {profile.full_name.split(" ")[0]}! 👋
-            </h1>
-            <p className="text-2xl font-semibold text-gray-800 mt-3">
-              Welcome back to your CityCare Dashboard
-            </p>
-            <p className="text-gray-600 mt-4 text-lg max-w-2xl mx-auto leading-relaxed">
-              Track your reported civic issues, monitor progress, and stay
-              informed about resolutions — all in one place designed to keep
-              your city thriving.
-            </p>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Total Issues */}
-            <div className="bg-gradient-to-br from-emerald-50 to-white p-8 rounded-2xl shadow-md border border-emerald-200 hover:shadow-lg hover:-translate-y-4 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 text-base font-medium">
-                    Total Issues
-                  </p>
-                  <p className="text-4xl font-extrabold text-emerald-700 mt-1">
-                    {stats.total}
-                  </p>
-                </div>
-                <div className="bg-emerald-100 p-3 rounded-xl">
-                  <TrendingUp className="text-emerald-600" size={28} />
-                </div>
-              </div>
-            </div>
-
-            {/* Pending */}
-            <div className="bg-gradient-to-br from-yellow-50 to-white p-8 rounded-2xl shadow-md border border-yellow-200 hover:shadow-lg hover:-translate-y-4 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 text-base font-medium">Pending</p>
-                  <p className="text-4xl font-extrabold text-yellow-600 mt-1">
-                    {stats.pending}
-                  </p>
-                </div>
-                <div className="bg-yellow-100 p-3 rounded-xl">
-                  <Calendar className="text-yellow-600" size={28} />
-                </div>
-              </div>
-            </div>
-
-            {/* In Progress */}
-            <div className="bg-gradient-to-br from-teal-50 to-white p-8 rounded-2xl shadow-md border border-teal-200 hover:shadow-lg hover:-translate-y-4 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 text-base font-medium">
-                    In Progress
-                  </p>
-                  <p className="text-4xl font-extrabold text-teal-600 mt-1">
-                    {stats.in_progress}
-                  </p>
-                </div>
-                <div className="bg-teal-100 p-3 rounded-xl">
-                  <AlertCircle className="text-teal-600" size={28} />
-                </div>
-              </div>
-            </div>
-
-            {/* Resolved */}
-            <div className="bg-gradient-to-br from-green-50 to-white p-8 rounded-2xl shadow-md border border-green-200 hover:shadow-lg hover:-translate-y-4 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-600 text-base font-medium">
-                    Resolved
-                  </p>
-                  <p className="text-4xl font-extrabold text-green-600 mt-1">
-                    {stats.resolved}
-                  </p>
-                </div>
-                <div className="bg-green-100 p-3 rounded-xl">
-                  <CheckCircle className="text-green-600" size={28} />
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Greeting */}
+        <section className="text-center mb-12">
+          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 bg-clip-text text-transparent tracking-tight">
+            Hello, {profile.full_name.split(" ")[0]}! 👋
+          </h1>
+          <p className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mt-3">
+            Welcome back to your CityCare Dashboard
+          </p>
+          <p className="text-gray-600 dark:text-gray-400 mt-4 text-lg max-w-2xl mx-auto leading-relaxed">
+            Track your reported civic issues, monitor progress, and stay
+            informed about resolutions — all in one place designed to keep your
+            city thriving.
+          </p>
         </section>
 
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          {[
+            {
+              label: "Total Issues",
+              value: stats.total,
+              color: "emerald",
+              icon: (
+                <TrendingUp
+                  className="text-emerald-600 dark:text-emerald-400"
+                  size={28}
+                />
+              ),
+            },
+            {
+              label: "Pending",
+              value: stats.pending,
+              color: "yellow",
+              icon: (
+                <Calendar
+                  className="text-yellow-600 dark:text-yellow-400"
+                  size={28}
+                />
+              ),
+            },
+            {
+              label: "In Progress",
+              value: stats.in_progress,
+              color: "teal",
+              icon: (
+                <AlertCircle
+                  className="text-teal-600 dark:text-teal-400"
+                  size={28}
+                />
+              ),
+            },
+            {
+              label: "Resolved",
+              value: stats.resolved,
+              color: "green",
+              icon: (
+                <CheckCircle
+                  className="text-green-600 dark:text-green-400"
+                  size={28}
+                />
+              ),
+            },
+          ].map((stat, i) => (
+            <div
+              key={i}
+              className={`bg-gradient-to-br from-${stat.color}-50 to-white dark:from-gray-800 dark:to-gray-900 p-8 rounded-2xl shadow-md border border-${stat.color}-200 dark:border-gray-700 hover:shadow-lg hover:-translate-y-2 transition-all duration-300`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-400 text-base font-medium">
+                    {stat.label}
+                  </p>
+                  <p
+                    className={`text-4xl font-extrabold text-${stat.color}-700 dark:text-${stat.color}-400 mt-1`}
+                  >
+                    {stat.value}
+                  </p>
+                </div>
+                <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl">
+                  {stat.icon}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Search + Filters + View Mode */}
+        <div className="mt-10 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8 border border-gray-200 dark:border-gray-700 transition-colors duration-300">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search
-                className="absolute left-3 top-1/2 transform -translate-y-4/2 text-gray-400"
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"
                 size={20}
               />
               <input
@@ -292,14 +304,14 @@ export function CitizenDashboard({
                 placeholder="Search your issues by title, description, or ticket ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
               />
             </div>
 
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-emerald-500"
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
@@ -311,7 +323,7 @@ export function CitizenDashboard({
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-emerald-500"
             >
               <option value="all">All Categories</option>
               <option value="road">Road & Infrastructure</option>
@@ -321,13 +333,14 @@ export function CitizenDashboard({
               <option value="other">Other</option>
             </select>
 
-            <div className="flex border-2 border-gray-200 rounded-xl overflow-hidden">
+            {/* View Mode Toggle */}
+            <div className="flex border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
               <button
                 onClick={() => setViewMode("grid")}
                 className={`p-3 transition-all ${
                   viewMode === "grid"
-                    ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                 }`}
                 aria-label="Grid view"
               >
@@ -337,8 +350,8 @@ export function CitizenDashboard({
                 onClick={() => setViewMode("list")}
                 className={`p-3 transition-all ${
                   viewMode === "list"
-                    ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                 }`}
                 aria-label="List view"
               >
@@ -348,42 +361,44 @@ export function CitizenDashboard({
           </div>
         </div>
 
-        <div className="space-y-4">
-          {filteredIssues.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-xl shadow-lg">
-              <AlertCircle className="mx-auto text-gray-400 mb-4" size={48} />
-              <p className="text-gray-600 text-lg font-medium mb-2">
-                {issues.length === 0
-                  ? "No issues reported yet"
-                  : "No issues found matching your criteria"}
-              </p>
-              {issues.length === 0 && (
-                <button
-                  onClick={onReportIssue}
-                  className="mt-4 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-lg hover:shadow-lg transform hover:scale-105 transition-all font-medium"
-                >
-                  Report Your First Issue
-                </button>
-              )}
-            </div>
-          ) : (
-            <div
-              className={
-                viewMode === "grid"
-                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                  : "space-y-4"
-              }
-            >
-              {filteredIssues.map((issue) => (
-                <IssueCard
-                  key={issue.id}
-                  issue={issue}
-                  onClick={() => setSelectedIssue(issue)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Issues Section */}
+        {filteredIssues.length === 0 ? (
+          <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-xl shadow-lg transition-all">
+            <AlertCircle
+              className="mx-auto text-gray-400 dark:text-gray-500 mb-4"
+              size={48}
+            />
+            <p className="text-gray-600 dark:text-gray-300 text-lg font-medium mb-2">
+              {issues.length === 0
+                ? "No issues reported yet"
+                : "No issues found matching your criteria"}
+            </p>
+            {issues.length === 0 && (
+              <button
+                onClick={onReportIssue}
+                className="mt-4 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-lg hover:shadow-lg transform hover:scale-105 transition-all font-medium"
+              >
+                Report Your First Issue
+              </button>
+            )}
+          </div>
+        ) : (
+          <div
+            className={
+              viewMode === "grid"
+                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                : "space-y-4"
+            }
+          >
+            {filteredIssues.map((issue) => (
+              <IssueCard
+                key={issue.id}
+                issue={issue}
+                onClick={() => setSelectedIssue(issue)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {selectedIssue && (
