@@ -37,10 +37,10 @@ export function IssueCard({ issue, onClick }) {
       onClick={onClick}
       className="group bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100 hover:border-blue-200 transform hover:-translate-y-1"
     >
-      {issue.photo_url && (
+      {issue.photoUrl && (
         <div className="relative overflow-hidden h-48">
           <img
-            src={issue.photo_url}
+            src={issue.photoUrl}
             alt={issue.title}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
@@ -79,7 +79,7 @@ export function IssueCard({ issue, onClick }) {
             <div className="bg-gray-50 p-1.5 rounded-md mr-2">
               <Calendar size={14} className="text-gray-600" />
             </div>
-            <span>{new Date(issue.created_at).toLocaleDateString()}</span>
+            <span>{new Date(issue.createdAt).toLocaleDateString()}</span>
           </div>
 
           {issue.address && (
@@ -93,7 +93,7 @@ export function IssueCard({ issue, onClick }) {
 
           <div className="pt-2 border-t border-gray-100">
             <span className="font-mono text-xs bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 px-3 py-1.5 rounded-lg font-semibold">
-              {issue.ticket_id}
+              {issue.ticket}
             </span>
           </div>
         </div>

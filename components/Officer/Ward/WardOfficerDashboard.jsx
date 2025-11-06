@@ -41,12 +41,11 @@ export function WardOfficerDashboard() {
       await new Promise((resolve) => setTimeout(resolve, 300));
       const data = getIssues()
         .filter(
-          (issue) =>
-            issue.assigned_to === user?.id || issue.status === "pending"
+          (issue) => issue.assignedTo === user?.id || issue.status === "pending"
         )
         .sort(
           (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
       setIssues(data);
     } catch (error) {
@@ -76,7 +75,7 @@ export function WardOfficerDashboard() {
       filtered = filtered.filter((issue) => issue.category === categoryFilter);
     }
 
-    filtered.sort((a, b) => b.priority_score - a.priority_score);
+    filtered.sort((a, b) => b.priorityScore - a.priorityScore);
     setFilteredIssues(filtered);
   }
 
@@ -87,7 +86,7 @@ export function WardOfficerDashboard() {
           ? {
               ...issue,
               status: newStatus,
-              updated_at: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
             }
           : issue
       )
@@ -99,10 +98,10 @@ export function WardOfficerDashboard() {
     total: issues.length,
     pending: issues.filter((i) => i.status === "pending").length,
     inProgress: issues.filter(
-      (i) => i.status === "in_progress" && i.assigned_to === user?.id
+      (i) => i.status === "in_progress" && i.assignedTo === user?.id
     ).length,
     resolved: issues.filter(
-      (i) => i.status === "resolved" && i.assigned_to === user?.id
+      (i) => i.status === "resolved" && i.assignedTo === user?.id
     ).length,
   };
 

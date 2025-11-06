@@ -50,7 +50,7 @@ export function AdminDashboard() {
       await new Promise((resolve) => setTimeout(resolve, 300));
       const data = getIssues().sort(
         (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       setIssues(data);
     } catch (error) {
@@ -68,7 +68,7 @@ export function AdminDashboard() {
         (issue) =>
           issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           issue.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          issue.ticket_id.toLowerCase().includes(searchTerm.toLowerCase())
+          issue.ticket.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -103,7 +103,7 @@ export function AdminDashboard() {
       from_user_id: user.id,
       to_user_id: officerId,
       message,
-      created_at: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       read: false,
       issue_ids: issueIds,
     };
@@ -127,7 +127,7 @@ export function AdminDashboard() {
 
   function handleReassign(issueId, newOfficerId, reason) {
     const issue = issues.find((i) => i.id === issueId);
-    const oldOfficer = officers.find((o) => o.id === issue?.assigned_to);
+    const oldOfficer = officers.find((o) => o.id === issue?.assignedTo);
     const newOfficer = officers.find((o) => o.id === newOfficerId);
 
     setIssues(
@@ -135,8 +135,8 @@ export function AdminDashboard() {
         i.id === issueId
           ? {
               ...i,
-              assigned_to: newOfficerId,
-              updated_at: new Date().toISOString(),
+              assignedTo: newOfficerId,
+              updatedAt: new Date().toISOString(),
             }
           : i
       )
@@ -165,16 +165,16 @@ export function AdminDashboard() {
 
   function handleRevoke(issueId, reason) {
     const issue = issues.find((i) => i.id === issueId);
-    const officer = officers.find((o) => o.id === issue?.assigned_to);
+    const officer = officers.find((o) => o.id === issue?.assignedTo);
 
     setIssues(
       issues.map((i) =>
         i.id === issueId
           ? {
               ...i,
-              assigned_to: null,
+              assignedTo: null,
               status: "pending",
-              updated_at: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
             }
           : i
       )
@@ -205,7 +205,7 @@ export function AdminDashboard() {
   );
 
   const officerWorkload = officers.map((officer) => {
-    const assignedIssues = issues.filter((i) => i.assigned_to === officer.id);
+    const assignedIssues = issues.filter((i) => i.assignedTo === officer.id);
     const pending = assignedIssues.filter((i) => i.status === "pending").length;
     const inProgress = assignedIssues.filter(
       (i) => i.status === "in_progress"
@@ -569,7 +569,7 @@ export function AdminDashboard() {
                               >
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className="font-mono text-sm text-gray-500">
-                                    {issue.ticket_id}
+                                    {issue.ticket}
                                   </span>
                                   <span
                                     className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -612,7 +612,7 @@ export function AdminDashboard() {
                                   </div>
                                   <div className="text-xs font-medium text-gray-700">
                                     {new Date(
-                                      issue.updated_at
+                                      issue.updatedAt
                                     ).toLocaleDateString()}
                                   </div>
                                 </div>

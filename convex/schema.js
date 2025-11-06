@@ -48,8 +48,8 @@ export default defineSchema({
     assignedTo: v.optional(v.id("users")),
     isAnonymous: v.boolean(),
     anonymousContact: v.optional(v.string()),
-    created_at: v.number(),
-    updated_at: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
   })
     .index("by_status", ["status"])
     .index("by_category", ["category"]),
@@ -59,7 +59,7 @@ export default defineSchema({
     status: v.string(),
     comment: v.optional(v.string()),
     updated_by: v.id("users"),
-    created_at: v.number(),
+    createdAt: v.number(),
   }),
 
   comments: defineTable({
@@ -67,15 +67,15 @@ export default defineSchema({
     user_id: v.optional(v.id("users")),
     comment: v.string(),
     sentiment_score: v.optional(v.number()),
-    is_anonymous: v.boolean(),
-    created_at: v.number(),
+    isAnonymous: v.boolean(),
+    createdAt: v.number(),
   }),
 
   reactions: defineTable({
     issue_id: v.id("issues"),
     user_id: v.id("users"),
     reaction_type: v.string(),
-    created_at: v.number(),
+    createdAt: v.number(),
   }),
 
   notifications: defineTable({
@@ -83,7 +83,7 @@ export default defineSchema({
     issue_id: v.optional(v.id("issues")),
     message: v.string(),
     read: v.boolean(),
-    created_at: v.number(),
+    createdAt: v.number(),
   }),
 
   badges: defineTable({
@@ -91,7 +91,7 @@ export default defineSchema({
     description: v.optional(v.string()),
     icon: v.optional(v.string()),
     points_required: v.number(),
-    created_at: v.number(),
+    createdAt: v.number(),
   }),
 
   user_badges: defineTable({
@@ -101,12 +101,12 @@ export default defineSchema({
   }),
 
   messages: defineTable({
-    from_user_id: v.id("users"), 
-    to_user_id: v.id("users"), 
-    message: v.string(), 
-    created_at: v.number(), 
-    read: v.boolean(), 
-    issue_ids: v.optional(v.array(v.id("issues"))), 
+    from_user_id: v.id("users"),
+    to_user_id: v.id("users"),
+    message: v.string(),
+    createdAt: v.number(),
+    read: v.boolean(),
+    issue_ids: v.optional(v.array(v.id("issues"))),
   })
     .index("by_sender", ["from_user_id"])
     .index("by_receiver", ["to_user_id"])

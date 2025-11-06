@@ -3,30 +3,30 @@ import { v } from "convex/values";
 
 export const createIssue = mutation({
   args: {
-    ticket_id: v.string(),
+    ticket: v.string(),
     title: v.string(),
     description: v.string(),
     category: v.string(),
     severity: v.optional(v.string()),
-    priority_score: v.number(),
+    priorityScore: v.number(),
     upvotes: v.number(),
-    photo_url: v.optional(v.string()),
+    photoUrl: v.optional(v.string()),
     latitude: v.optional(v.number()),
     longitude: v.optional(v.number()),
     address: v.optional(v.string()),
-    reported_by: v.id("users"),
-    assigned_to: v.optional(v.id("users")),
-    is_anonymous: v.boolean(),
-    anonymous_contact: v.optional(v.string()),
+    reportedBy: v.id("users"),
+    assignedTo: v.optional(v.id("users")),
+    isAnonymous: v.boolean(),
+    anonymousContact: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const issue = {
       ...args,
       status: "pending",
-      ai_category: null,
+      aiCategory: null,
       ai_confidence: null,
-      created_at: Date.now(),
-      updated_at: Date.now(),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
     };
 
     const issueId = await ctx.db.insert("issues", issue);

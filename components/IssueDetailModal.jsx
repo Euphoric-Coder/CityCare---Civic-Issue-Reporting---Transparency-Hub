@@ -1,46 +1,56 @@
-import { X, Calendar, MapPin, Tag, Clock, User, MessageSquare, TrendingUp, AlertCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { mockIssueUpdates } from '../lib/mockData';
-import { IssueDiscussion } from './IssueDiscussion';
+import {
+  X,
+  Calendar,
+  MapPin,
+  Tag,
+  Clock,
+  User,
+  MessageSquare,
+  TrendingUp,
+  AlertCircle,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { mockIssueUpdates } from "../lib/mockData";
+import { IssueDiscussion } from "./IssueDiscussion";
 
 const statusColors = {
-  pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  in_progress: 'bg-blue-100 text-blue-800 border-blue-300',
-  resolved: 'bg-green-100 text-green-800 border-green-300',
+  pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
+  in_progress: "bg-blue-100 text-blue-800 border-blue-300",
+  resolved: "bg-green-100 text-green-800 border-green-300",
 };
 
 const statusLabels = {
-  pending: 'Pending',
-  in_progress: 'In Progress',
-  resolved: 'Resolved',
+  pending: "Pending",
+  in_progress: "In Progress",
+  resolved: "Resolved",
 };
 
 const categoryLabels = {
-  road: 'Road & Infrastructure',
-  lighting: 'Street Lighting',
-  waste: 'Waste Management',
-  water: 'Water Supply',
-  other: 'Other',
+  road: "Road & Infrastructure",
+  lighting: "Street Lighting",
+  waste: "Waste Management",
+  water: "Water Supply",
+  other: "Other",
 };
 
 const categoryIcons = {
-  road: '🛣️',
-  lighting: '💡',
-  waste: '🗑️',
-  water: '💧',
-  other: '📋',
+  road: "🛣️",
+  lighting: "💡",
+  waste: "🗑️",
+  water: "💧",
+  other: "📋",
 };
 
 const severityColors = {
-  high: 'bg-red-100 text-red-800 border-red-300',
-  medium: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  low: 'bg-green-100 text-green-800 border-green-300',
+  high: "bg-red-100 text-red-800 border-red-300",
+  medium: "bg-yellow-100 text-yellow-800 border-yellow-300",
+  low: "bg-green-100 text-green-800 border-green-300",
 };
 
 const severityLabels = {
-  high: 'High Priority',
-  medium: 'Medium Priority',
-  low: 'Low Priority',
+  high: "High Priority",
+  medium: "Medium Priority",
+  low: "Low Priority",
 };
 
 export function IssueDetailModal({ issue, onClose }) {
@@ -56,7 +66,7 @@ export function IssueDetailModal({ issue, onClose }) {
   async function loadUpdates() {
     if (!issue) return;
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, 300));
     const issueUpdates = mockIssueUpdates[issue.id] || [];
     setUpdates(issueUpdates);
     setLoading(false);
@@ -70,7 +80,9 @@ export function IssueDetailModal({ issue, onClose }) {
         <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-start">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">{issue.title}</h2>
-            <p className="text-sm text-gray-500 mt-1 font-mono">{issue.ticket_id}</p>
+            <p className="text-sm text-gray-500 mt-1 font-mono">
+              {issue.ticket}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -102,10 +114,12 @@ export function IssueDetailModal({ issue, onClose }) {
               <Tag size={14} className="mr-1" />
               {categoryIcons[issue.category]} {categoryLabels[issue.category]}
             </div>
-            {issue.priority_score > 0 && (
+            {issue.priorityScore > 0 && (
               <div className="flex items-center text-sm text-gray-600 bg-purple-50 px-3 py-1 rounded-full">
                 <TrendingUp size={14} className="mr-1 text-purple-600" />
-                <span className="font-semibold text-purple-700">Score: {issue.priority_score.toFixed(1)}</span>
+                <span className="font-semibold text-purple-700">
+                  Score: {issue.priorityScore.toFixed(1)}
+                </span>
               </div>
             )}
             {issue.upvotes > 0 && (
@@ -115,10 +129,10 @@ export function IssueDetailModal({ issue, onClose }) {
             )}
           </div>
 
-          {issue.photo_url && (
+          {issue.photoUrl && (
             <div>
               <img
-                src={issue.photo_url}
+                src={issue.photoUrl}
                 alt={issue.title}
                 className="w-full rounded-lg"
               />
@@ -126,18 +140,24 @@ export function IssueDetailModal({ issue, onClose }) {
           )}
 
           <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
-            <p className="text-gray-700 whitespace-pre-wrap">{issue.description}</p>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Description
+            </h3>
+            <p className="text-gray-700 whitespace-pre-wrap">
+              {issue.description}
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center text-sm text-gray-600">
               <Calendar size={16} className="mr-2" />
-              <span>Reported: {new Date(issue.created_at).toLocaleString()}</span>
+              <span>
+                Reported: {new Date(issue.createdAt).toLocaleString()}
+              </span>
             </div>
             <div className="flex items-center text-sm text-gray-600">
               <Clock size={16} className="mr-2" />
-              <span>Updated: {new Date(issue.updated_at).toLocaleString()}</span>
+              <span>Updated: {new Date(issue.updatedAt).toLocaleString()}</span>
             </div>
           </div>
 
@@ -150,7 +170,9 @@ export function IssueDetailModal({ issue, onClose }) {
 
           {issue.latitude && issue.longitude && (
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Location</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                Location
+              </h3>
               <div className="bg-gray-100 rounded-lg p-4">
                 <p className="text-sm text-gray-600">
                   Latitude: {issue.latitude}, Longitude: {issue.longitude}
@@ -175,7 +197,10 @@ export function IssueDetailModal({ issue, onClose }) {
               </h3>
               <div className="space-y-4">
                 {updates.map((update) => (
-                  <div key={update.id} className="border-l-4 border-blue-500 pl-4 py-2">
+                  <div
+                    key={update.id}
+                    className="border-l-4 border-blue-500 pl-4 py-2"
+                  >
                     <div className="flex items-center justify-between mb-1">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium border ${
@@ -185,18 +210,20 @@ export function IssueDetailModal({ issue, onClose }) {
                         {statusLabels[update.status]}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {new Date(update.created_at).toLocaleString()}
+                        {new Date(update.createdAt).toLocaleString()}
                       </span>
                     </div>
                     {update.comment && (
-                      <p className="text-sm text-gray-700 mt-2">{update.comment}</p>
+                      <p className="text-sm text-gray-700 mt-2">
+                        {update.comment}
+                      </p>
                     )}
                     {update.updater && (
                       <div className="flex items-center text-xs text-gray-500 mt-2">
                         <User size={12} className="mr-1" />
                         <span>
                           Updated by {update.updater.full_name}
-                          {update.updater.role === 'admin' && ' (Admin)'}
+                          {update.updater.role === "admin" && " (Admin)"}
                         </span>
                       </div>
                     )}

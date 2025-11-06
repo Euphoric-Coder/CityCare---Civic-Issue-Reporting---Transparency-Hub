@@ -1,15 +1,15 @@
-import { X, UserCheck, AlertCircle, History } from 'lucide-react';
-import { useState } from 'react';
+import { X, UserCheck, AlertCircle, History } from "lucide-react";
+import { useState } from "react";
 
 export function AdminReassignModal({ issue, officers, onClose, onReassign }) {
-  const [selectedOfficer, setSelectedOfficer] = useState('');
-  const [reason, setReason] = useState('');
+  const [selectedOfficer, setSelectedOfficer] = useState("");
+  const [reason, setReason] = useState("");
   const [reassigning, setReassigning] = useState(false);
 
   if (!issue) return null;
 
-  const currentOfficer = officers.find(o => o.id === issue.assigned_to);
-  const availableOfficers = officers.filter(o => o.id !== issue.assigned_to);
+  const currentOfficer = officers.find((o) => o.id === issue.assignedTo);
+  const availableOfficers = officers.filter((o) => o.id !== issue.assignedTo);
 
   function handleReassign() {
     if (!selectedOfficer || !reason.trim()) return;
@@ -31,7 +31,9 @@ export function AdminReassignModal({ issue, officers, onClose, onReassign }) {
               <UserCheck size={28} className="mr-3" />
               Reassign Issue
             </h2>
-            <p className="text-blue-100 text-sm mt-1">Transfer issue to another officer</p>
+            <p className="text-blue-100 text-sm mt-1">
+              Transfer issue to another officer
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -50,22 +52,34 @@ export function AdminReassignModal({ issue, officers, onClose, onReassign }) {
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-sm text-gray-600">{issue.ticket_id}</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  issue.severity === 'high' ? 'bg-red-100 text-red-700' :
-                  issue.severity === 'medium' ? 'bg-orange-100 text-orange-700' :
-                  'bg-gray-100 text-gray-700'
-                }`}>
+                <span className="font-mono text-sm text-gray-600">
+                  {issue.ticket}
+                </span>
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    issue.severity === "high"
+                      ? "bg-red-100 text-red-700"
+                      : issue.severity === "medium"
+                        ? "bg-orange-100 text-orange-700"
+                        : "bg-gray-100 text-gray-700"
+                  }`}
+                >
                   {issue.severity.toUpperCase()}
                 </span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  issue.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                  issue.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                  'bg-green-100 text-green-700'
-                }`}>
-                  {issue.status === 'pending' ? 'Pending' :
-                   issue.status === 'in_progress' ? 'In Progress' :
-                   'Resolved'}
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    issue.status === "pending"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : issue.status === "in_progress"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-green-100 text-green-700"
+                  }`}
+                >
+                  {issue.status === "pending"
+                    ? "Pending"
+                    : issue.status === "in_progress"
+                      ? "In Progress"
+                      : "Resolved"}
                 </span>
               </div>
               <p className="font-semibold text-gray-800">{issue.title}</p>
@@ -82,16 +96,28 @@ export function AdminReassignModal({ issue, officers, onClose, onReassign }) {
               </label>
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
-                    currentOfficer.role === 'ward_officer' ? 'bg-gradient-to-br from-teal-600 to-emerald-700' : 'bg-gradient-to-br from-cyan-600 to-blue-700'
-                  }`}>
-                    {currentOfficer.full_name.split(' ').map(n => n[0]).join('')}
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
+                      currentOfficer.role === "ward_officer"
+                        ? "bg-gradient-to-br from-teal-600 to-emerald-700"
+                        : "bg-gradient-to-br from-cyan-600 to-blue-700"
+                    }`}
+                  >
+                    {currentOfficer.full_name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-800">{currentOfficer.full_name}</p>
+                    <p className="font-semibold text-gray-800">
+                      {currentOfficer.full_name}
+                    </p>
                     <p className="text-sm text-gray-600">
-                      {currentOfficer.role === 'ward_officer' ? '🏛️ Ward Officer' : '🔧 Field Officer'}
-                      {currentOfficer.ward_zone && ` - ${currentOfficer.ward_zone}`}
+                      {currentOfficer.role === "ward_officer"
+                        ? "🏛️ Ward Officer"
+                        : "🔧 Field Officer"}
+                      {currentOfficer.ward_zone &&
+                        ` - ${currentOfficer.ward_zone}`}
                     </p>
                   </div>
                 </div>
@@ -104,13 +130,13 @@ export function AdminReassignModal({ issue, officers, onClose, onReassign }) {
               <span className="text-red-500">*</span> Reassign To
             </label>
             <div className="space-y-2 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3">
-              {availableOfficers.map(officer => (
+              {availableOfficers.map((officer) => (
                 <label
                   key={officer.id}
                   className={`flex items-center p-3 rounded-lg cursor-pointer transition-all ${
                     selectedOfficer === officer.id
-                      ? 'bg-blue-100 border-2 border-blue-500'
-                      : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
+                      ? "bg-blue-100 border-2 border-blue-500"
+                      : "bg-gray-50 hover:bg-gray-100 border-2 border-transparent"
                   }`}
                 >
                   <input
@@ -121,15 +147,26 @@ export function AdminReassignModal({ issue, officers, onClose, onReassign }) {
                     onChange={(e) => setSelectedOfficer(e.target.value)}
                     className="mr-3 text-blue-600 focus:ring-blue-500"
                   />
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
-                    officer.role === 'ward_officer' ? 'bg-gradient-to-br from-teal-600 to-emerald-700' : 'bg-gradient-to-br from-cyan-600 to-blue-700'
-                  }`}>
-                    {officer.full_name.split(' ').map(n => n[0]).join('')}
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
+                      officer.role === "ward_officer"
+                        ? "bg-gradient-to-br from-teal-600 to-emerald-700"
+                        : "bg-gradient-to-br from-cyan-600 to-blue-700"
+                    }`}
+                  >
+                    {officer.full_name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </div>
                   <div className="ml-3">
-                    <p className="font-semibold text-gray-800">{officer.full_name}</p>
+                    <p className="font-semibold text-gray-800">
+                      {officer.full_name}
+                    </p>
                     <p className="text-sm text-gray-600">
-                      {officer.role === 'ward_officer' ? '🏛️ Ward Officer' : '🔧 Field Officer'}
+                      {officer.role === "ward_officer"
+                        ? "🏛️ Ward Officer"
+                        : "🔧 Field Officer"}
                       {officer.ward_zone && ` - ${officer.ward_zone}`}
                     </p>
                   </div>
@@ -137,7 +174,9 @@ export function AdminReassignModal({ issue, officers, onClose, onReassign }) {
               ))}
             </div>
             {availableOfficers.length === 0 && (
-              <p className="text-sm text-gray-500 mt-2">No other officers available</p>
+              <p className="text-sm text-gray-500 mt-2">
+                No other officers available
+              </p>
             )}
           </div>
 
@@ -152,16 +191,23 @@ export function AdminReassignModal({ issue, officers, onClose, onReassign }) {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-32 resize-none"
             />
             <div className="flex items-start gap-2 mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <History size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+              <History
+                size={18}
+                className="text-amber-600 flex-shrink-0 mt-0.5"
+              />
               <p className="text-sm text-amber-800">
-                This reassignment will be recorded in the issue history and both officers will be notified
+                This reassignment will be recorded in the issue history and both
+                officers will be notified
               </p>
             </div>
           </div>
 
           {!selectedOfficer && (
             <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle size={18} className="text-red-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle
+                size={18}
+                className="text-red-600 flex-shrink-0 mt-0.5"
+              />
               <p className="text-sm text-red-800">
                 Please select an officer to reassign this issue to
               </p>
@@ -170,7 +216,10 @@ export function AdminReassignModal({ issue, officers, onClose, onReassign }) {
 
           {!reason.trim() && selectedOfficer && (
             <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <AlertCircle size={18} className="text-red-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle
+                size={18}
+                className="text-red-600 flex-shrink-0 mt-0.5"
+              />
               <p className="text-sm text-red-800">
                 Please provide a reason for this reassignment
               </p>
@@ -184,7 +233,7 @@ export function AdminReassignModal({ issue, officers, onClose, onReassign }) {
               className="flex-1 flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-medium hover:shadow-lg disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed transition-all"
             >
               <UserCheck size={20} className="mr-2" />
-              {reassigning ? 'Reassigning...' : 'Confirm Reassignment'}
+              {reassigning ? "Reassigning..." : "Confirm Reassignment"}
             </button>
             <button
               onClick={onClose}

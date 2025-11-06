@@ -1,112 +1,130 @@
-import { getMockUser } from '@/lib/mockData';
-import { X, Calendar, MapPin, Tag, Clock, User, MessageSquare, Save, XCircle, UserPlus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { getMockUser } from "@/lib/mockData";
+import {
+  X,
+  Calendar,
+  MapPin,
+  Tag,
+  Clock,
+  User,
+  MessageSquare,
+  Save,
+  XCircle,
+  UserPlus,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 const statusColors = {
-  pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  in_progress: 'bg-blue-100 text-blue-800 border-blue-300',
-  resolved: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-  rejected: 'bg-red-100 text-red-800 border-red-300',
+  pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
+  in_progress: "bg-blue-100 text-blue-800 border-blue-300",
+  resolved: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  rejected: "bg-red-100 text-red-800 border-red-300",
 };
 
 const statusLabels = {
-  pending: 'Pending',
-  in_progress: 'In Progress',
-  resolved: 'Resolved',
-  rejected: 'Rejected',
+  pending: "Pending",
+  in_progress: "In Progress",
+  resolved: "Resolved",
+  rejected: "Rejected",
 };
 
 const categoryLabels = {
-  road: 'Road & Infrastructure',
-  lighting: 'Street Lighting',
-  waste: 'Waste Management',
-  water: 'Water Supply',
-  other: 'Other',
+  road: "Road & Infrastructure",
+  lighting: "Street Lighting",
+  waste: "Waste Management",
+  water: "Water Supply",
+  other: "Other",
 };
 
 const categoryIcons = {
-  road: '🛣️',
-  lighting: '💡',
-  waste: '🗑️',
-  water: '💧',
-  other: '📋',
+  road: "🛣️",
+  lighting: "💡",
+  waste: "🗑️",
+  water: "💧",
+  other: "📋",
 };
 
-export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView, onReassign, onRevoke }) {
-  const [action, setAction] = useState('status');
-  const [newStatus, setNewStatus] = useState('pending');
-  const [assignTo, setAssignTo] = useState('');
-  const [rejectReason, setRejectReason] = useState('');
-  const [comment, setComment] = useState('');
-  const [success, setSuccess] = useState('');
-  const [reassignReason, setReassignReason] = useState('');
-  const [revokeReason, setRevokeReason] = useState('');
+export function AdminIssueModal({
+  issue,
+  onClose,
+  onUpdated,
+  fromAssignmentView,
+  onReassign,
+  onRevoke,
+}) {
+  const [action, setAction] = useState("status");
+  const [newStatus, setNewStatus] = useState("pending");
+  const [assignTo, setAssignTo] = useState("");
+  const [rejectReason, setRejectReason] = useState("");
+  const [comment, setComment] = useState("");
+  const [success, setSuccess] = useState("");
+  const [reassignReason, setReassignReason] = useState("");
+  const [revokeReason, setRevokeReason] = useState("");
 
-  const wardOfficers = getMockUser().filter(u => u.role === 'ward_officer');
-  const fieldOfficers = getMockUser().filter(u => u.role === 'field_officer');
+  const wardOfficers = getMockUser().filter((u) => u.role === "ward_officer");
+  const fieldOfficers = getMockUser().filter((u) => u.role === "field_officer");
 
   useEffect(() => {
     if (issue) {
       setNewStatus(issue.status);
-      setAssignTo(issue.assigned_to || '');
+      setAssignTo(issue.assignedTo || "");
     }
   }, [issue]);
 
   function handleUpdate() {
     if (!issue) return;
 
-    setSuccess('');
+    setSuccess("");
 
-    if (action === 'reassign') {
-      if (!assignTo || assignTo === issue.assigned_to) {
-        alert('Please select a different officer to reassign to');
+    if (action === "reassign") {
+      if (!assignTo || assignTo === issue.assignedTo) {
+        alert("Please select a different officer to reassign to");
         return;
       }
       if (!reassignReason.trim()) {
-        alert('Please provide a reason for reassignment');
+        alert("Please provide a reason for reassignment");
         return;
       }
       if (onReassign) {
         onReassign(issue.id, assignTo, reassignReason);
       }
       return;
-    } else if (action === 'revoke') {
+    } else if (action === "revoke") {
       if (!revokeReason.trim()) {
-        alert('Please provide a reason for revoking assignment');
+        alert("Please provide a reason for revoking assignment");
         return;
       }
       if (onRevoke) {
         onRevoke(issue.id, revokeReason);
       }
       return;
-    } else if (action === 'reject') {
+    } else if (action === "reject") {
       if (!rejectReason.trim()) {
-        alert('Please provide a reason for rejection');
+        alert("Please provide a reason for rejection");
         return;
       }
       onUpdated(issue.id, {
-        status: 'rejected',
+        status: "rejected",
         rejection_reason: rejectReason,
-        updated_at: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
-      setSuccess('Issue rejected successfully!');
-    } else if (action === 'assign') {
+      setSuccess("Issue rejected successfully!");
+    } else if (action === "assign") {
       if (!assignTo) {
-        alert('Please select an officer to assign');
+        alert("Please select an officer to assign");
         return;
       }
       onUpdated(issue.id, {
-        assigned_to: assignTo,
-        status: 'in_progress',
-        updated_at: new Date().toISOString()
+        assignedTo: assignTo,
+        status: "in_progress",
+        updatedAt: new Date().toISOString(),
       });
-      setSuccess('Issue assigned successfully!');
+      setSuccess("Issue assigned successfully!");
     } else {
       onUpdated(issue.id, {
         status: newStatus,
-        updated_at: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
-      setSuccess('Status updated successfully!');
+      setSuccess("Status updated successfully!");
     }
 
     setTimeout(() => {
@@ -122,7 +140,9 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
         <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-start">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">{issue.title}</h2>
-            <p className="text-sm text-gray-500 mt-1 font-mono">{issue.ticket_id}</p>
+            <p className="text-sm text-gray-500 mt-1 font-mono">
+              {issue.ticket}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -134,30 +154,32 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
         </div>
 
         <div className="p-6 space-y-6">
-          <div className={`${fromAssignmentView ? 'bg-blue-50 border-blue-200' : 'bg-orange-50 border-orange-200'} border rounded-lg p-5`}>
+          <div
+            className={`${fromAssignmentView ? "bg-blue-50 border-blue-200" : "bg-orange-50 border-orange-200"} border rounded-lg p-5`}
+          >
             <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              {fromAssignmentView ? 'Assignment Management' : 'Admin Actions'}
+              {fromAssignmentView ? "Assignment Management" : "Admin Actions"}
             </h3>
 
             {fromAssignmentView ? (
               <div className="flex gap-2 mb-4">
                 <button
-                  onClick={() => setAction('reassign')}
+                  onClick={() => setAction("reassign")}
                   className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                    action === 'reassign'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    action === "reassign"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                   }`}
                 >
                   <UserPlus size={18} className="inline mr-2" />
                   Reassign Officer
                 </button>
                 <button
-                  onClick={() => setAction('revoke')}
+                  onClick={() => setAction("revoke")}
                   className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                    action === 'revoke'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    action === "revoke"
+                      ? "bg-red-600 text-white"
+                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                   }`}
                 >
                   <XCircle size={18} className="inline mr-2" />
@@ -167,33 +189,33 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
             ) : (
               <div className="flex gap-2 mb-4">
                 <button
-                  onClick={() => setAction('status')}
+                  onClick={() => setAction("status")}
                   className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                    action === 'status'
-                      ? 'bg-teal-600 text-white'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    action === "status"
+                      ? "bg-teal-600 text-white"
+                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                   }`}
                 >
                   <Save size={18} className="inline mr-2" />
                   Update Status
                 </button>
                 <button
-                  onClick={() => setAction('assign')}
+                  onClick={() => setAction("assign")}
                   className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                    action === 'assign'
-                      ? 'bg-teal-600 text-white'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    action === "assign"
+                      ? "bg-teal-600 text-white"
+                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                   }`}
                 >
                   <UserPlus size={18} className="inline mr-2" />
                   Assign Officer
                 </button>
                 <button
-                  onClick={() => setAction('reject')}
+                  onClick={() => setAction("reject")}
                   className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                    action === 'reject'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    action === "reject"
+                      ? "bg-red-600 text-white"
+                      : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                   }`}
                 >
                   <XCircle size={18} className="inline mr-2" />
@@ -203,7 +225,7 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
             )}
 
             <div className="space-y-4">
-              {action === 'status' && (
+              {action === "status" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     New Status
@@ -231,7 +253,7 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
                 </div>
               )}
 
-              {action === 'assign' && (
+              {action === "assign" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Assign To
@@ -243,14 +265,14 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
                   >
                     <option value="">Select an officer...</option>
                     <optgroup label="Ward Officers">
-                      {wardOfficers.map(officer => (
+                      {wardOfficers.map((officer) => (
                         <option key={officer.id} value={officer.id}>
                           {officer.full_name} ({officer.email})
                         </option>
                       ))}
                     </optgroup>
                     <optgroup label="Field Officers">
-                      {fieldOfficers.map(officer => (
+                      {fieldOfficers.map((officer) => (
                         <option key={officer.id} value={officer.id}>
                           {officer.full_name} ({officer.email})
                         </option>
@@ -258,12 +280,13 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
                     </optgroup>
                   </select>
                   <p className="mt-2 text-sm text-gray-600">
-                    This will assign the issue and automatically change status to "In Progress"
+                    This will assign the issue and automatically change status
+                    to "In Progress"
                   </p>
                 </div>
               )}
 
-              {action === 'reject' && (
+              {action === "reject" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Rejection Reason <span className="text-red-500">*</span>
@@ -276,17 +299,21 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
                     required
                   />
                   <p className="mt-2 text-sm text-gray-600">
-                    The reporter will be notified with this reason. Rejected issues will only be visible to the reporter.
+                    The reporter will be notified with this reason. Rejected
+                    issues will only be visible to the reporter.
                   </p>
                 </div>
               )}
 
-              {action === 'reassign' && (
+              {action === "reassign" && (
                 <div className="space-y-4">
                   <div className="bg-blue-100 border border-blue-300 rounded-lg p-4">
                     <p className="text-sm text-blue-800">
-                      <strong>Currently assigned to:</strong>{' '}
-                      {wardOfficers.concat(fieldOfficers).find(o => o.id === issue.assigned_to)?.full_name || 'Unknown'}
+                      <strong>Currently assigned to:</strong>{" "}
+                      {wardOfficers
+                        .concat(fieldOfficers)
+                        .find((o) => o.id === issue.assignedTo)?.full_name ||
+                        "Unknown"}
                     </p>
                   </div>
                   <div>
@@ -298,26 +325,33 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
                       onChange={(e) => setAssignTo(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value={issue.assigned_to}>Select a different officer...</option>
+                      <option value={issue.assignedTo}>
+                        Select a different officer...
+                      </option>
                       <optgroup label="Ward Officers">
-                        {wardOfficers.filter(o => o.id !== issue.assigned_to).map(officer => (
-                          <option key={officer.id} value={officer.id}>
-                            {officer.full_name} ({officer.email})
-                          </option>
-                        ))}
+                        {wardOfficers
+                          .filter((o) => o.id !== issue.assignedTo)
+                          .map((officer) => (
+                            <option key={officer.id} value={officer.id}>
+                              {officer.full_name} ({officer.email})
+                            </option>
+                          ))}
                       </optgroup>
                       <optgroup label="Field Officers">
-                        {fieldOfficers.filter(o => o.id !== issue.assigned_to).map(officer => (
-                          <option key={officer.id} value={officer.id}>
-                            {officer.full_name} ({officer.email})
-                          </option>
-                        ))}
+                        {fieldOfficers
+                          .filter((o) => o.id !== issue.assignedTo)
+                          .map((officer) => (
+                            <option key={officer.id} value={officer.id}>
+                              {officer.full_name} ({officer.email})
+                            </option>
+                          ))}
                       </optgroup>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Reason for Reassignment <span className="text-red-500">*</span>
+                      Reason for Reassignment{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       value={reassignReason}
@@ -327,23 +361,29 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
                       required
                     />
                     <p className="mt-2 text-sm text-gray-600">
-                      Both the current and new officer will be notified. This action will be recorded in the issue history.
+                      Both the current and new officer will be notified. This
+                      action will be recorded in the issue history.
                     </p>
                   </div>
                 </div>
               )}
 
-              {action === 'revoke' && (
+              {action === "revoke" && (
                 <div>
                   <div className="bg-amber-100 border border-amber-300 rounded-lg p-4 mb-4">
                     <p className="text-sm text-amber-800">
-                      <strong>⚠️ Warning:</strong> This will unassign the issue from{' '}
-                      {wardOfficers.concat(fieldOfficers).find(o => o.id === issue.assigned_to)?.full_name || 'the current officer'}.
-                      The issue will return to unassigned status.
+                      <strong>⚠️ Warning:</strong> This will unassign the issue
+                      from{" "}
+                      {wardOfficers
+                        .concat(fieldOfficers)
+                        .find((o) => o.id === issue.assignedTo)?.full_name ||
+                        "the current officer"}
+                      . The issue will return to unassigned status.
                     </p>
                   </div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reason for Revoking Assignment <span className="text-red-500">*</span>
+                    Reason for Revoking Assignment{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={revokeReason}
@@ -353,7 +393,8 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
                     required
                   />
                   <p className="mt-2 text-sm text-gray-600">
-                    The officer will be notified and this action will be recorded in the issue history.
+                    The officer will be notified and this action will be
+                    recorded in the issue history.
                   </p>
                 </div>
               )}
@@ -367,18 +408,43 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
               <button
                 onClick={handleUpdate}
                 className={`w-full flex items-center justify-center px-4 py-3 rounded-md text-white font-medium transition-colors ${
-                  action === 'reject' || action === 'revoke'
-                    ? 'bg-red-600 hover:bg-red-700'
-                    : action === 'reassign'
-                    ? 'bg-blue-600 hover:bg-blue-700'
-                    : 'bg-teal-600 hover:bg-teal-700'
+                  action === "reject" || action === "revoke"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : action === "reassign"
+                      ? "bg-blue-600 hover:bg-blue-700"
+                      : "bg-teal-600 hover:bg-teal-700"
                 }`}
               >
-                {action === 'status' && <><Save size={20} className="mr-2" />Update Status</>}
-                {action === 'assign' && <><UserPlus size={20} className="mr-2" />Assign Officer</>}
-                {action === 'reject' && <><XCircle size={20} className="mr-2" />Reject Issue</>}
-                {action === 'reassign' && <><UserPlus size={20} className="mr-2" />Confirm Reassignment</>}
-                {action === 'revoke' && <><XCircle size={20} className="mr-2" />Revoke Assignment</>}
+                {action === "status" && (
+                  <>
+                    <Save size={20} className="mr-2" />
+                    Update Status
+                  </>
+                )}
+                {action === "assign" && (
+                  <>
+                    <UserPlus size={20} className="mr-2" />
+                    Assign Officer
+                  </>
+                )}
+                {action === "reject" && (
+                  <>
+                    <XCircle size={20} className="mr-2" />
+                    Reject Issue
+                  </>
+                )}
+                {action === "reassign" && (
+                  <>
+                    <UserPlus size={20} className="mr-2" />
+                    Confirm Reassignment
+                  </>
+                )}
+                {action === "revoke" && (
+                  <>
+                    <XCircle size={20} className="mr-2" />
+                    Revoke Assignment
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -397,10 +463,10 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
             </div>
           </div>
 
-          {issue.photo_url && (
+          {issue.photoUrl && (
             <div>
               <img
-                src={issue.photo_url}
+                src={issue.photoUrl}
                 alt={issue.title}
                 className="w-full rounded-lg max-h-96 object-cover"
               />
@@ -408,18 +474,24 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
           )}
 
           <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">Description</h3>
-            <p className="text-gray-700 whitespace-pre-wrap">{issue.description}</p>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Description
+            </h3>
+            <p className="text-gray-700 whitespace-pre-wrap">
+              {issue.description}
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center text-sm text-gray-600">
               <Calendar size={16} className="mr-2" />
-              <span>Reported: {new Date(issue.created_at).toLocaleString()}</span>
+              <span>
+                Reported: {new Date(issue.createdAt).toLocaleString()}
+              </span>
             </div>
             <div className="flex items-center text-sm text-gray-600">
               <Clock size={16} className="mr-2" />
-              <span>Updated: {new Date(issue.updated_at).toLocaleString()}</span>
+              <span>Updated: {new Date(issue.updatedAt).toLocaleString()}</span>
             </div>
           </div>
 
@@ -433,16 +505,19 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
           {issue.reporter && (
             <div className="flex items-center text-sm text-gray-600">
               <User size={16} className="mr-2" />
-              <span>Reported by: {issue.reporter.full_name} ({issue.reporter.email})</span>
+              <span>
+                Reported by: {issue.reporter.full_name} ({issue.reporter.email})
+              </span>
             </div>
           )}
 
-          {issue.assigned_to && issue.assignee && (
+          {issue.assignedTo && issue.assignee && (
             <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
               <div className="flex items-center text-sm text-teal-800">
                 <UserPlus size={16} className="mr-2" />
                 <span className="font-medium">
-                  Assigned to: {issue.assignee.full_name} ({issue.assignee.role.replace('_', ' ')})
+                  Assigned to: {issue.assignee.full_name} (
+                  {issue.assignee.role.replace("_", " ")})
                 </span>
               </div>
             </div>
@@ -450,7 +525,9 @@ export function AdminIssueModal({ issue, onClose, onUpdated, fromAssignmentView,
 
           {issue.rejection_reason && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-red-800 mb-2">Rejection Reason:</h3>
+              <h3 className="text-sm font-semibold text-red-800 mb-2">
+                Rejection Reason:
+              </h3>
               <p className="text-sm text-red-700">{issue.rejection_reason}</p>
             </div>
           )}

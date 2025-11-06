@@ -64,8 +64,8 @@ export function IssueDiscussion({ issueId }) {
         user_id: isAnonymous ? undefined : user?.id,
         comment: newComment,
         sentiment_score: 56,
-        is_anonymous: isAnonymous,
-        created_at: new Date().toISOString(),
+        isAnonymous: isAnonymous,
+        createdAt: new Date().toISOString(),
         commenter: isAnonymous ? undefined : currentMockUser || undefined,
       };
 
@@ -113,7 +113,7 @@ export function IssueDiscussion({ issueId }) {
         issue_id: issueId,
         user_id: user.id,
         reaction_type: reactionType,
-        created_at: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
       });
     }
 
@@ -167,19 +167,19 @@ export function IssueDiscussion({ issueId }) {
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-2">
                   <div className="bg-gradient-to-br from-blue-600 to-blue-700 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {comment.is_anonymous
+                    {comment.isAnonymous
                       ? "?"
                       : comment.commenter?.full_name?.charAt(0).toUpperCase() ||
                         "U"}
                   </div>
                   <div>
                     <p className="font-semibold text-gray-800">
-                      {comment.is_anonymous
+                      {comment.isAnonymous
                         ? "Anonymous Citizen"
                         : comment.commenter?.full_name || "User"}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {new Date(comment.created_at).toLocaleString()}
+                      {new Date(comment.createdAt).toLocaleString()}
                     </p>
                   </div>
                 </div>

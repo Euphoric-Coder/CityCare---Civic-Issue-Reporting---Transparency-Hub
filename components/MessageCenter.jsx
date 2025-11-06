@@ -47,7 +47,7 @@ export function MessagesCenter() {
 
       const sortedMessages = messages.sort(
         (a, b) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
 
       const unreadCount = messages.filter(
@@ -64,8 +64,8 @@ export function MessagesCenter() {
 
     threadsList.sort(
       (a, b) =>
-        new Date(b.lastMessage.created_at).getTime() -
-        new Date(a.lastMessage.created_at).getTime()
+        new Date(b.lastMessage.createdAt).getTime() -
+        new Date(a.lastMessage.createdAt).getTime()
     );
 
     setThreads(threadsList);
@@ -109,7 +109,7 @@ export function MessagesCenter() {
       from_user_id: user.id,
       to_user_id: selectedThread.otherUser.id,
       message: replyText.trim(),
-      created_at: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       read: false,
     };
 
@@ -214,7 +214,7 @@ export function MessagesCenter() {
                   </p>
                   <div className="flex items-center text-xs text-gray-500">
                     <Clock size={12} className="mr-1" />
-                    {new Date(thread.lastMessage.created_at).toLocaleString()}
+                    {new Date(thread.lastMessage.createdAt).toLocaleString()}
                   </div>
                 </button>
               ))}
@@ -317,7 +317,7 @@ export function MessagesCenter() {
                                     <span
                                       className={`font-mono text-xs ${isFromMe ? "opacity-80" : "text-gray-500"}`}
                                     >
-                                      {issue.ticket_id}
+                                      {issue.ticket}
                                     </span>
                                     <span className="font-medium truncate">
                                       {issue.title}
@@ -326,7 +326,7 @@ export function MessagesCenter() {
                                   <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-50 w-80">
                                     <div className="bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
                                       <div className="font-semibold mb-1">
-                                        {issue.ticket_id}: {issue.title}
+                                        {issue.ticket}: {issue.title}
                                       </div>
                                       <div className="text-gray-300 mb-2">
                                         {issue.description}
@@ -356,7 +356,7 @@ export function MessagesCenter() {
                       <p
                         className={`text-xs text-gray-500 mt-1 ${isFromMe ? "text-right" : "text-left"}`}
                       >
-                        {new Date(msg.created_at).toLocaleString()}
+                        {new Date(msg.createdAt).toLocaleString()}
                       </p>
                     </div>
                   </div>

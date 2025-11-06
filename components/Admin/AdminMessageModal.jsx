@@ -1,8 +1,8 @@
-import { X, Send, User, MessageSquare } from 'lucide-react';
-import { useState } from 'react';
+import { X, Send, User, MessageSquare } from "lucide-react";
+import { useState } from "react";
 
 export function AdminMessageModal({ officer, issues, onClose, onSend }) {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [selectedIssues, setSelectedIssues] = useState([]);
   const [sending, setSending] = useState(false);
 
@@ -13,16 +13,20 @@ export function AdminMessageModal({ officer, issues, onClose, onSend }) {
 
     setSending(true);
     setTimeout(() => {
-      onSend(officer.id, message, selectedIssues.length > 0 ? selectedIssues : undefined);
+      onSend(
+        officer.id,
+        message,
+        selectedIssues.length > 0 ? selectedIssues : undefined
+      );
       setSending(false);
       onClose();
     }, 500);
   }
 
   function toggleIssue(issueId) {
-    setSelectedIssues(prev =>
+    setSelectedIssues((prev) =>
       prev.includes(issueId)
-        ? prev.filter(id => id !== issueId)
+        ? prev.filter((id) => id !== issueId)
         : [...prev, issueId]
     );
   }
@@ -36,7 +40,9 @@ export function AdminMessageModal({ officer, issues, onClose, onSend }) {
               <MessageSquare size={28} className="mr-3" />
               Send Message to Officer
             </h2>
-            <p className="text-orange-100 text-sm mt-1">Communicate work updates and instructions</p>
+            <p className="text-orange-100 text-sm mt-1">
+              Communicate work updates and instructions
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -50,23 +56,38 @@ export function AdminMessageModal({ officer, issues, onClose, onSend }) {
         <div className="p-6 space-y-6">
           <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-5">
             <div className="flex items-center gap-4">
-              <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ${
-                officer.role === 'ward_officer' ? 'bg-gradient-to-br from-teal-600 to-emerald-700' : 'bg-gradient-to-br from-cyan-600 to-blue-700'
-              }`}>
-                {officer.full_name.split(' ').map(n => n[0]).join('')}
+              <div
+                className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ${
+                  officer.role === "ward_officer"
+                    ? "bg-gradient-to-br from-teal-600 to-emerald-700"
+                    : "bg-gradient-to-br from-cyan-600 to-blue-700"
+                }`}
+              >
+                {officer.full_name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
               </div>
               <div>
-                <h3 className="text-xl font-bold text-gray-800">{officer.full_name}</h3>
+                <h3 className="text-xl font-bold text-gray-800">
+                  {officer.full_name}
+                </h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    officer.role === 'ward_officer'
-                      ? 'bg-teal-200 text-teal-800'
-                      : 'bg-cyan-200 text-cyan-800'
-                  }`}>
-                    {officer.role === 'ward_officer' ? '🏛️ Ward Officer' : '🔧 Field Officer'}
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      officer.role === "ward_officer"
+                        ? "bg-teal-200 text-teal-800"
+                        : "bg-cyan-200 text-cyan-800"
+                    }`}
+                  >
+                    {officer.role === "ward_officer"
+                      ? "🏛️ Ward Officer"
+                      : "🔧 Field Officer"}
                   </span>
                   {officer.ward_zone && (
-                    <span className="text-sm text-gray-600 font-medium">{officer.ward_zone}</span>
+                    <span className="text-sm text-gray-600 font-medium">
+                      {officer.ward_zone}
+                    </span>
                   )}
                 </div>
               </div>
@@ -79,7 +100,7 @@ export function AdminMessageModal({ officer, issues, onClose, onSend }) {
                 Reference Specific Issues (Optional)
               </label>
               <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                {issues.map(issue => (
+                {issues.map((issue) => (
                   <label
                     key={issue.id}
                     className="flex items-start p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
@@ -92,23 +113,32 @@ export function AdminMessageModal({ officer, issues, onClose, onSend }) {
                     />
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-xs text-gray-500">{issue.ticket_id}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          issue.severity === 'high' ? 'bg-red-100 text-red-700' :
-                          issue.severity === 'medium' ? 'bg-orange-100 text-orange-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
+                        <span className="font-mono text-xs text-gray-500">
+                          {issue.ticket}
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            issue.severity === "high"
+                              ? "bg-red-100 text-red-700"
+                              : issue.severity === "medium"
+                                ? "bg-orange-100 text-orange-700"
+                                : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
                           {issue.severity.toUpperCase()}
                         </span>
                       </div>
-                      <p className="font-medium text-gray-800 text-sm">{issue.title}</p>
+                      <p className="font-medium text-gray-800 text-sm">
+                        {issue.title}
+                      </p>
                     </div>
                   </label>
                 ))}
               </div>
               {selectedIssues.length > 0 && (
                 <p className="text-sm text-gray-600 mt-2">
-                  {selectedIssues.length} {selectedIssues.length === 1 ? 'issue' : 'issues'} selected
+                  {selectedIssues.length}{" "}
+                  {selectedIssues.length === 1 ? "issue" : "issues"} selected
                 </p>
               )}
             </div>
@@ -125,7 +155,8 @@ export function AdminMessageModal({ officer, issues, onClose, onSend }) {
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 h-40 resize-none"
             />
             <p className="text-xs text-gray-500 mt-2">
-              This message will be sent to {officer.full_name} and appear in their notifications
+              This message will be sent to {officer.full_name} and appear in
+              their notifications
             </p>
           </div>
 
@@ -136,7 +167,7 @@ export function AdminMessageModal({ officer, issues, onClose, onSend }) {
               className="flex-1 flex items-center justify-center px-6 py-3 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg font-medium hover:shadow-lg disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed transition-all"
             >
               <Send size={20} className="mr-2" />
-              {sending ? 'Sending...' : 'Send Message'}
+              {sending ? "Sending..." : "Send Message"}
             </button>
             <button
               onClick={onClose}

@@ -38,7 +38,7 @@ export function PublicDashboard() {
     setIssues(
       [...allIssues].sort(
         (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
     );
     setLoading(false);
@@ -52,7 +52,7 @@ export function PublicDashboard() {
         (issue) =>
           issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           issue.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          issue.ticket_id.toLowerCase().includes(searchTerm.toLowerCase())
+          issue.ticket.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 

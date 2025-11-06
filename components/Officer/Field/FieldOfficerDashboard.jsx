@@ -38,10 +38,10 @@ export function FieldOfficerDashboard() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 300));
       const data = getIssues()
-        .filter((issue) => issue.assigned_to === user?.id)
+        .filter((issue) => issue.assignedTo === user?.id)
         .sort(
           (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
       setIssues(data);
     } catch (error) {
@@ -71,7 +71,7 @@ export function FieldOfficerDashboard() {
       filtered = filtered.filter((issue) => issue.category === categoryFilter);
     }
 
-    filtered.sort((a, b) => b.priority_score - a.priority_score);
+    filtered.sort((a, b) => b.priorityScore - a.priorityScore);
     setFilteredIssues(filtered);
   }
 
@@ -82,7 +82,7 @@ export function FieldOfficerDashboard() {
           ? {
               ...issue,
               status: newStatus,
-              updated_at: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
             }
           : issue
       )
