@@ -42,7 +42,7 @@ export function PublicNavbar() {
   if (status === "loading") {
     return (
       <nav className="bg-white/95 backdrop-blur-md shadow-lg sticky top-0 z-40 border-b border-gray-100 p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
+        <div className="max-w-8xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <Image src="/logo.png" alt="CityCare Logo" width={36} height={36} />
             <span className="text-lg font-semibold text-slate-700">
@@ -59,7 +59,7 @@ export function PublicNavbar() {
   if (status === "unauthenticated" || !user) {
     return (
       <nav className="bg-white/95 backdrop-blur-md shadow-lg sticky top-0 z-40 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link href="/">
@@ -137,7 +137,7 @@ export function PublicNavbar() {
   // ✅ Authenticated
   return (
     <nav className="bg-white/95 backdrop-blur-md shadow-lg sticky top-0 z-40 border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/">
@@ -162,7 +162,7 @@ export function PublicNavbar() {
 
             <button
               className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-lg font-medium hover:shadow-lg transform hover:scale-105 transition-all"
-              onClick={() => router.push(`/${userRole}/dashboard`)}
+              onClick={() => router.push(`/${userRole}/`)}
             >
               Dashboard
             </button>
