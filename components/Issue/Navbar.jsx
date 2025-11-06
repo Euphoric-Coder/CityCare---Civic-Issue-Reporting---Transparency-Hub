@@ -29,7 +29,7 @@ const Navbar = ({ setFormData, setCurrentStep }) => {
           <div className="flex items-center space-x-5">
             <ModeToggle />
             <button
-              onClick={() => router.push("/citizen/dashboard")}
+              onClick={() => router.push("/citizen/")}
               className="flex items-center space-x-2 px-4 py-2 rounded-3xl font-medium transition-all duration-200 bg-gray-100/80 hover:bg-gray-200/80 dark:bg-gray-800/80 dark:hover:bg-gray-700/80 text-gray-700 dark:text-gray-300 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50"
             >
               <Home className="w-4 h-4" />

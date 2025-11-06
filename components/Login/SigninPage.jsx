@@ -83,7 +83,7 @@ const SignInPage = () => {
 
       // Success → redirect
       toast.success(`Welcome back, ${user.fullName}!`);
-      router.push(`/${formData.role}/dashboard`);
+      router.push(`/${formData.role}/`);
     } catch (err) {
       console.error("Error during sign-in:", err);
       toast.error("Something went wrong, please try again.");

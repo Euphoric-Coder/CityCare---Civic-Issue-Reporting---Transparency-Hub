@@ -101,7 +101,7 @@ const SignUp = () => {
       toast.error("Login failed. Please try again.");
       setError("Login failed. Please try again.");
     } else {
-      router.push(`/${formData.role}/dashboard`);
+      router.push(`/${formData.role}/`);
     }
   };
 
