@@ -94,6 +94,17 @@ const handler = NextAuth({
     },
   },
 
+  cookies: {
+    sessionToken: {
+      name: "citycare.session-token",
+      options: { httpOnly: true, sameSite: "lax", path: "/" },
+    },
+    csrfToken: {
+      name: "citycare.csrf-token",
+      options: { httpOnly: true, sameSite: "lax", path: "/" },
+    },
+  },
+
   secret: process.env.NEXTAUTH_SECRET || "dev-secret",
 });
 
