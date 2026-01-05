@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 const RedirectPage = ({
-  redirectTo = "/dashboard",
+  redirectTo = "/",
   delay = 2500,
   children,
 }) => {

@@ -94,7 +94,7 @@ const SignInPage = () => {
   };
 
   return (
-    <RedirectPage redirectTo={`/${formData.role}/dashboard`}>
+    <RedirectPage redirectTo={`/${formData.role}/`}>
       <div className="min-h-screen flex bg-white dark:bg-dark-300 transition-colors">
         {/* Left Side - Form */}
         <div className="flex-1 flex items-center justify-center px-8 py-12">
