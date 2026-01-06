@@ -206,19 +206,24 @@ export function CitizenDashboard({
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-10">
         {/* Greeting */}
-        <section className="text-center mb-12">
-          <h1 className="text-5xl font-extrabold bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 bg-clip-text text-transparent tracking-tight">
-            Hello, {profile.full_name.split(" ")[0]}! 👋
-          </h1>
-          <p className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mt-3">
-            Welcome back to your CityCare Dashboard
-          </p>
-          <p className="text-gray-600 dark:text-gray-400 mt-4 text-lg max-w-2xl mx-auto leading-relaxed">
-            Track your reported civic issues, monitor progress, and stay
-            informed about resolutions — all in one place designed to keep your
-            city thriving.
-          </p>
-        </section>
+        <div className="bg-gradient-to-br from-green-600 via-emerald-600 to-green-700 rounded-2xl shadow-xl p-8 mb-12 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full -ml-24 -mb-24"></div>
+
+          <div className="relative z-10">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
+              Hello, {profile?.full_name?.split(" ")[0] || "there"}! 👋
+            </h1>
+            <h2 className="text-2xl md:text-3xl font-semibold text-green-50 mb-4">
+              Welcome back to your CityCare Dashboard
+            </h2>
+            <p className="text-green-50/90 text-lg leading-relaxed max-w-3xl">
+              Track your reported civic issues, monitor progress, and stay
+              informed about resolutions — all in one place designed to keep
+              your city thriving.
+            </p>
+          </div>
+        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
