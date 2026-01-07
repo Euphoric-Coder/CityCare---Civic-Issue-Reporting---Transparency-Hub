@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Send, User, Clock, Shield, Wrench } from "lucide-react";
-import { getIssueMessages } from "@/lib/mockData";
+import { getIssueMessages, mockUsers } from "@/lib/mockData";
 
 export function IssueMessaging({ issue }) {
-  const user = { id: 1, full_name: "John Doe", role: "citizen" }; // Mocked user data
+  console.log("IssueMessaging rendered with issue:", issue);
+  const user = mockUsers[0]; // Mocked user data
   const profile = { full_name: "John Doe", role: "citizen" }; // Mocked profile data
   const [selectedOfficer, setSelectedOfficer] = useState("field");
   const [messages, setMessages] = useState([]);
@@ -51,17 +52,24 @@ export function IssueMessaging({ issue }) {
           ? issue.assignee?.id
           : issue.ward_officer?.id;
 
+        console.log("Loading messages for recipientId:", recipientId);
+        console.log("User ID:", user.id);
+
       if (!recipientId) {
         setMessages([]);
         setLoading(false);
         return;
       }
 
+      console.log("Issue:", getIssueMessages(issue.id));
+
       const mockMessages = getIssueMessages(issue.id).filter(
         (msg) =>
           (msg.sender_id === user.id && msg.recipient_id === recipientId) ||
           (msg.sender_id === recipientId && msg.recipient_id === user.id)
       );
+
+      console.log("Filtered messages:", mockMessages);
 
       const messagesWithSender = mockMessages.map((msg) => ({
         ...msg,
@@ -140,7 +148,7 @@ export function IssueMessaging({ issue }) {
   }
 
   const hasFieldOfficer = !!issue.assignee;
-  const hasWardOfficer = !!issue.ward_officer;
+  const hasWardOfficer = !!issue.wardOfficer;
 
   if (!user || (!hasFieldOfficer && !hasWardOfficer)) {
     return (
