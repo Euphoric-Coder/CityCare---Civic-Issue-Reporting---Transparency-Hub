@@ -50,10 +50,10 @@ export function IssueMessaging({ issue }) {
       const recipientId =
         selectedOfficer === "field"
           ? issue.assignee?.id
-          : issue.ward_officer?.id;
+          : issue.wardOfficer?.id;
 
-        console.log("Loading messages for recipientId:", recipientId);
-        console.log("User ID:", user.id);
+      console.log("Loading messages for recipientId:", recipientId);
+      console.log("User ID:", user.id);
 
       if (!recipientId) {
         setMessages([]);
@@ -87,9 +87,9 @@ export function IssueMessaging({ issue }) {
                   role: issue.assignee.role,
                 }
               : {
-                  id: issue.ward_officer.id,
-                  full_name: issue.ward_officer.full_name,
-                  role: issue.ward_officer.role,
+                  id: issue.wardOfficer.id,
+                  full_name: issue.wardOfficer.full_name,
+                  role: issue.wardOfficer.role,
                 },
       }));
 
@@ -103,7 +103,7 @@ export function IssueMessaging({ issue }) {
 
   async function handleSendMessage() {
     const recipientId =
-      selectedOfficer === "field" ? issue.assignee?.id : issue.ward_officer?.id;
+      selectedOfficer === "field" ? issue.assignee?.id : issue.wardOfficer?.id;
     if (!newMessage.trim() || sending || !user || !recipientId) return;
 
     setSending(true);
@@ -164,10 +164,10 @@ export function IssueMessaging({ issue }) {
   }
 
   const currentOfficer =
-    selectedOfficer === "field" ? issue.assignee : issue.ward_officer;
+    selectedOfficer === "field" ? issue.assignee : issue.wardOfficer;
 
   return (
-    <div className="flex flex-col h-[500px]">
+    <div className="flex flex-col h-full p-6">
       {hasFieldOfficer && hasWardOfficer && (
         <div className="flex gap-2 mb-4">
           <button
@@ -301,3 +301,4 @@ export function IssueMessaging({ issue }) {
     </div>
   );
 }
+
