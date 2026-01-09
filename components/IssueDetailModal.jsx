@@ -14,6 +14,8 @@ import {
   MessageSquare,
   ChevronLeft,
   ChevronRight,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { IssueDiscussion } from "./IssueDiscussion";
 import { IssueMessaging } from "./Citizen/IssueMessaging";
@@ -42,6 +44,7 @@ const statusSteps = [
 export function IssueDetailModal({ issue, onClose }) {
   const [activeTab, setActiveTab] = useState("progress");
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   if (!issue) return null;
 
@@ -139,18 +142,30 @@ export function IssueDetailModal({ issue, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-      <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl animate-slideUp overflow-hidden">
+      <div
+        className={`bg-white rounded-2xl ${isFullscreen ? "w-full h-full max-w-none max-h-none" : "max-w-4xl w-full max-h-[90vh]"} flex flex-col shadow-2xl animate-slideUp overflow-hidden transition-all duration-300`}
+      >
         <div
           className={`relative bg-gradient-to-r ${currentColors.gradient} p-6 text-white`}
         >
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all"
-          >
-            <X size={24} />
-          </button>
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            <button
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all"
+              aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            >
+              {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+            </button>
+            <button
+              onClick={onClose}
+              className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all"
+              aria-label="Close modal"
+            >
+              <X size={24} />
+            </button>
+          </div>
 
-          <div className="pr-12">
+          <div className="pr-24">
             <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium mb-3">
               {issue.ticket_id}
             </span>
@@ -369,9 +384,7 @@ export function IssueDetailModal({ issue, onClose }) {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Priority Score:</span>
-                      <span className="font-medium text-gray-900">
-                        14.33
-                      </span>
+                      <span className="font-medium text-gray-900">22</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Severity:</span>
@@ -506,7 +519,7 @@ export function IssueDetailModal({ issue, onClose }) {
 
           {activeTab === "messages" &&
             (issue.assignee || issue.ward_officer) && (
-              <div>
+              <div className="h-full">
                 <IssueMessaging issue={issue} />
               </div>
             )}

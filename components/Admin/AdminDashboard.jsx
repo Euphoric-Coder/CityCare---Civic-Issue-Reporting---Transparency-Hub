@@ -662,7 +662,7 @@ export function AdminDashboard() {
           )}
         </div>
       ) : (
-        <MessagesCenter />
+        <MessagesCenter user={mockUsers[1]} profile={{ role: "admin" }} />
       )}
 
       <AdminIssueModal

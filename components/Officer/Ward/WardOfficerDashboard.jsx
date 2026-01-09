@@ -11,7 +11,7 @@ import {
   CheckCircle,
   Mail,
 } from "lucide-react";
-import { getIssues } from "@/lib/mockData";
+import { getIssues, mockUsers } from "@/lib/mockData";
 import { OfficerIssueModal } from "../OfficerIssueModal";
 import { IssueCard } from "@/components/IssueCard";
 import { MessagesCenter } from "@/components/MessageCenter";
@@ -279,7 +279,10 @@ export function WardOfficerDashboard() {
           </div>
         </>
       ) : (
-        <MessagesCenter />
+        <MessagesCenter
+          user={mockUsers[2]}
+          profile={{ role: "ward_officer" }}
+        />
       )}
 
       {selectedIssue && (
