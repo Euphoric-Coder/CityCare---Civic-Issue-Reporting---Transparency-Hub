@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   MessageSquare,
   Send,
@@ -7,27 +7,59 @@ import {
   User,
   ChevronRight,
   FileText,
+  UserPlus,
+  Search,
+  ChevronDown,
 } from "lucide-react";
-import { mockUsers, getIssues } from "@/lib/mockData";
+import {
+  mockUsers,
+  getIssues,
+  initializeMessagesIfNeeded,
+} from "../lib/mockData";
 
-export function MessagesCenter() {
-  const user = { id: "4" };
+export function MessagesCenter({ user, profile }) {
+  console.log("User & profile in MessageCenter:", user, profile);
   const [threads, setThreads] = useState([]);
   const [selectedThread, setSelectedThread] = useState(null);
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
+  const [showNewConversation, setShowNewConversation] = useState(false);
+  const [selectedIssueId, setSelectedIssueId] = useState("");
+  const [issueSearchTerm, setIssueSearchTerm] = useState("");
+  const [showIssueDropdown, setShowIssueDropdown] = useState(false);
+  const issueDropdownRef = useRef(null);
 
   useEffect(() => {
+    initializeMessagesIfNeeded();
     loadMessages();
+  }, [user]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        issueDropdownRef.current &&
+        !issueDropdownRef.current.contains(event.target)
+      ) {
+        setShowIssueDropdown(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   function loadMessages() {
     if (!user) return;
 
     const allMessages = getStoredMessages();
+
+    console.log("All messages loaded:", allMessages);
+
     const userMessages = allMessages.filter(
       (m) => m.from_user_id === user.id || m.to_user_id === user.id
     );
+
+    console.log("User messages:", userMessages);
 
     const threadMap = new Map();
 
@@ -47,7 +79,7 @@ export function MessagesCenter() {
 
       const sortedMessages = messages.sort(
         (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
 
       const unreadCount = messages.filter(
@@ -64,8 +96,8 @@ export function MessagesCenter() {
 
     threadsList.sort(
       (a, b) =>
-        new Date(b.lastMessage.createdAt).getTime() -
-        new Date(a.lastMessage.createdAt).getTime()
+        new Date(b.lastMessage.created_at).getTime() -
+        new Date(a.lastMessage.created_at).getTime()
     );
 
     setThreads(threadsList);
@@ -109,8 +141,9 @@ export function MessagesCenter() {
       from_user_id: user.id,
       to_user_id: selectedThread.otherUser.id,
       message: replyText.trim(),
-      createdAt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
       read: false,
+      issue_ids: selectedIssueId ? [selectedIssueId] : undefined,
     };
 
     const allMessages = getStoredMessages();
@@ -118,6 +151,7 @@ export function MessagesCenter() {
     saveMessages(allMessages);
 
     setReplyText("");
+    setSelectedIssueId("");
     setSending(false);
     loadMessages();
 
@@ -133,16 +167,106 @@ export function MessagesCenter() {
     }
   }
 
+  function handleStartConversation(recipientId) {
+    const recipient = mockUsers.find((u) => u.id === recipientId);
+    if (!recipient) return;
+
+    const existingThread = threads.find((t) => t.otherUser.id === recipientId);
+    if (existingThread) {
+      setSelectedThread(existingThread);
+      setShowNewConversation(false);
+      return;
+    }
+
+    const newThread = {
+      otherUser: recipient,
+      messages: [],
+      lastMessage: {
+        id: "",
+        from_user_id: "",
+        to_user_id: "",
+        message: "Start a new conversation",
+        created_at: new Date().toISOString(),
+        read: true,
+      },
+      unreadCount: 0,
+    };
+
+    setSelectedThread(newThread);
+    setShowNewConversation(false);
+  }
+
+  function getAvailableColleagues() {
+    if (!user || !profile) return [];
+
+    const allowedRoles = ["admin", "ward_officer", "field_officer"];
+    return mockUsers.filter(
+      (u) => u.id !== user.id && allowedRoles.includes(u.role)
+    );
+  }
+
+  function getAvailableIssues() {
+    if (!user || !profile) return [];
+
+    const allIssues = getIssues();
+    if (profile.role === "admin") {
+      return allIssues;
+    } else if (profile.role === "ward_officer") {
+      return allIssues.filter((issue) => issue.ward_officer_id === user.id);
+    } else if (profile.role === "field_officer") {
+      return allIssues.filter((issue) => issue.assigned_to === user.id);
+    }
+
+    return [];
+  }
+
+  function getFilteredIssues() {
+    const availableIssues = getAvailableIssues();
+    if (!issueSearchTerm.trim()) return availableIssues;
+
+    const searchLower = issueSearchTerm.toLowerCase();
+    return availableIssues.filter(
+      (issue) =>
+        issue.ticket_id.toLowerCase().includes(searchLower) ||
+        issue.title.toLowerCase().includes(searchLower) ||
+        issue.description.toLowerCase().includes(searchLower)
+    );
+  }
+
+  function handleSelectIssue(issueId) {
+    setSelectedIssueId(issueId);
+    setShowIssueDropdown(false);
+    setIssueSearchTerm("");
+  }
+
+  function getSelectedIssue() {
+    const availableIssues = getAvailableIssues();
+    return availableIssues.find((issue) => issue.id === selectedIssueId);
+  }
+
   const totalUnread = threads.reduce((sum, t) => sum + t.unreadCount, 0);
+
+  const availableColleagues = getAvailableColleagues();
+  const filteredIssues = getFilteredIssues();
+  const selectedIssue = getSelectedIssue();
 
   return (
     <div className="flex gap-6 h-[calc(100vh-12rem)]">
       <div className="w-96 bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col">
         <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-red-50">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center">
-            <MessageSquare size={24} className="mr-2 text-orange-600" />
-            Messages
-          </h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center">
+              <MessageSquare size={24} className="mr-2 text-orange-600" />
+              Messages
+            </h2>
+            <button
+              onClick={() => setShowNewConversation(true)}
+              className="p-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+              title="Start new conversation"
+            >
+              <UserPlus size={18} />
+            </button>
+          </div>
           {totalUnread > 0 && (
             <p className="text-sm text-gray-600 mt-1">
               {totalUnread} unread {totalUnread === 1 ? "message" : "messages"}
@@ -214,7 +338,7 @@ export function MessagesCenter() {
                   </p>
                   <div className="flex items-center text-xs text-gray-500">
                     <Clock size={12} className="mr-1" />
-                    {new Date(thread.lastMessage.createdAt).toLocaleString()}
+                    {new Date(thread.lastMessage.created_at).toLocaleString()}
                   </div>
                 </button>
               ))}
@@ -317,7 +441,7 @@ export function MessagesCenter() {
                                     <span
                                       className={`font-mono text-xs ${isFromMe ? "opacity-80" : "text-gray-500"}`}
                                     >
-                                      {issue.ticket}
+                                      {issue.ticket_id}
                                     </span>
                                     <span className="font-medium truncate">
                                       {issue.title}
@@ -326,7 +450,7 @@ export function MessagesCenter() {
                                   <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-50 w-80">
                                     <div className="bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
                                       <div className="font-semibold mb-1">
-                                        {issue.ticket}: {issue.title}
+                                        {issue.ticket_id}: {issue.title}
                                       </div>
                                       <div className="text-gray-300 mb-2">
                                         {issue.description}
@@ -356,7 +480,7 @@ export function MessagesCenter() {
                       <p
                         className={`text-xs text-gray-500 mt-1 ${isFromMe ? "text-right" : "text-left"}`}
                       >
-                        {new Date(msg.createdAt).toLocaleString()}
+                        {new Date(msg.created_at).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -365,6 +489,98 @@ export function MessagesCenter() {
             </div>
 
             <div className="p-5 border-t border-gray-200 bg-white">
+              <div className="mb-3 relative" ref={issueDropdownRef}>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reference Issue (Optional)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowIssueDropdown(!showIssueDropdown)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-left bg-white hover:border-gray-400 transition-colors flex items-center justify-between"
+                >
+                  <span
+                    className={
+                      selectedIssue ? "text-gray-900" : "text-gray-500"
+                    }
+                  >
+                    {selectedIssue
+                      ? `${selectedIssue.ticket_id} - ${selectedIssue.title}`
+                      : "No issue reference"}
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    className={`text-gray-500 transition-transform ${showIssueDropdown ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {showIssueDropdown && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-hidden flex flex-col">
+                    <div className="p-3 border-b border-gray-200">
+                      <div className="relative">
+                        <Search
+                          size={16}
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        />
+                        <input
+                          type="text"
+                          value={issueSearchTerm}
+                          onChange={(e) => setIssueSearchTerm(e.target.value)}
+                          placeholder="Search by ID, title, or description..."
+                          className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto">
+                      <button
+                        onClick={() => handleSelectIssue("")}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 transition-colors text-gray-500 border-b border-gray-200"
+                      >
+                        No issue reference
+                      </button>
+                      {filteredIssues.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500 text-sm">
+                          No issues found
+                        </div>
+                      ) : (
+                        filteredIssues.map((issue) => (
+                          <button
+                            key={issue.id}
+                            onClick={() => handleSelectIssue(issue.id)}
+                            className={`w-full px-3 py-2.5 text-left text-sm hover:bg-blue-50 transition-colors border-b border-gray-100 ${
+                              selectedIssueId === issue.id ? "bg-blue-100" : ""
+                            }`}
+                          >
+                            <div className="font-medium text-gray-900 mb-1">
+                              {issue.ticket_id} - {issue.title}
+                            </div>
+                            <div className="text-xs text-gray-600 line-clamp-2">
+                              {issue.description}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded ${
+                                  issue.severity === "high"
+                                    ? "bg-red-100 text-red-700"
+                                    : issue.severity === "medium"
+                                      ? "bg-orange-100 text-orange-700"
+                                      : "bg-blue-100 text-blue-700"
+                                }`}
+                              >
+                                {issue.severity}
+                              </span>
+                              <span className="text-xs text-gray-500 capitalize">
+                                {issue.category}
+                              </span>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="flex gap-3">
                 <textarea
                   value={replyText}
@@ -405,6 +621,84 @@ export function MessagesCenter() {
           </div>
         )}
       </div>
+
+      {showNewConversation && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl max-h-[80vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-orange-50 to-red-50">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800">
+                  Start New Conversation
+                </h3>
+                <button
+                  onClick={() => setShowNewConversation(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X size={20} className="text-gray-600" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mt-2">
+                Select a colleague to start messaging
+              </p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {availableColleagues.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <User size={48} className="mx-auto mb-3 text-gray-400" />
+                  <p className="font-medium">No colleagues available</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {availableColleagues.map((colleague) => (
+                    <button
+                      key={colleague.id}
+                      onClick={() => handleStartConversation(colleague.id)}
+                      className="w-full p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-orange-300 transition-all text-left group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg ${
+                            colleague.role === "admin"
+                              ? "bg-gradient-to-br from-orange-600 to-red-700"
+                              : colleague.role === "ward_officer"
+                                ? "bg-gradient-to-br from-teal-600 to-emerald-700"
+                                : "bg-gradient-to-br from-cyan-600 to-blue-700"
+                          }`}
+                        >
+                          {colleague.full_name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-800 group-hover:text-orange-700 transition-colors">
+                            {colleague.full_name}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {colleague.role === "admin"
+                              ? "Admin"
+                              : colleague.role === "ward_officer"
+                                ? "Ward Officer"
+                                : "Field Officer"}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {colleague.email}
+                          </p>
+                        </div>
+                        <ChevronRight
+                          size={20}
+                          className="text-gray-400 group-hover:text-orange-600 transition-colors"
+                        />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
