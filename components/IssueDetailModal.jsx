@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   X,
   MapPin,
@@ -18,6 +18,7 @@ import {
   Minimize2,
 } from "lucide-react";
 import { IssueDiscussion } from "./IssueDiscussion";
+import { getUpdatesByIssueId } from "../lib/mockData";
 import { IssueMessaging } from "./Citizen/IssueMessaging";
 
 const statusSteps = [
@@ -45,6 +46,16 @@ export function IssueDetailModal({ issue, onClose }) {
   const [activeTab, setActiveTab] = useState("progress");
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [issueUpdates, setIssueUpdates] = useState([]);
+
+  useEffect(() => {
+    if (issue) {
+      console.log("Fetching issue updates for issue:", issue.id);
+      const updates = getUpdatesByIssueId(issue.id);
+      console.log("Fetched issue updates:", updates);
+      setIssueUpdates(updates);
+    }
+  }, [issue]);
 
   if (!issue) return null;
 
@@ -220,7 +231,9 @@ export function IssueDetailModal({ issue, onClose }) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div
+          className={`flex-1 overflow-y-auto ${activeTab === "messages" ? "p-0" : "p-6"}`}
+        >
           {activeTab === "progress" && (
             <div>
               {issue.status === "rejected" ? (
@@ -247,89 +260,186 @@ export function IssueDetailModal({ issue, onClose }) {
                     Progress Timeline
                   </h3>
 
-                  <div className="relative">
-                    {statusSteps.map((step, index) => {
-                      const isCompleted =
-                        index < currentStepIndex ||
-                        (index === currentStepIndex &&
-                          issue.status === "resolved");
-                      const isCurrent =
-                        index === currentStepIndex &&
-                        issue.status !== "resolved";
-                      const Icon = step.icon;
+                  {issueUpdates.length > 0 ? (
+                    <div className="relative">
+                      {issueUpdates.map((update, index) => {
+                        const isLastUpdate = index === issueUpdates.length - 1;
+                        const stepColors = statusColors[update.status];
+                        const StatusIcon =
+                          update.status === "resolved"
+                            ? CheckCircle
+                            : update.status === "in_progress"
+                              ? Clock
+                              : update.status === "rejected"
+                                ? XCircle
+                                : AlertCircle;
 
-                      const stepColors = statusColors[step.status];
-
-                      return (
-                        <div
-                          key={step.status}
-                          className="relative flex gap-4 pb-8 last:pb-0"
-                        >
-                          {index < statusSteps.length - 1 && (
-                            <div
-                              className={`absolute left-[18px] top-[40px] w-0.5 h-[calc(100%-40px)] ${
-                                isCompleted
-                                  ? `bg-gradient-to-b ${stepColors.lineGradient}`
-                                  : "bg-gray-200"
-                              }`}
-                            />
-                          )}
-
+                        return (
                           <div
-                            className={`relative z-10 flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center border-4 ${
-                              isCompleted
-                                ? `bg-gradient-to-br ${stepColors.gradient} border-${step.status === "pending" ? "amber" : step.status === "resolved" ? "emerald" : "blue"}-100 shadow-lg`
-                                : isCurrent
-                                  ? `bg-white ${stepColors.circleBorder} shadow-lg animate-pulse`
-                                  : "bg-white border-gray-300"
-                            }`}
+                            key={update.id}
+                            className="relative flex gap-4 pb-6 last:pb-0"
                           >
-                            <Icon
-                              size={18}
-                              className={
-                                isCompleted
-                                  ? "text-white"
-                                  : isCurrent
-                                    ? stepColors.text
-                                    : "text-gray-400"
-                              }
-                            />
-                          </div>
+                            {!isLastUpdate && (
+                              <div
+                                className={`absolute left-[18px] top-[40px] w-0.5 h-[calc(100%-16px)] bg-gradient-to-b ${stepColors.lineGradient}`}
+                              />
+                            )}
 
-                          <div className="flex-1 pt-1">
-                            <div className="flex items-center justify-between mb-1">
-                              <h4
-                                className={`font-bold ${
-                                  isCompleted || isCurrent
-                                    ? "text-gray-900"
-                                    : "text-gray-500"
-                                }`}
-                              >
-                                {step.label}
-                              </h4>
-                              {isCompleted && (
+                            <div
+                              className={`relative z-10 flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center border-4 bg-gradient-to-br ${stepColors.gradient} border-${update.status === "pending" ? "amber" : update.status === "resolved" ? "emerald" : update.status === "rejected" ? "red" : "blue"}-100 shadow-lg ${isLastUpdate ? "animate-pulse" : ""}`}
+                            >
+                              <StatusIcon size={18} className="text-white" />
+                            </div>
+
+                            <div className="flex-1 pt-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <span
-                                  className={`text-xs ${stepColors.text} ${stepColors.badgeBg} px-2 py-1 rounded-full font-medium`}
+                                  className={`text-xs font-semibold ${stepColors.text} ${stepColors.badgeBg} px-2 py-1 rounded-full uppercase`}
                                 >
-                                  Completed
+                                  {update.status === "in_progress"
+                                    ? "In Progress"
+                                    : update.status === "resolved"
+                                      ? "Resolved"
+                                      : update.status === "rejected"
+                                        ? "Rejected"
+                                        : "Pending"}
                                 </span>
-                              )}
-                              {isCurrent && (
-                                <span
-                                  className={`text-xs ${stepColors.text} ${stepColors.badgeBg} px-2 py-1 rounded-full font-semibold`}
-                                >
-                                  Current Stage
+                                <span className="text-xs text-gray-500">
+                                  {new Date(update.created_at).toLocaleString(
+                                    "en-US",
+                                    {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    }
+                                  )}
                                 </span>
+                              </div>
+                              <p className="text-sm font-medium text-gray-900 mb-1">
+                                {update.comment}
+                              </p>
+                              {update.updater && (
+                                <div className="flex items-center gap-2 mt-2">
+                                  <div
+                                    className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+                                      update.updater.role === "admin"
+                                        ? "bg-orange-600"
+                                        : update.updater.role === "ward_officer"
+                                          ? "bg-teal-600"
+                                          : update.updater.role ===
+                                              "field_officer"
+                                            ? "bg-cyan-600"
+                                            : "bg-gray-600"
+                                    }`}
+                                  >
+                                    {update.updater.full_name
+                                      .split(" ")
+                                      .map((n) => n[0])
+                                      .join("")}
+                                  </div>
+                                  <div className="text-xs">
+                                    <span className="text-gray-700 font-medium">
+                                      {update.updater.full_name}
+                                    </span>
+                                    <span className="text-gray-500"> • </span>
+                                    <span className="text-gray-500 capitalize">
+                                      {update.updater.role.replace("_", " ")}
+                                    </span>
+                                  </div>
+                                </div>
                               )}
                             </div>
-                            <p className="text-sm text-gray-600">
-                              {step.description}
-                            </p>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      {statusSteps.map((step, index) => {
+                        const isCompleted =
+                          index < currentStepIndex ||
+                          (index === currentStepIndex &&
+                            issue.status === "resolved");
+                        const isCurrent =
+                          index === currentStepIndex &&
+                          issue.status !== "resolved";
+                        const Icon = step.icon;
+
+                        const stepColors = statusColors[step.status];
+
+                        return (
+                          <div
+                            key={step.status}
+                            className="relative flex gap-4 pb-8 last:pb-0"
+                          >
+                            {index < statusSteps.length - 1 && (
+                              <div
+                                className={`absolute left-[18px] top-[40px] w-0.5 h-[calc(100%-40px)] ${
+                                  isCompleted
+                                    ? `bg-gradient-to-b ${stepColors.lineGradient}`
+                                    : "bg-gray-200"
+                                }`}
+                              />
+                            )}
+
+                            <div
+                              className={`relative z-10 flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center border-4 ${
+                                isCompleted
+                                  ? `bg-gradient-to-br ${stepColors.gradient} border-${step.status === "pending" ? "amber" : step.status === "resolved" ? "emerald" : "blue"}-100 shadow-lg`
+                                  : isCurrent
+                                    ? `bg-white ${stepColors.circleBorder} shadow-lg animate-pulse`
+                                    : "bg-white border-gray-300"
+                              }`}
+                            >
+                              <Icon
+                                size={18}
+                                className={
+                                  isCompleted
+                                    ? "text-white"
+                                    : isCurrent
+                                      ? stepColors.text
+                                      : "text-gray-400"
+                                }
+                              />
+                            </div>
+
+                            <div className="flex-1 pt-1">
+                              <div className="flex items-center justify-between mb-1">
+                                <h4
+                                  className={`font-bold ${
+                                    isCompleted || isCurrent
+                                      ? "text-gray-900"
+                                      : "text-gray-500"
+                                  }`}
+                                >
+                                  {step.label}
+                                </h4>
+                                {isCompleted && (
+                                  <span
+                                    className={`text-xs ${stepColors.text} ${stepColors.badgeBg} px-2 py-1 rounded-full font-medium`}
+                                  >
+                                    Completed
+                                  </span>
+                                )}
+                                {isCurrent && (
+                                  <span
+                                    className={`text-xs ${stepColors.text} ${stepColors.badgeBg} px-2 py-1 rounded-full font-semibold`}
+                                  >
+                                    Current Stage
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                {step.description}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -384,7 +494,7 @@ export function IssueDetailModal({ issue, onClose }) {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Priority Score:</span>
-                      <span className="font-medium text-gray-900">22</span>
+                      <span className="font-medium text-gray-900">12</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Severity:</span>
