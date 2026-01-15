@@ -703,7 +703,7 @@ export function WardOfficerWorkflow() {
         <div className="flex-1 flex overflow-hidden">
           {/* Issue List */}
           <div
-            className={`${selectedIssue ? "hidden lg:block lg:w-2/5" : "w-full"} flex flex-col border-r border-gray-200 bg-white`}
+            className={`w-full flex flex-col border-r border-gray-200 bg-white`}
           >
             {/* Search and Filters */}
             <div className="p-4 md:p-5 border-b border-gray-200 space-y-4 bg-gradient-to-br from-gray-50 to-white">
