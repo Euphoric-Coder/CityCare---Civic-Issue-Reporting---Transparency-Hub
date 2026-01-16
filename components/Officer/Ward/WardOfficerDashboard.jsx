@@ -18,17 +18,24 @@ import {
   RefreshCw,
   Menu,
   X as CloseIcon,
-  ChevronLeft,
-  ChevronRight,
   ArrowUpCircle,
   Maximize2,
   Minimize2,
+  PanelLeftClose,
+  PanelRightClose,
+  LogOut,
+  User,
+  Sun,
+  Moon,
 } from "lucide-react";
 import * as localStorageService from "@/lib/localStorageService";
 import { WOIssueDetailPanel } from "./WOIssueDetailPanel";
+import { ModeToggle } from "@/components/ModeToggle";
+import { useTheme } from "next-themes";
 
 export function WardOfficerWorkflow() {
   const { user } = { id: "3" };
+  const { resolvedTheme, setTheme } = useTheme();
   const [issues, setIssues] = useState([]);
   const [fieldOfficers, setFieldOfficers] = useState([]);
   const [activeView, setActiveView] = useState("overview");
@@ -42,9 +49,18 @@ export function WardOfficerWorkflow() {
   const [isLoading, setIsLoading] = useState(true);
   const [isFullScreen, setIsFullScreen] = useState(false);
 
+  // Theme mounting state
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    localStorage.removeItem("city_care_issues");
     loadData();
-  }, [user]);
+  }, []);
+
+  // Theme mounting
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
 
   function loadData() {
     setIsLoading(true);
@@ -61,6 +77,10 @@ export function WardOfficerWorkflow() {
       setIsLoading(false);
     }
   }
+
+  const toogleTheme = () => {
+    setTheme(resolvedTheme === "light" ? "dark" : "light");
+  };
 
   const stats = {
     pending_verification: issues.filter(
@@ -237,29 +257,47 @@ export function WardOfficerWorkflow() {
 
   const SidebarContent = () => (
     <>
+      {/* Header */}
       <div
-        className={`p-5 border-b border-gray-200 bg-gradient-to-br from-teal-600 to-cyan-700 ${sidebarCollapsed ? "px-3" : ""}`}
+        className={`p-5 border-b border-gray-200 dark:border-slate-800 bg-gradient-to-br from-teal-600 to-cyan-700 dark:from-teal-800 dark:to-cyan-700 ${
+          sidebarCollapsed ? "px-3" : ""
+        }`}
       >
         <div className="flex items-center justify-between">
           {!sidebarCollapsed ? (
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                WO
+              {/* CityCare Icon */}
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg ring-1 ring-white/20">
+                {/* Replace with your actual icon */}
+                <img
+                  src="/citycare.png"
+                  alt="CityCare"
+                  className="w-8 h-8 object-contain drop-shadow"
+                />
               </div>
+
               <div>
-                <h2 className="text-lg font-bold text-white">Ward Officer</h2>
+                <h2 className="text-lg font-bold text-white leading-tight">
+                  CityCare
+                </h2>
                 <p className="text-xs text-teal-100 mt-0.5">
-                  Management Portal
+                  Ward Officer • Management Portal
                 </p>
               </div>
             </div>
           ) : (
             <div className="flex justify-center w-full">
-              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold shadow-lg">
-                WO
+              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg ring-1 ring-white/20">
+                <img
+                  src="/citycare.png"
+                  alt="CityCare"
+                  className="w-6 h-6 object-contain drop-shadow"
+                />
               </div>
             </div>
           )}
+
+          {/* Only collapse + close here */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -267,14 +305,16 @@ export function WardOfficerWorkflow() {
               title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {sidebarCollapsed ? (
-                <ChevronRight size={20} />
+                <PanelRightClose size={20} />
               ) : (
-                <ChevronLeft size={20} />
+                <PanelLeftClose size={20} />
               )}
             </button>
+
             <button
               onClick={() => setSidebarOpen(false)}
               className="md:hidden text-white/80 hover:text-white"
+              title="Close"
             >
               <CloseIcon size={24} />
             </button>
@@ -282,18 +322,23 @@ export function WardOfficerWorkflow() {
         </div>
       </div>
 
+      {/* Nav */}
       <nav
-        className={`flex-1 ${sidebarCollapsed ? "p-2" : "p-4"} space-y-1.5 overflow-y-auto`}
+        className={`flex-1 ${
+          sidebarCollapsed ? "p-2" : "p-4"
+        } space-y-1.5 overflow-y-auto bg-white dark:bg-slate-950`}
       >
         <button
           onClick={() => {
             setActiveView("overview");
             setSidebarOpen(false);
           }}
-          className={`w-full flex items-center ${sidebarCollapsed ? "justify-center px-2" : "gap-3 px-4"} py-3 text-sm font-semibold rounded-xl transition-all ${
+          className={`w-full flex items-center ${
+            sidebarCollapsed ? "justify-center px-2" : "gap-3 px-4"
+          } py-3 text-sm font-semibold rounded-xl transition-all ${
             activeView === "overview"
-              ? "bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 shadow-sm"
-              : "text-gray-700 hover:bg-gray-100"
+              ? "bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 shadow-sm dark:from-teal-900/60 dark:to-cyan-900/60 dark:text-teal-200 dark:shadow-none"
+              : "text-gray-700 hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-slate-800"
           }`}
           title={sidebarCollapsed ? "Overview" : ""}
         >
@@ -308,23 +353,28 @@ export function WardOfficerWorkflow() {
             setActiveView("pending_verification");
             setSidebarOpen(false);
           }}
-          className={`w-full flex items-center justify-between ${sidebarCollapsed ? "px-2" : "px-4"} py-3 text-sm font-semibold rounded-xl transition-all ${
+          className={`w-full flex items-center justify-between ${
+            sidebarCollapsed ? "px-2" : "px-4"
+          } py-3 text-sm font-semibold rounded-xl transition-all ${
             activeView === "pending_verification"
-              ? "bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 shadow-sm"
-              : "text-gray-700 hover:bg-gray-100"
+              ? "bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 shadow-sm dark:from-teal-900/60 dark:to-cyan-900/60 dark:text-teal-200 dark:shadow-none"
+              : "text-gray-700 hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-slate-800"
           }`}
           title={sidebarCollapsed ? "Pending Verification" : ""}
         >
           <div
-            className={`flex items-center ${sidebarCollapsed ? "justify-center w-full" : "gap-3"}`}
+            className={`flex items-center ${
+              sidebarCollapsed ? "justify-center w-full" : "gap-3"
+            }`}
           >
             <Clock size={20} className="flex-shrink-0" />
             {!sidebarCollapsed && (
               <span className="whitespace-nowrap">Pending Verification</span>
             )}
           </div>
+
           {stats.pending_verification > 0 && !sidebarCollapsed && (
-            <span className="px-2 py-0.5 text-xs font-bold bg-yellow-100 text-yellow-700 rounded-full flex-shrink-0">
+            <span className="px-2 py-0.5 text-xs font-bold bg-yellow-100 text-yellow-700 rounded-full flex-shrink-0 dark:bg-yellow-500/15 dark:text-yellow-200 dark:ring-1 dark:ring-yellow-400/20">
               {stats.pending_verification}
             </span>
           )}
@@ -335,23 +385,28 @@ export function WardOfficerWorkflow() {
             setActiveView("verified");
             setSidebarOpen(false);
           }}
-          className={`w-full flex items-center justify-between ${sidebarCollapsed ? "px-2" : "px-4"} py-3 text-sm font-semibold rounded-xl transition-all ${
+          className={`w-full flex items-center justify-between ${
+            sidebarCollapsed ? "px-2" : "px-4"
+          } py-3 text-sm font-semibold rounded-xl transition-all ${
             activeView === "verified"
-              ? "bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 shadow-sm"
-              : "text-gray-700 hover:bg-gray-100"
+              ? "bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 shadow-sm dark:from-teal-900/60 dark:to-cyan-900/60 dark:text-teal-200 dark:shadow-none"
+              : "text-gray-700 hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-slate-800"
           }`}
           title={sidebarCollapsed ? "Verified - Assign FO" : ""}
         >
           <div
-            className={`flex items-center ${sidebarCollapsed ? "justify-center w-full" : "gap-3"}`}
+            className={`flex items-center ${
+              sidebarCollapsed ? "justify-center w-full" : "gap-3"
+            }`}
           >
             <CheckCircle size={20} className="flex-shrink-0" />
             {!sidebarCollapsed && (
               <span className="whitespace-nowrap">Verified - Assign FO</span>
             )}
           </div>
+
           {stats.verified > 0 && !sidebarCollapsed && (
-            <span className="px-2 py-0.5 text-xs font-bold bg-teal-100 text-teal-700 rounded-full flex-shrink-0">
+            <span className="px-2 py-0.5 text-xs font-bold bg-teal-100 text-teal-700 rounded-full flex-shrink-0 dark:bg-teal-500/15 dark:text-teal-200 dark:ring-1 dark:ring-teal-400/20">
               {stats.verified}
             </span>
           )}
@@ -362,23 +417,28 @@ export function WardOfficerWorkflow() {
             setActiveView("in_progress");
             setSidebarOpen(false);
           }}
-          className={`w-full flex items-center justify-between ${sidebarCollapsed ? "px-2" : "px-4"} py-3 text-sm font-semibold rounded-xl transition-all ${
+          className={`w-full flex items-center justify-between ${
+            sidebarCollapsed ? "px-2" : "px-4"
+          } py-3 text-sm font-semibold rounded-xl transition-all ${
             activeView === "in_progress"
-              ? "bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 shadow-sm"
-              : "text-gray-700 hover:bg-gray-100"
+              ? "bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 shadow-sm dark:from-teal-900/60 dark:to-cyan-900/60 dark:text-teal-200 dark:shadow-none"
+              : "text-gray-700 hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-slate-800"
           }`}
           title={sidebarCollapsed ? "In Progress" : ""}
         >
           <div
-            className={`flex items-center ${sidebarCollapsed ? "justify-center w-full" : "gap-3"}`}
+            className={`flex items-center ${
+              sidebarCollapsed ? "justify-center w-full" : "gap-3"
+            }`}
           >
             <TrendingUp size={20} className="flex-shrink-0" />
             {!sidebarCollapsed && (
               <span className="whitespace-nowrap">In Progress</span>
             )}
           </div>
+
           {stats.in_progress > 0 && !sidebarCollapsed && (
-            <span className="px-2 py-0.5 text-xs font-bold bg-cyan-100 text-cyan-700 rounded-full flex-shrink-0">
+            <span className="px-2 py-0.5 text-xs font-bold bg-cyan-100 text-cyan-700 rounded-full flex-shrink-0 dark:bg-cyan-500/15 dark:text-cyan-200 dark:ring-1 dark:ring-cyan-400/20">
               {stats.in_progress}
             </span>
           )}
@@ -389,23 +449,28 @@ export function WardOfficerWorkflow() {
             setActiveView("fo_verified");
             setSidebarOpen(false);
           }}
-          className={`w-full flex items-center justify-between ${sidebarCollapsed ? "px-2" : "px-4"} py-3 text-sm font-semibold rounded-xl transition-all ${
+          className={`w-full flex items-center justify-between ${
+            sidebarCollapsed ? "px-2" : "px-4"
+          } py-3 text-sm font-semibold rounded-xl transition-all ${
             activeView === "fo_verified"
-              ? "bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 shadow-sm"
-              : "text-gray-700 hover:bg-gray-100"
+              ? "bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 shadow-sm dark:from-teal-900/60 dark:to-cyan-900/60 dark:text-teal-200 dark:shadow-none"
+              : "text-gray-700 hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-slate-800"
           }`}
           title={sidebarCollapsed ? "Pending WO Verification" : ""}
         >
           <div
-            className={`flex items-center ${sidebarCollapsed ? "justify-center w-full" : "gap-3"}`}
+            className={`flex items-center ${
+              sidebarCollapsed ? "justify-center w-full" : "gap-3"
+            }`}
           >
             <Eye size={20} className="flex-shrink-0" />
             {!sidebarCollapsed && (
               <span className="whitespace-nowrap">Pending WO Verification</span>
             )}
           </div>
+
           {stats.fo_verified > 0 && !sidebarCollapsed && (
-            <span className="px-2 py-0.5 text-xs font-bold bg-blue-100 text-blue-700 rounded-full flex-shrink-0">
+            <span className="px-2 py-0.5 text-xs font-bold bg-blue-100 text-blue-700 rounded-full flex-shrink-0 dark:bg-blue-500/15 dark:text-blue-200 dark:ring-1 dark:ring-blue-400/20">
               {stats.fo_verified}
             </span>
           )}
@@ -416,10 +481,12 @@ export function WardOfficerWorkflow() {
             setActiveView("resolved");
             setSidebarOpen(false);
           }}
-          className={`w-full flex items-center ${sidebarCollapsed ? "justify-center px-2" : "gap-3 px-4"} py-3 text-sm font-semibold rounded-xl transition-all ${
+          className={`w-full flex items-center ${
+            sidebarCollapsed ? "justify-center px-2" : "gap-3 px-4"
+          } py-3 text-sm font-semibold rounded-xl transition-all ${
             activeView === "resolved"
-              ? "bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 shadow-sm"
-              : "text-gray-700 hover:bg-gray-100"
+              ? "bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 shadow-sm dark:from-teal-900/60 dark:to-cyan-900/60 dark:text-teal-200 dark:shadow-none"
+              : "text-gray-700 hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-slate-800"
           }`}
           title={sidebarCollapsed ? "Resolved" : ""}
         >
@@ -434,10 +501,12 @@ export function WardOfficerWorkflow() {
             setActiveView("rejected");
             setSidebarOpen(false);
           }}
-          className={`w-full flex items-center ${sidebarCollapsed ? "justify-center px-2" : "gap-3 px-4"} py-3 text-sm font-semibold rounded-xl transition-all ${
+          className={`w-full flex items-center ${
+            sidebarCollapsed ? "justify-center px-2" : "gap-3 px-4"
+          } py-3 text-sm font-semibold rounded-xl transition-all ${
             activeView === "rejected"
-              ? "bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 shadow-sm"
-              : "text-gray-700 hover:bg-gray-100"
+              ? "bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 shadow-sm dark:from-teal-900/60 dark:to-cyan-900/60 dark:text-teal-200 dark:shadow-none"
+              : "text-gray-700 hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-slate-800"
           }`}
           title={sidebarCollapsed ? "Rejected" : ""}
         >
@@ -452,23 +521,28 @@ export function WardOfficerWorkflow() {
             setActiveView("reopened");
             setSidebarOpen(false);
           }}
-          className={`w-full flex items-center justify-between ${sidebarCollapsed ? "px-2" : "px-4"} py-3 text-sm font-semibold rounded-xl transition-all ${
+          className={`w-full flex items-center justify-between ${
+            sidebarCollapsed ? "px-2" : "px-4"
+          } py-3 text-sm font-semibold rounded-xl transition-all ${
             activeView === "reopened"
-              ? "bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 shadow-sm"
-              : "text-gray-700 hover:bg-gray-100"
+              ? "bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 shadow-sm dark:from-teal-900/60 dark:to-cyan-900/60 dark:text-teal-200 dark:shadow-none"
+              : "text-gray-700 hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-slate-800"
           }`}
           title={sidebarCollapsed ? "Reopened" : ""}
         >
           <div
-            className={`flex items-center ${sidebarCollapsed ? "justify-center w-full" : "gap-3"}`}
+            className={`flex items-center ${
+              sidebarCollapsed ? "justify-center w-full" : "gap-3"
+            }`}
           >
             <RefreshCw size={20} className="flex-shrink-0" />
             {!sidebarCollapsed && (
               <span className="whitespace-nowrap">Reopened</span>
             )}
           </div>
+
           {stats.reopened > 0 && !sidebarCollapsed && (
-            <span className="px-2 py-0.5 text-xs font-bold bg-orange-100 text-orange-700 rounded-full flex-shrink-0">
+            <span className="px-2 py-0.5 text-xs font-bold bg-orange-100 text-orange-700 rounded-full flex-shrink-0 dark:bg-orange-500/15 dark:text-orange-200 dark:ring-1 dark:ring-orange-400/20">
               {stats.reopened}
             </span>
           )}
@@ -479,41 +553,50 @@ export function WardOfficerWorkflow() {
             setActiveView("escalated");
             setSidebarOpen(false);
           }}
-          className={`w-full flex items-center justify-between ${sidebarCollapsed ? "px-2" : "px-4"} py-3 text-sm font-semibold rounded-xl transition-all ${
+          className={`w-full flex items-center justify-between ${
+            sidebarCollapsed ? "px-2" : "px-4"
+          } py-3 text-sm font-semibold rounded-xl transition-all ${
             activeView === "escalated"
-              ? "bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 shadow-sm"
-              : "text-gray-700 hover:bg-gray-100"
+              ? "bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 shadow-sm dark:from-teal-900/60 dark:to-cyan-900/60 dark:text-teal-200 dark:shadow-none"
+              : "text-gray-700 hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-slate-800"
           }`}
           title={sidebarCollapsed ? "Admin Escalation" : ""}
         >
           <div
-            className={`flex items-center ${sidebarCollapsed ? "justify-center w-full" : "gap-3"}`}
+            className={`flex items-center ${
+              sidebarCollapsed ? "justify-center w-full" : "gap-3"
+            }`}
           >
             <ArrowUpCircle size={20} className="flex-shrink-0" />
             {!sidebarCollapsed && (
               <span className="whitespace-nowrap">Admin Escalation</span>
             )}
           </div>
+
           {stats.escalated > 0 && !sidebarCollapsed && (
-            <span className="px-2 py-0.5 text-xs font-bold bg-rose-100 text-rose-700 rounded-full flex-shrink-0">
+            <span className="px-2 py-0.5 text-xs font-bold bg-rose-100 text-rose-700 rounded-full flex-shrink-0 dark:bg-rose-500/15 dark:text-rose-200 dark:ring-1 dark:ring-rose-400/20">
               {stats.escalated}
             </span>
           )}
         </button>
 
         <div
-          className={`h-px bg-gray-200 ${sidebarCollapsed ? "my-3" : "my-4"}`}
-        ></div>
+          className={`h-px bg-gray-200 dark:bg-slate-800 ${
+            sidebarCollapsed ? "my-3" : "my-4"
+          }`}
+        />
 
         <button
           onClick={() => {
             setActiveView("field_officers");
             setSidebarOpen(false);
           }}
-          className={`w-full flex items-center ${sidebarCollapsed ? "justify-center px-2" : "gap-3 px-4"} py-3 text-sm font-semibold rounded-xl transition-all ${
+          className={`w-full flex items-center ${
+            sidebarCollapsed ? "justify-center px-2" : "gap-3 px-4"
+          } py-3 text-sm font-semibold rounded-xl transition-all ${
             activeView === "field_officers"
-              ? "bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 shadow-sm"
-              : "text-gray-700 hover:bg-gray-100"
+              ? "bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 shadow-sm dark:from-teal-900/60 dark:to-cyan-900/60 dark:text-teal-200 dark:shadow-none"
+              : "text-gray-700 hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-slate-800"
           }`}
           title={sidebarCollapsed ? "Field Officers" : ""}
         >
@@ -528,10 +611,12 @@ export function WardOfficerWorkflow() {
             setActiveView("messages");
             setSidebarOpen(false);
           }}
-          className={`w-full flex items-center ${sidebarCollapsed ? "justify-center px-2" : "gap-3 px-4"} py-3 text-sm font-semibold rounded-xl transition-all ${
+          className={`w-full flex items-center ${
+            sidebarCollapsed ? "justify-center px-2" : "gap-3 px-4"
+          } py-3 text-sm font-semibold rounded-xl transition-all ${
             activeView === "messages"
-              ? "bg-gradient-to-r from-teal-50 to-cyan-50 text-teal-700 shadow-sm"
-              : "text-gray-700 hover:bg-gray-100"
+              ? "bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-700 shadow-sm dark:from-teal-900/60 dark:to-cyan-900/60 dark:text-teal-200 dark:shadow-none"
+              : "text-gray-700 hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-slate-800"
           }`}
           title={sidebarCollapsed ? "Messages" : ""}
         >
@@ -541,6 +626,102 @@ export function WardOfficerWorkflow() {
           )}
         </button>
       </nav>
+
+      {/* Bottom User Area (Profile + Theme + Sign out) */}
+      <div
+        className={`border-t border-gray-200 dark:border-slate-800 ${
+          sidebarCollapsed ? "p-2" : "p-4"
+        } space-y-2 bg-white dark:bg-slate-950`}
+      >
+        {/* Theme Toggle */}
+        {!sidebarCollapsed ? (
+          <button
+            onClick={() => toogleTheme()}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all"
+            title="Toggle theme"
+          >
+            <div className="flex items-center gap-3">
+              {resolvedTheme === "light" ? (
+                <Sun size={20} />
+              ) : (
+                <Moon size={20} />
+              )}
+              <span>Theme</span>
+            </div>
+
+            <div
+              className={`w-11 h-6 rounded-full transition-colors bg-gray-300 dark:bg-teal-600 relative ring-1 ring-black/5 dark:ring-white/10`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full bg-white dark:bg-slate-950 absolute top-0.5 transition-transform translate-x-0.5 dark:translate-x-5 shadow-sm ring-1 ring-black/10 dark:ring-white/10`}
+              ></div>
+            </div>
+          </button>
+        ) : (
+          <button
+            onClick={() => toogleTheme()}
+            className="w-full flex items-center justify-center px-2 py-3 text-sm font-medium text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-xl transition-all"
+            title="Toggle theme"
+          >
+            {resolvedTheme === "light" ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+        )}
+
+        {/* User Profile & Sign Out */}
+        <div
+          className={`rounded-xl ${sidebarCollapsed ? "p-1" : "p-3"} ${
+            sidebarCollapsed
+              ? "bg-transparent"
+              : "bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800"
+          } ring-1 ring-gray-200/80 dark:ring-slate-800`}
+        >
+          {!sidebarCollapsed ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 px-2 py-2">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 dark:from-teal-500 dark:to-cyan-500 flex items-center justify-center text-white font-bold text-sm shadow-md ring-1 ring-black/5 dark:ring-white/10">
+                  {user?.email?.charAt(0).toUpperCase() || "W"}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
+                    {user?.email?.split("@")[0] || "Ward Officer"}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 truncate">
+                    {user?.email || "officer@ward.gov"}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => console.log("Logging out...")}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 text-white rounded-lg font-semibold text-sm hover:shadow-lg hover:from-rose-600 hover:to-red-700 transition-all ring-1 ring-white/10"
+              >
+                <LogOut size={18} />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <button
+                className="w-full flex items-center justify-center p-2 rounded-lg bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-slate-900 dark:to-slate-800 ring-1 ring-gray-200/80 dark:ring-slate-800"
+                title={user?.email || "Ward Officer"}
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 dark:from-teal-500 dark:to-cyan-500 flex items-center justify-center text-white font-bold text-xs shadow-md ring-1 ring-black/5 dark:ring-white/10">
+                  {user?.email?.charAt(0).toUpperCase() || "W"}
+                </div>
+              </button>
+
+              <button
+                // onClick={logout}
+                className="w-full flex items-center justify-center p-2.5 bg-gradient-to-r from-rose-500 to-red-600 text-white rounded-lg hover:shadow-lg hover:from-rose-600 hover:to-red-700 transition-all ring-1 ring-white/10"
+                title="Sign Out"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </>
   );
 
@@ -556,7 +737,7 @@ export function WardOfficerWorkflow() {
 
       {/* Left Sidebar - Desktop */}
       <div
-        className={`hidden md:flex ${sidebarCollapsed ? "md:w-20" : "md:w-72"} bg-white border-r border-gray-200 flex-col transition-all duration-300 ease-in-out shadow-lg`}
+        className={`hidden md:flex ${sidebarCollapsed ? "md:w-28" : "md:w-80"} bg-white border-r border-gray-200 flex-col transition-all duration-300 ease-in-out shadow-lg`}
       >
         <SidebarContent />
       </div>
