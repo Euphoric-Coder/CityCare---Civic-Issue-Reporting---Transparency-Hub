@@ -29,6 +29,7 @@ import {
   Moon,
   Grid3x3,
   List,
+  Shield,
 } from "lucide-react";
 import * as localStorageService from "@/lib/localStorageService";
 import { WOIssueDetailPanel } from "./WOIssueDetailPanel";
@@ -36,6 +37,7 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export function WardOfficerWorkflow() {
   const { user } = { id: "3" };
@@ -541,7 +543,7 @@ export function WardOfficerWorkflow() {
           </div>
 
           {stats.reopened > 0 && !sidebarCollapsed && (
-            <span className="px-2 py-0.5 text-xs font-bold bg-orange-100 text-orange-700 rounded-full flex-shrink-0 dark:bg-orange-500/15 dark:text-orange-200 dark:ring-1 dark:ring-orange-400/20">
+            <span className="px-2 py-0.5 text-xs font-bold bg-orange-100 text-orange-700 rounded-full flex-shrink-0 dark:bg-orange-500/30 dark:text-orange-200 dark:ring-1 dark:ring-orange-400/20">
               {stats.reopened}
             </span>
           )}
@@ -572,7 +574,7 @@ export function WardOfficerWorkflow() {
           </div>
 
           {stats.escalated > 0 && !sidebarCollapsed && (
-            <span className="px-2 py-0.5 text-xs font-bold bg-rose-100 text-rose-700 rounded-full flex-shrink-0 dark:bg-rose-500/15 dark:text-rose-200 dark:ring-1 dark:ring-rose-400/20">
+            <span className="px-2 py-0.5 text-xs font-bold bg-rose-200 text-rose-700 rounded-full flex-shrink-0 dark:bg-rose-500/15 dark:text-rose-200 dark:ring-1 dark:ring-rose-400/20">
               {stats.escalated}
             </span>
           )}
@@ -773,14 +775,31 @@ export function WardOfficerWorkflow() {
         {/* Top Summary Cards */}
         {activeView === "overview" && (
           <div className="p-5 md:p-8 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-            <div className="mb-6">
-              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent mb-2">
-                Dashboard Overview
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base">
-                Monitor and manage all civic issues efficiently
-              </p>
+            <div className="bg-gradient-to-br from-teal-600 via-cyan-600 to-teal-700 rounded-2xl shadow-xl p-8 mb-12 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32"></div>
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full -ml-24 -mb-24"></div>
+
+              {/* subtle grid glow */}
+              <div className="absolute inset-0 opacity-20">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.18),transparent_40%)]"></div>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_30%,rgba(255,255,255,0.12),transparent_45%)]"></div>
+              </div>
+
+              <div className="relative z-10">
+                <h1 className="flex items-center gap-2 text-4xl md:text-5xl font-bold text-white mb-3">
+                  Welcome, Virat! <Shield size={50} />
+                </h1>
+                <h2 className="text-2xl md:text-3xl font-semibold text-teal-50 mb-4">
+                  Ward Officer Control Center
+                </h2>
+                <p className="text-teal-50/90 text-lg leading-relaxed">
+                  Verify new reports, assign the right Field Officers, track
+                  deadlines, and keep every case moving with updates — all from
+                  one streamlined dashboard built for accountability.
+                </p>
+              </div>
             </div>
+
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-5">
               <button
                 onClick={() => setActiveView("pending_verification")}
@@ -892,112 +911,111 @@ export function WardOfficerWorkflow() {
             className={`${selectedIssue ? "hidden lg:block lg:w-2/5" : "w-full"} flex flex-col border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900`}
           >
             {/* Search and Filters */}
-            <div className="p-4 md:p-5 border-b border-gray-200 dark:border-gray-700 space-y-4 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
-              <div className="flex items-center gap-3">
-                <div className="relative flex-1">
-                  <Search
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"
-                    size={20}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search by ID, title, or location..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 text-sm transition-all shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
-                  />
-                </div>
-                {activeView !== "field_officers" &&
-                  activeView !== "messages" && (
-                    <div className="flex items-center gap-3">
-                      {/* Grid/List Toggle */}
-                      <div className="flex bg-white dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
-                        <button
-                          onClick={() => setViewMode("grid")}
-                          className={`p-3 transition-all ${
-                            viewMode === "grid"
-                              ? "bg-gradient-to-br from-teal-500 to-cyan-600 text-white"
-                              : "text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
-                          }`}
-                          title="Grid view"
-                        >
-                          <Grid3x3 size={20} />
-                        </button>
-
-                        <button
-                          onClick={() => setViewMode("list")}
-                          className={`p-3 transition-all ${
-                            viewMode === "list"
-                              ? "bg-gradient-to-br from-teal-500 to-cyan-600 text-white"
-                              : "text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
-                          }`}
-                          title="List view"
-                        >
-                          <List size={20} />
-                        </button>
-                      </div>
-
-                      {/* Filter Button */}
+            {activeView !== "field_officers" && activeView !== "messages" && (
+              <div className="p-4 md:p-5 border-b border-gray-200 dark:border-gray-700 space-y-4 bg-gradient-to-br from-gray-50 to-white dark:from-gray-800 dark:to-gray-900">
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1">
+                    <Search
+                      className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"
+                      size={20}
+                    />
+                    <Input
+                      type="text"
+                      placeholder="Search Issues by ID, title, or location..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-12 pr-4 py-5 rounded-3xl text-sm transition-all shadow-sm border-2 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-0 focus:border-teal-500 dark:focus:ring-teal-400 dark:focus:border-teal-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-0 dark:focus-visible:ring-teal-400"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {/* Grid/List Toggle */}
+                    <div className="flex bg-white dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
                       <button
-                        onClick={() => setEnableFilter((prev) => !prev)}
-                        className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 shadow-sm transition-all ${
-                          enableFilter
-                            ? "bg-gradient-to-br from-teal-500 to-cyan-600 text-white border-transparent"
-                            : "bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800"
+                        onClick={() => setViewMode("grid")}
+                        className={`p-3 transition-all ${
+                          viewMode === "grid"
+                            ? "bg-gradient-to-br from-teal-500 to-cyan-600 text-white"
+                            : "text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
                         }`}
-                        title="Filter"
+                        title="Grid view"
                       >
-                        <Filter
-                          size={18}
-                          className={enableFilter ? "text-white" : ""}
-                        />
-                        <span className="text-sm font-semibold">Filter</span>
+                        <Grid3x3 size={20} />
                       </button>
+
+                      <button
+                        onClick={() => setViewMode("list")}
+                        className={`p-3 transition-all ${
+                          viewMode === "list"
+                            ? "bg-gradient-to-br from-teal-500 to-cyan-600 text-white"
+                            : "text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800"
+                        }`}
+                        title="List view"
+                      >
+                        <List size={20} />
+                      </button>
+                    </div>
+
+                    {/* Filter Button */}
+                    <button
+                      onClick={() => setEnableFilter((prev) => !prev)}
+                      className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 shadow-sm transition-all ${
+                        enableFilter
+                          ? "bg-gradient-to-br from-teal-500 to-cyan-600 text-white border-transparent"
+                          : "bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800"
+                      }`}
+                      title="Filter"
+                    >
+                      <Filter
+                        size={18}
+                        className={enableFilter ? "text-white" : ""}
+                      />
+                      <span className="text-sm font-semibold">Filter</span>
+                    </button>
+                  </div>
+                </div>
+
+                {enableFilter &&
+                  activeView !== "field_officers" &&
+                  activeView !== "messages" && (
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <select
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 text-sm font-medium transition-all shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      >
+                        <option value="all">All Categories</option>
+                        <option value="road">Road</option>
+                        <option value="lighting">Lighting</option>
+                        <option value="waste">Waste</option>
+                        <option value="water">Water</option>
+                        <option value="other">Other</option>
+                      </select>
+
+                      <select
+                        value={priorityFilter}
+                        onChange={(e) => setPriorityFilter(e.target.value)}
+                        className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 text-sm font-medium transition-all shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      >
+                        <option value="all">All Priority</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                      </select>
+
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 text-sm font-medium transition-all shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      >
+                        <option value="overdue">Overdue First</option>
+                        <option value="priority">High Priority</option>
+                        <option value="newest">Newest</option>
+                        <option value="oldest">Oldest</option>
+                      </select>
                     </div>
                   )}
               </div>
-
-              {enableFilter &&
-                activeView !== "field_officers" &&
-                activeView !== "messages" && (
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <select
-                      value={categoryFilter}
-                      onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 text-sm font-medium transition-all shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                    >
-                      <option value="all">All Categories</option>
-                      <option value="road">Road</option>
-                      <option value="lighting">Lighting</option>
-                      <option value="waste">Waste</option>
-                      <option value="water">Water</option>
-                      <option value="other">Other</option>
-                    </select>
-
-                    <select
-                      value={priorityFilter}
-                      onChange={(e) => setPriorityFilter(e.target.value)}
-                      className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 text-sm font-medium transition-all shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                    >
-                      <option value="all">All Priority</option>
-                      <option value="high">High</option>
-                      <option value="medium">Medium</option>
-                      <option value="low">Low</option>
-                    </select>
-
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 text-sm font-medium transition-all shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                    >
-                      <option value="overdue">Overdue First</option>
-                      <option value="priority">High Priority</option>
-                      <option value="newest">Newest</option>
-                      <option value="oldest">Oldest</option>
-                    </select>
-                  </div>
-                )}
-            </div>
+            )}
 
             {/* Section Header with Count */}
             {activeView !== "overview" && (
