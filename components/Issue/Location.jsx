@@ -199,7 +199,7 @@ export default function Location({ formData, setFormData, errors }) {
     setFormData({
       ...formData,
       searchQuery: inputRef.current.value,
-      address: fullAddress, // ✅ longest formatted address
+      address: fullAddress, // longest formatted address
       city: get("locality") || get("administrative_area_level_2") || "",
       state: get("administrative_area_level_1") || "",
       postal: get("postal_code") || "",
@@ -229,7 +229,7 @@ export default function Location({ formData, setFormData, errors }) {
       setFormData({
         ...formData,
         searchQuery: inputRef.current?.value || "",
-        address: fullAddress, // ✅ longest formatted address
+        address: fullAddress, // longest formatted address
         city: get("locality") || get("administrative_area_level_2") || "",
         state: get("administrative_area_level_1") || "",
         postal: get("postal_code") || "",

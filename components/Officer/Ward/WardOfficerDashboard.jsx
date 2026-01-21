@@ -407,7 +407,7 @@ export function WardOfficerWorkflow() {
           >
             <CheckCircle size={20} className="flex-shrink-0" />
             {!sidebarCollapsed && (
-              <span className="whitespace-nowrap">Verified - Assign FO</span>
+              <span className="whitespace-nowrap">Assign Field Officer</span>
             )}
           </div>
 
@@ -841,7 +841,7 @@ export function WardOfficerWorkflow() {
                         </span>
                       </div>
                       <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        Verified - Assign FO
+                        Assign Field Officer
                       </p>
                     </div>
                   </button>
