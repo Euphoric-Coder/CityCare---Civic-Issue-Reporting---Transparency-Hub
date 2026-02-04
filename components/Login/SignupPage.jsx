@@ -242,22 +242,6 @@ const SignUp = () => {
                 </div>
               </div>
 
-              {/* Ward No */}
-              {/* <div>
-                <label className="shad-input-label mb-2">Ward Number</label>
-                <div className="relative">
-                  <Home className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                  <input
-                    type="text"
-                    name="wardNo"
-                    value={formData.wardNo}
-                    onChange={handleInputChange}
-                    placeholder="Enter Ward Number (if known)"
-                    className="shad-input pl-10 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
-                  />
-                </div>
-              </div> */}
-
               {/* Location Detection Section */}
               <div className="mt-6">
                 <LocationPicker
