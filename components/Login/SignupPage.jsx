@@ -183,7 +183,7 @@ const SignUp = () => {
                           Select Role
                         </span>
                       </div>
-                      {["citizen", "ward_officer", "field_worker", "admin"].map(
+                      {["citizen", "unit_officer", "field_worker"].map(
                         (role) => (
                           <button
                             key={role}
