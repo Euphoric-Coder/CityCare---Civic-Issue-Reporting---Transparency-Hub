@@ -6,109 +6,106 @@ export default defineSchema({
     fullName: v.string(),
     email: v.string(),
     password: v.string(),
+
     role: v.union(
       v.literal("citizen"),
-      v.literal("ward_officer"),
+      v.literal("unit_officer"),
       v.literal("field_worker"),
-      v.literal("admin")
+      v.literal("admin"),
     ),
-    city: v.optional(v.string()),
-    state: v.optional(v.string()),
-    region: v.optional(v.string()),
-    postal: v.optional(v.string()),
-    fullAddress: v.optional(v.string()),
-    wardNo: v.optional(v.string()),
-    latitude: v.optional(v.string()),
-    longitude: v.optional(v.string()),
-    notificationEnabled: v.boolean(),
-    points: v.number(),
-    languagePreference: v.string(),
+
     createdAt: v.string(),
   })
     .index("by_email", ["email"])
-    .index("by_role", ["role"])
-    .index("by_ward_zone", ["wardNo"]),
+    .index("by_role", ["role"]),
 
-  issues: defineTable({
-    ticket: v.string(),
-    title: v.string(),
-    description: v.string(),
-    category: v.string(),
-    status: v.optional(v.string()),
-    severity: v.optional(v.string()),
-    priorityScore: v.optional(v.number()),
-    upvotes: v.optional(v.number()),
-    aiCategory: v.optional(v.string()),
-    aiConfidence: v.optional(v.number()),
-    photoUrl: v.optional(v.string()),
-    latitude: v.optional(v.number()),
-    longitude: v.optional(v.number()),
-    address: v.optional(v.string()),
-    reportedBy: v.optional(v.id("users")),
-    assignedTo: v.optional(v.id("users")),
-    isAnonymous: v.boolean(),
-    anonymousContact: v.optional(v.string()),
-    createdAt: v.number(),
-    updatedAt: v.optional(v.number()),
+  citizens: defineTable({
+    userId: v.id("users"),
+
+    fullName: v.string(),
+    email: v.string(),
+
+    city: v.string(),
+    state: v.string(),
+    region: v.string(),
+
+    postal: v.string(),
+    fullAddress: v.string(),
+
+    latitude: v.string(),
+    longitude: v.string(),
+
+    points: v.number(),
   })
-    .index("by_status", ["status"])
-    .index("by_category", ["category"]),
+    .index("by_user", ["userId"])
+    .index("by_city", ["city"]),
 
-  issue_updates: defineTable({
-    issue_id: v.id("issues"),
-    status: v.string(),
-    comment: v.optional(v.string()),
-    updated_by: v.id("users"),
-    createdAt: v.number(),
-  }),
+  unitOfficers: defineTable({
+    userId: v.id("users"),
 
-  comments: defineTable({
-    issue_id: v.id("issues"),
-    user_id: v.optional(v.id("users")),
-    comment: v.string(),
-    sentiment_score: v.optional(v.number()),
-    isAnonymous: v.boolean(),
-    createdAt: v.number(),
-  }),
+    fullName: v.string(),
+    email: v.string(),
+    phone: v.string(),
 
-  reactions: defineTable({
-    issue_id: v.id("issues"),
-    user_id: v.id("users"),
-    reaction_type: v.string(),
-    createdAt: v.number(),
-  }),
+    state: v.string(),
+    city: v.string(),
+    district: v.string(),
 
-  notifications: defineTable({
-    user_id: v.id("users"),
-    issue_id: v.optional(v.id("issues")),
-    message: v.string(),
-    read: v.boolean(),
-    createdAt: v.number(),
-  }),
+    department: v.string(),
 
-  badges: defineTable({
-    name: v.string(),
-    description: v.optional(v.string()),
-    icon: v.optional(v.string()),
-    points_required: v.number(),
-    createdAt: v.number(),
-  }),
+    totalVerifiedIssues: v.number(),
+    totalRejectedIssues: v.number(),
 
-  user_badges: defineTable({
-    user_id: v.id("users"),
-    badge_id: v.id("badges"),
-    earned_at: v.number(),
-  }),
+    avgResolutionTime: v.number(),
 
-  messages: defineTable({
-    from_user_id: v.id("users"),
-    to_user_id: v.id("users"),
-    message: v.string(),
-    createdAt: v.number(),
-    read: v.boolean(),
-    issue_ids: v.optional(v.array(v.id("issues"))),
+    rating: v.number(),
+    efficiencyScore: v.number(),
+
+    lastLogin: v.optional(v.string()),
+
+    assignedFieldOfficers: v.array(v.id("fieldOfficers")),
+
+    activeIssueIds: v.array(v.id("issues")),
+    resolvedIssueIds: v.array(v.id("issues")),
   })
-    .index("by_sender", ["from_user_id"])
-    .index("by_receiver", ["to_user_id"])
-    .index("by_issue", ["issue_ids"]),
+    .index("by_user", ["userId"])
+    .index("by_department", ["department"])
+    .index("by_city", ["city"]),
+
+  fieldOfficers: defineTable({
+    userId: v.id("users"),
+
+    fullName: v.string(),
+    email: v.string(),
+    phone: v.string(),
+
+    state: v.string(),
+    city: v.string(),
+    district: v.string(),
+
+    department: v.string(),
+
+    specialisations: v.array(v.string()),
+
+    reportingUnitOfficerId: v.optional(v.id("unitOfficers")),
+
+    currentActiveIssues: v.number(),
+    maxIssueCapacity: v.number(),
+
+    assignedIssueIds: v.array(v.id("issues")),
+    completedIssueIds: v.array(v.id("issues")),
+
+    totalResolvedIssues: v.number(),
+
+    avgResolutionTime: v.number(),
+    onTimeCompletionRate: v.number(),
+
+    rating: v.number(),
+    efficiencyScore: v.number(),
+
+    lastLogin: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_department", ["department"])
+    .index("by_unit_officer", ["reportingUnitOfficerId"]),
 });
