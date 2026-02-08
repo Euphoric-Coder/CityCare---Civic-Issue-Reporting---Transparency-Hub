@@ -109,7 +109,7 @@ export const signUp = mutation({
         rating: 0,
         efficiencyScore: 0,
 
-        lastLogin: null,
+        lastLogin: undefined,
 
         assignedFieldOfficers: [],
         activeIssueIds: [],
@@ -134,7 +134,7 @@ export const signUp = mutation({
 
         specialisations: args.specialisations || [],
 
-        reportingUnitOfficerId: null,
+        reportingUnitOfficerId: undefined,
 
         currentActiveIssues: 0,
         maxIssueCapacity: 10,
@@ -150,7 +150,7 @@ export const signUp = mutation({
         rating: 0,
         efficiencyScore: 0,
 
-        lastLogin: null,
+        lastLogin: undefined,
       });
     }
 
@@ -163,7 +163,7 @@ export const signUp = mutation({
         userId,
         fullName: args.fullName,
         email: args.email,
-        lastLogin: null,
+        lastLogin: undefined,
       });
     }
 

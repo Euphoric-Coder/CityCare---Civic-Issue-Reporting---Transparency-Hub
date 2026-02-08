@@ -623,28 +623,36 @@ const SignUp = () => {
                     className="shad-input p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
                   />
                 </div>
-                <div>
-                  <label className="shad-input-label mb-2">Postal Code</label>
-                  <input
-                    type="text"
-                    name="postal"
-                    value={formData.postal}
-                    onChange={handleInputChange}
-                    placeholder="Postal Code"
-                    className="shad-input p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
-                  />
-                </div>
-                <div>
-                  <label className="shad-input-label mb-2">Full Address</label>
-                  <textarea
-                    type="text"
-                    name="fullAddress"
-                    value={formData.fullAddress}
-                    onChange={handleInputChange}
-                    placeholder="Full Address"
-                    className="p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
-                  />
-                </div>
+                {formData.role === "citizen" && (
+                  <div>
+                    <div>
+                      <label className="shad-input-label mb-2">
+                        Postal Code
+                      </label>
+                      <input
+                        type="text"
+                        name="postal"
+                        value={formData.postal}
+                        onChange={handleInputChange}
+                        placeholder="Postal Code"
+                        className="shad-input p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
+                      />
+                    </div>
+                    <div>
+                      <label className="shad-input-label mb-2">
+                        Full Address
+                      </label>
+                      <textarea
+                        type="text"
+                        name="fullAddress"
+                        value={formData.fullAddress}
+                        onChange={handleInputChange}
+                        placeholder="Full Address"
+                        className="p-3 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Submit */}

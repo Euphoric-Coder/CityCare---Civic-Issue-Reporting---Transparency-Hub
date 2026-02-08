@@ -126,13 +126,13 @@ export default function CitizenLayout({ children }) {
             </span>
             , you don’t have permission to access the Citizen Dashboard. Please
             continue to your{" "}
-            <span className="text-emerald-600 font-semibold">{dbRole}</span>{" "}
+            <span className="text-emerald-600 font-semibold capitalize">{dbRole.replace("_", " ")}</span>{" "}
             dashboard.
           </p>
 
           {/* Button */}
           <button
-            onClick={() => router.push(`/${dbRole}`)}
+            onClick={() => router.push(`/${dbRole.replace("_", "-")}`)}
             className="flex items-center justify-center gap-2 w-full 
             bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl 
             transition-all duration-300 shadow-md hover:shadow-emerald-500/25"
