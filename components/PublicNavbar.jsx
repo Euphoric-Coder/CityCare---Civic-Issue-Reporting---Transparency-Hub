@@ -156,13 +156,13 @@ export function PublicNavbar() {
 
           {/* Desktop Authenticated Actions */}
           <div className="hidden md:flex items-center gap-4">
-            <span className="text-gray-700 font-medium">
-              Hi, {userName} ({userRole})
+            <span className="text-gray-700 font-medium capitalize">
+              Hi, {userName} ({userRole.replace("_", " ")})
             </span>
 
             <button
               className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-lg font-medium hover:shadow-lg transform hover:scale-105 transition-all"
-              onClick={() => router.push(`/${userRole}/`)}
+              onClick={() => router.push(`/${userRole.replace("_", "-")}/`)}
             >
               Dashboard
             </button>
@@ -196,7 +196,7 @@ export function PublicNavbar() {
               </p>
 
               <button
-                onClick={() => router.push(`/${userRole}/dashboard`)}
+                onClick={() => router.push(`/${userRole.replace("_", "-")}/dashboard`)}
                 className="w-full px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-lg hover:shadow-lg transform hover:scale-105 transition-all"
               >
                 Dashboard
