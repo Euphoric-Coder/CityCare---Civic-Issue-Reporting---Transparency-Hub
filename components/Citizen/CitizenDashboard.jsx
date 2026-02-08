@@ -18,12 +18,14 @@ import { IssueCard } from "@/components/IssueCard";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ModeToggle } from "../ModeToggle";
+import { signOut, useSession } from "next-auth/react";
 
 export function CitizenDashboard({
   onReportIssue,
   onNotificationsClick,
   unreadCount,
 }) {
+  const { data: session, status } = useSession();
   const user = { id: "1" };
   const profile = { full_name: "Josh Hazlewood" };
   const router = useRouter();
@@ -45,7 +47,7 @@ export function CitizenDashboard({
     },
     [
       // user
-    ]
+    ],
   );
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export function CitizenDashboard({
         .filter((issue) => issue.reportedBy === user.id)
         .sort(
           (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         );
       setIssues(data);
     } catch (error) {
@@ -80,7 +82,7 @@ export function CitizenDashboard({
         (issue) =>
           issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           issue.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          issue.ticket.toLowerCase().includes(searchTerm.toLowerCase())
+          issue.ticket.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
@@ -175,7 +177,7 @@ export function CitizenDashboard({
                   <User size={16} className="text-white" />
                 </div>
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden md:block">
-                  {profile.full_name}
+                  {session?.user?.name || "Profile"}
                 </span>
               </button>
 
@@ -183,14 +185,16 @@ export function CitizenDashboard({
                 <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
                   <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {profile.full_name}
+                      {session?.user?.name || "User Name"}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {profile.email}
+                      {session?.user?.email}
                     </p>
                   </div>
                   <button
-                    onClick={() => console.log("Sign Out")}
+                    onClick={() =>
+                      signOut({ redirect: true, callbackUrl: "/sign-in" })
+                    }
                     className="w-full flex items-center px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
                   >
                     <LogOut size={16} className="mr-3" />
@@ -212,7 +216,7 @@ export function CitizenDashboard({
 
           <div className="relative z-10">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
-              Hello, {profile?.full_name?.split(" ")[0] || "there"}! 👋
+              Hello, {session?.user?.name?.split(" ")[0] || "there"}! 👋
             </h1>
             <h2 className="text-2xl md:text-3xl font-semibold text-green-50 mb-4">
               Welcome back to your CityCare Dashboard
