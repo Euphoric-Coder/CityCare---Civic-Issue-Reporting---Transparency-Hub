@@ -1,4 +1,4 @@
-import { WardOfficerWorkflow } from "@/components/Officer/Ward/WardOfficerDashboard";
+import { WardOfficerWorkflow } from "@/components/Officer/Unit/UnitOfficerDashboard";
 import React from "react";
 
 const page = () => {

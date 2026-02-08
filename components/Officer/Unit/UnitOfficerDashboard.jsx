@@ -32,14 +32,14 @@ import {
   Shield,
 } from "lucide-react";
 import * as localStorageService from "@/lib/localStorageService";
-import { WOIssueDetailPanel } from "./WOIssueDetailPanel";
-import { ModeToggle } from "@/components/ModeToggle";
+import { WOIssueDetailPanel } from "./UOIssueDetailPanel";
 import { useTheme } from "next-themes";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { signOut, useSession } from "next-auth/react";
 
 export function WardOfficerWorkflow() {
+  const { data: session, status } = useSession();
   const { user } = { id: "3" };
   const { resolvedTheme, setTheme } = useTheme();
   const [issues, setIssues] = useState([]);
@@ -74,7 +74,7 @@ export function WardOfficerWorkflow() {
     setIsLoading(true);
     try {
       const issuesData = localStorageService.getWardOfficerIssuesFromStorage(
-        user?.id
+        user?.id,
       );
       const officersData = localStorageService.getFieldOfficersFromStorage();
       setIssues(issuesData);
@@ -93,26 +93,26 @@ export function WardOfficerWorkflow() {
   const stats = {
     pending_verification: issues.filter(
       (i) =>
-        i.internal_status === "pending_verification" && i.status !== "rejected"
+        i.internal_status === "pending_verification" && i.status !== "rejected",
     ).length,
     verified: issues.filter(
-      (i) => i.internal_status === "verified" && !i.assigned_to
+      (i) => i.internal_status === "verified" && !i.assigned_to,
     ).length,
     in_progress: issues.filter(
       (i) =>
         i.status === "in_progress" &&
         i.internal_status === "assigned" &&
         i.internal_status !== "fo_marked_resolved" &&
-        i.internal_status !== "reopened"
+        i.internal_status !== "reopened",
     ).length,
     fo_verified: issues.filter(
-      (i) => i.internal_status === "fo_marked_resolved"
+      (i) => i.internal_status === "fo_marked_resolved",
     ).length,
     reopened: issues.filter((i) => i.internal_status === "reopened").length,
     escalated: issues.filter((i) => i.internal_status === "escalated_to_admin")
       .length,
     overdue: issues.filter(
-      (i) => i.is_overdue && i.status !== "resolved" && i.status !== "rejected"
+      (i) => i.is_overdue && i.status !== "resolved" && i.status !== "rejected",
     ).length,
   };
 
@@ -123,11 +123,11 @@ export function WardOfficerWorkflow() {
       filtered = filtered.filter(
         (i) =>
           i.internal_status === "pending_verification" &&
-          i.status !== "rejected"
+          i.status !== "rejected",
       );
     } else if (activeView === "verified") {
       filtered = filtered.filter(
-        (i) => i.internal_status === "verified" && !i.assigned_to
+        (i) => i.internal_status === "verified" && !i.assigned_to,
       );
     } else if (activeView === "in_progress") {
       filtered = filtered.filter(
@@ -135,11 +135,11 @@ export function WardOfficerWorkflow() {
           i.status === "in_progress" &&
           i.assigned_to &&
           i.internal_status !== "fo_marked_resolved" &&
-          i.internal_status !== "reopened"
+          i.internal_status !== "reopened",
       );
     } else if (activeView === "fo_verified") {
       filtered = filtered.filter(
-        (i) => i.internal_status === "fo_marked_resolved"
+        (i) => i.internal_status === "fo_marked_resolved",
       );
     } else if (activeView === "resolved") {
       filtered = filtered.filter((i) => i.status === "resolved");
@@ -149,7 +149,7 @@ export function WardOfficerWorkflow() {
       filtered = filtered.filter((i) => i.internal_status === "reopened");
     } else if (activeView === "escalated") {
       filtered = filtered.filter(
-        (i) => i.internal_status === "escalated_to_admin"
+        (i) => i.internal_status === "escalated_to_admin",
       );
     }
 
@@ -158,7 +158,7 @@ export function WardOfficerWorkflow() {
         (i) =>
           i.ticket_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
           i.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          i.address?.toLowerCase().includes(searchTerm.toLowerCase())
+          i.address?.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
@@ -173,12 +173,12 @@ export function WardOfficerWorkflow() {
     if (sortBy === "newest") {
       filtered.sort(
         (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
     } else if (sortBy === "oldest") {
       filtered.sort(
         (a, b) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       );
     } else if (sortBy === "overdue") {
       filtered.sort((a, b) => {
@@ -291,7 +291,10 @@ export function WardOfficerWorkflow() {
                   CityCare
                 </h2>
                 <p className="text-xs text-teal-100 mt-0.5">
-                  Ward Officer • Management Portal
+                  Unit Officer • Management Portal
+                </p>
+                <p className="text-sm text-teal-100 mt-0.5 font-bold">
+                  Dept:- Sanitary
                 </p>
               </div>
             </div>
@@ -686,21 +689,23 @@ export function WardOfficerWorkflow() {
             <div className="space-y-2">
               <div className="flex items-center gap-3 px-2 py-2">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 dark:from-teal-500 dark:to-cyan-500 flex items-center justify-center text-white font-bold text-sm shadow-md ring-1 ring-black/5 dark:ring-white/10">
-                  {user?.email?.charAt(0).toUpperCase() || "W"}
+                  {session?.user?.name?.charAt(0).toUpperCase() || "U"}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
-                    {user?.email?.split("@")[0] || "Ward Officer"}
+                    {session?.user?.name || "Unit Officer"}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-slate-400 truncate">
-                    {user?.email || "officer@ward.gov"}
+                    {session?.user?.email || "officer@unit.gov"}
                   </p>
                 </div>
               </div>
 
               <button
-                onClick={() => console.log("Logging out...")}
+                onClick={() =>
+                  signOut({ redirect: true, callbackUrl: "/sign-in" })
+                }
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 text-white rounded-lg font-semibold text-sm hover:shadow-lg hover:from-rose-600 hover:to-red-700 transition-all ring-1 ring-white/10"
               >
                 <LogOut size={18} />
@@ -720,6 +725,9 @@ export function WardOfficerWorkflow() {
 
               <button
                 // onClick={logout}
+                onClick={() =>
+                  signOut({ redirect: true, callbackUrl: "/sign-in" })
+                }
                 className="w-full flex items-center justify-center p-2.5 bg-gradient-to-r from-rose-500 to-red-600 text-white rounded-lg hover:shadow-lg hover:from-rose-600 hover:to-red-700 transition-all ring-1 ring-white/10"
                 title="Sign Out"
               >
@@ -792,10 +800,11 @@ export function WardOfficerWorkflow() {
 
                   <div className="relative z-10">
                     <h1 className="flex items-center gap-2 text-4xl md:text-5xl font-bold text-white mb-3">
-                      Welcome, Virat! <Shield size={50} />
+                      Welcome, {session?.user?.name || "Unit Officer"}!{" "}
+                      <Shield size={50} />
                     </h1>
                     <h2 className="text-2xl md:text-3xl font-semibold text-teal-50 mb-4">
-                      Ward Officer Control Center
+                      Unit Officer Control Center
                     </h2>
                     <p className="text-teal-50/90 text-lg leading-relaxed">
                       Verify new reports, assign the right Field Officers, track
@@ -1247,7 +1256,7 @@ export function WardOfficerWorkflow() {
                               />
                               <span className="font-medium">
                                 {new Date(
-                                  issue.created_at
+                                  issue.created_at,
                                 ).toLocaleDateString()}
                               </span>
                             </div>
@@ -1331,7 +1340,7 @@ export function WardOfficerWorkflow() {
                               />
                               <span className="font-medium">
                                 {new Date(
-                                  issue.created_at
+                                  issue.created_at,
                                 ).toLocaleDateString()}
                               </span>
                             </div>
@@ -1416,8 +1425,8 @@ export function WardOfficerWorkflow() {
               onUpdate={(updatedIssue) => {
                 setIssues(
                   issues.map((i) =>
-                    i.id === updatedIssue.id ? updatedIssue : i
-                  )
+                    i.id === updatedIssue.id ? updatedIssue : i,
+                  ),
                 );
                 setSelectedIssue(updatedIssue);
                 loadData();
