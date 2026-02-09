@@ -15,7 +15,6 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const SignInPage = () => {
   const { data: session, status } = useSession();
-  console.log("Session data:", session);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showAlert, setShowAlert] = useState(false);
@@ -175,7 +174,6 @@ const SignInPage = () => {
                             type="button"
                             onClick={() => {
                               setFormData((prev) => ({ ...prev, role }));
-                              console.log("Role selected:", role);
                               setShowRoleDropdown(false);
                             }}
                             className="w-full p-4 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-dark-500 transition-colors text-left"

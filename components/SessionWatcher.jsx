@@ -8,8 +8,6 @@ export default function SessionWatcher() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  console.log("SessionWatcher - session data:", session, "status:", status);
-
   // Step 1: Save expiry time locally
   useEffect(() => {
     if (session?.realExpiry) {
@@ -22,11 +20,6 @@ export default function SessionWatcher() {
     const expiry = localStorage.getItem("realExpiry");
     if (expiry) {
       const expiryTime = new Date(expiry).getTime();
-      console.log("Checking session expiry on load:", {
-        expiry,
-        expiryTime,
-        now: Date.now(),
-      });
       if (Date.now() > expiryTime) {
         localStorage.removeItem("realExpiry");
         localStorage.setItem("sessionExpired", "true");
