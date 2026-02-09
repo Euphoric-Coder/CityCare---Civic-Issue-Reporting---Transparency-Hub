@@ -36,6 +36,18 @@ const SignInPage = () => {
     }
   }, [searchParams]);
 
+  // Auto-select role from URL if present
+  useEffect(() => {
+    const roleFromUrl = searchParams.get("role");
+
+    if (roleFromUrl) {
+      setFormData((prev) => ({
+        ...prev,
+        role: roleFromUrl,
+      }));
+    }
+  }, [searchParams]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -60,6 +72,8 @@ const SignInPage = () => {
       }
 
       toast.success("Login successful!");
+
+      localStorage.setItem("lastRole", formData.role);
 
       // Just redirect → layout will validate role
       router.push(`/${formData.role.replace("_", "-")}/`);

@@ -8,6 +8,8 @@ export default function SessionWatcher() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  console.log("SessionWatcher - session data:", session, "status:", status);
+
   // Step 1: Save expiry time locally
   useEffect(() => {
     if (session?.realExpiry) {
@@ -20,10 +22,18 @@ export default function SessionWatcher() {
     const expiry = localStorage.getItem("realExpiry");
     if (expiry) {
       const expiryTime = new Date(expiry).getTime();
+      console.log("Checking session expiry on load:", {
+        expiry,
+        expiryTime,
+        now: Date.now(),
+      });
       if (Date.now() > expiryTime) {
         localStorage.removeItem("realExpiry");
         localStorage.setItem("sessionExpired", "true");
-        router.replace("/sign-in?expired=true");
+        const role =
+          session?.user?.role || localStorage.getItem("lastRole") || "citizen";
+
+        router.replace(`/sign-in?expired=true&role=${role}`);
       }
     }
   }, []);
@@ -57,7 +67,10 @@ export default function SessionWatcher() {
       const expired = localStorage.getItem("sessionExpired");
       if (expired === "true") {
         localStorage.removeItem("sessionExpired");
-        router.replace("/sign-in?expired=true");
+        const role =
+          session?.user?.role || localStorage.getItem("lastRole") || "citizen";
+
+        router.replace(`/sign-in?expired=true&role=${role}`);
       }
     }
   }, [status]);
