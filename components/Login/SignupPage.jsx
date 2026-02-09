@@ -227,7 +227,7 @@ const SignUp = () => {
   };
 
   return (
-    <RedirectPage>
+    <RedirectPage redirectTo={`/${formData.role.replace("_", "-")}/`}>
       <div className="min-h-screen flex bg-white dark:bg-dark-300 transition-colors">
         {/* Left Section */}
         <div className="flex-1 flex items-center justify-center px-8 py-12">

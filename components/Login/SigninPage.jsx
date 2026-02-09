@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Mail, Lock, ChevronDown, Check, AlertTriangle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn, signOut } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
@@ -14,6 +14,8 @@ import { ModeToggle } from "../ModeToggle";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const SignInPage = () => {
+  const { data: session, status } = useSession();
+  console.log("Session data:", session);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showAlert, setShowAlert] = useState(false);
@@ -45,7 +47,6 @@ const SignInPage = () => {
     setLoading(true);
 
     try {
-      // Sign in with NextAuth
       const result = await signIn("credentials", {
         redirect: false,
         email: formData.email,
@@ -55,46 +56,24 @@ const SignInPage = () => {
       if (result?.error) {
         toast.error("Invalid email or password");
         setError("Invalid email or password");
-        setLoading(false);
         return;
       }
 
-      // Fetch user record from Convex
-      const user = await fetchQuery(api.users.getUserByEmail, {
-        email: formData.email,
-      });
+      toast.success("Login successful!");
 
-      if (!user) {
-        toast.error("User not found in database.");
-        await signOut({ redirect: false });
-        setError("User not found in database.");
-        setLoading(false);
-        return;
-      }
-
-      // Check role match
-      if (user.role !== formData.role) {
-        toast.error("Role mismatch. Please select the correct role.");
-        setError("Role mismatch. Please select the correct role.");
-        await signOut({ redirect: false });
-        setLoading(false);
-        return;
-      }
-
-      // Success → redirect
-      toast.success(`Welcome back, ${user.fullName}!`);
-      router.push(`/${formData.role}/`);
+      // Just redirect → layout will validate role
+      router.push(`/${formData.role.replace("_", "-")}/`);
     } catch (err) {
       console.error("Error during sign-in:", err);
-      toast.error("Something went wrong, please try again.");
-      setError("Something went wrong, please try again.");
+      toast.error("Something went wrong. Please try again.");
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <RedirectPage redirectTo={`/${formData.role}/`}>
+    <RedirectPage redirectTo={`/${formData.role.replace("_", "-")}/`}>
       <div className="min-h-screen flex bg-white dark:bg-dark-300 transition-colors">
         {/* Left Side - Form */}
         <div className="flex-1 flex items-center justify-center px-8 py-12">
@@ -173,7 +152,7 @@ const SignInPage = () => {
                       <div className="max-h-60 overflow-y-auto">
                         {[
                           "citizen",
-                          "ward_officer",
+                          "unit_officer",
                           "field_worker",
                           "admin",
                         ].map((role) => (
@@ -182,6 +161,7 @@ const SignInPage = () => {
                             type="button"
                             onClick={() => {
                               setFormData((prev) => ({ ...prev, role }));
+                              console.log("Role selected:", role);
                               setShowRoleDropdown(false);
                             }}
                             className="w-full p-4 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-dark-500 transition-colors text-left"
