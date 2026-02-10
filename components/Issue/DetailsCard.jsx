@@ -23,13 +23,6 @@ import {
 import { useRef, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 import MediaPreview from "./MediaPreview";
 import ImageCarousel from "./ImageCarousel";
 import { toast } from "sonner";
@@ -166,6 +159,7 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
   const [uploading, setUploading] = useState(false);
   const [subcategorySearch, setSpecialisationSearch] = useState("");
   const [showSpecDropdown, setShowSpecDropdown] = useState(false);
+  const [tagInput, setTagInput] = useState("");
 
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -293,7 +287,6 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
     (spec) => !formData.subcategory.includes(spec),
   );
 
-
   // Add specialisation
   const handleSpecSelect = (spec) => {
     if (!formData.subcategory.includes(spec)) {
@@ -320,6 +313,38 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
     if (e.key === "Enter" && subcategorySearch.trim()) {
       e.preventDefault();
       handleSpecSelect(subcategorySearch.trim());
+    }
+  };
+
+  // Add Tag
+  const handleAddTag = () => {
+    const value = tagInput.trim().toLowerCase();
+
+    if (!value) return;
+
+    if (!formData.tags.includes(value)) {
+      setFormData((prev) => ({
+        ...prev,
+        tags: [...prev.tags, value],
+      }));
+    }
+
+    setTagInput("");
+  };
+
+  // Remove Tag
+  const handleRemoveTag = (tag) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((t) => t !== tag),
+    }));
+  };
+
+  // Enter Support
+  const handleTagKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddTag();
     }
   };
 
@@ -558,9 +583,9 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
           <div>
             <div className="space-y-3">
               {/* Selected Tags */}
-              {formData.subcategory.length > 0 && (
+              {formData.subcategory?.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {formData.subcategory.map((spec, index) => (
+                  {formData.subcategory?.map((spec, index) => (
                     <div
                       key={index}
                       className="flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 rounded-full px-3 py-1"
@@ -615,7 +640,8 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
                               <Plus className="w-4 h-4 text-green-500" />
 
                               <span className="text-14-regular">
-                                Add "{subcategorySearch}" (Click to add or Press Enter / Return to add)
+                                Add "{subcategorySearch}" (Click to add or Press
+                                Enter / Return to add)
                               </span>
                             </button>
                           )}
@@ -635,6 +661,52 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
                     </div>
                   )}
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tags */}
+        <div className="mt-6">
+          <label className="shad-input-label block mb-2">Issue Tags</label>
+
+          <div className="space-y-3">
+            {/* Selected Tags */}
+            {formData.tags?.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {formData.tags?.map((tag, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 bg-cyan-500/20 border border-cyan-500/30 rounded-full px-3 py-1"
+                  >
+                    <span className="text-12-medium text-cyan-400">#{tag}</span>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTag(tag)}
+                      className="text-cyan-400 hover:text-cyan-300 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Input */}
+            <div className="relative">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                placeholder="Type a tag and press Enter..."
+                className="shad-input w-full p-3 rounded-2xl"
+              />
+
+              {/* Helper */}
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Press Enter to add tag • No spaces • Example: pothole, urgent
+              </p>
             </div>
           </div>
         </div>

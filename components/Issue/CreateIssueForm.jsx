@@ -100,8 +100,8 @@ const IssueForm = () => {
 
     if (step === 3) {
       if (!formData.isAnonymous) {
-        if (!formData.email.trim()) {
-          newErrors.email = "Email is required";
+        if (!formData.additionalEmail.trim()) {
+          newErrors.additionalEmail = "Email is required";
         }
       }
     }

@@ -12,6 +12,7 @@ import {
   ClipboardList,
   Map,
 } from "lucide-react";
+import MediaPreview from "./MediaPreview";
 
 const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
   const getCategoryLabel = (value) => {
@@ -19,10 +20,7 @@ const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
       case "road":
         return (
           <span className="inline-flex items-center gap-1">
-            <Map
-              className="text-emerald-600 dark:text-emerald-400"
-              size={18}
-            />
+            <Map className="text-emerald-600 dark:text-emerald-400" size={18} />
             Road & Infrastructure
           </span>
         );
@@ -125,26 +123,61 @@ const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
               </div>
               <span
                 className={`inline-block px-3 py-1 rounded-lg border-2 font-semibold text-sm ${getSeverityColor(
-                  formData.severity
+                  formData.priority,
                 )}`}
               >
-                {formData.severity.charAt(0).toUpperCase() +
-                  formData.severity.slice(1)}
+                {formData.priority.charAt(0).toUpperCase() +
+                  formData.priority.slice(1)}
               </span>
             </div>
           </div>
 
-          {/* Photo Evidence */}
-          {formData.photoUrl && (
-            <div>
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                Photo Evidence
+          {/* Media Evidence */}
+          {(formData.photos?.length > 0 || formData.videos?.length > 0) && (
+            <div className="space-y-5">
+              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Media Evidence
               </h4>
-              <img
-                src={formData.photoUrl}
-                alt="Issue"
-                className="w-full h-64 object-cover rounded-xl border-2 border-gray-200 dark:border-gray-700"
-              />
+
+              {/* Photos */}
+              {formData.photos?.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                    Photos ({formData.photos.length})
+                  </p>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {formData.photos.map((id, index) => (
+                      <div
+                        key={id}
+                        className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm"
+                      >
+                        <MediaPreview storageId={id} isVideo={false} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Videos */}
+              {formData.videos?.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                    Videos ({formData.videos.length})
+                  </p>
+
+                  <div className="space-y-3">
+                    {formData.videos.map((id) => (
+                      <div
+                        key={id}
+                        className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm"
+                      >
+                        <MediaPreview storageId={id} isVideo />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
