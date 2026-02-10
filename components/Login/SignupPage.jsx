@@ -366,7 +366,7 @@ const SignUp = () => {
 
               {(formData.role === "field_worker" ||
                 formData.role === "unit_officer") && (
-                <div>
+                <div className="space-y-6">
                   {/* Phone */}
                   <div>
                     <label className="shad-input-label mb-2">
@@ -426,8 +426,8 @@ const SignUp = () => {
 
                           {[
                             "sanitation",
-                            "roads_infrastructure",
-                            "water_supply",
+                            "road",
+                            "water",
                             "electricity",
                             "drainage",
                             "solid_waste",
@@ -462,99 +462,101 @@ const SignUp = () => {
               )}
 
               {/* Specialisations */}
-              {formData.role === "field_worker" && (
-                <div className="mt-6">
-                  <label className="shad-input-label block mb-2">
-                    Specialisations
-                  </label>
+              {formData.role === "field_worker" &&
+                formData.department.length > 0 && (
+                  <div className="mt-6">
+                    <label className="shad-input-label block mb-2">
+                      Specialisations
+                    </label>
 
-                  <div className="space-y-3">
-                    {/* Selected Tags */}
-                    {formData.specialisations.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {formData.specialisations.map((spec, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 rounded-full px-3 py-1"
-                          >
-                            <span className="text-12-medium text-emerald-400">
-                              {spec}
-                            </span>
-
-                            <button
-                              type="button"
-                              onClick={() => removeSpec(spec)}
-                              className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                    <div className="space-y-3">
+                      {/* Selected Tags */}
+                      {formData.specialisations.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {formData.specialisations.map((spec, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 rounded-full px-3 py-1"
                             >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                              <span className="text-12-medium text-emerald-400">
+                                {spec}
+                              </span>
 
-                    {/* Input */}
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={specialisationSearch}
-                        onChange={(e) =>
-                          setSpecialisationSearch(e.target.value)
-                        }
-                        onKeyPress={handleSpecKeyPress}
-                        placeholder="Type to search or add specialisation..."
-                        className="shad-input w-full p-3 rounded-2xl"
-                        onFocus={() => setShowSpecDropdown(true)}
-                        onBlur={() =>
-                          setTimeout(() => setShowSpecDropdown(false), 150)
-                        }
-                      />
+                              <button
+                                type="button"
+                                onClick={() => removeSpec(spec)}
+                                className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
-                      {/* Dropdown */}
-                      {showSpecDropdown &&
-                        (specialisationSearch || filteredSpecs.length > 0) && (
-                          <div className="absolute top-full left-0 right-0 mt-2 bg-slate-50 dark:bg-dark-400 border border-dark-500 rounded-lg shadow-lg z-10 overflow-hidden">
-                            <div className="max-h-48 overflow-y-auto">
-                              {/* Add Custom */}
-                              {specialisationSearch &&
-                                !filteredSpecs.includes(
-                                  specialisationSearch,
-                                ) && (
+                      {/* Input */}
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={specialisationSearch}
+                          onChange={(e) =>
+                            setSpecialisationSearch(e.target.value)
+                          }
+                          onKeyPress={handleSpecKeyPress}
+                          placeholder="Type to search or add specialisation..."
+                          className="shad-input w-full p-3 rounded-2xl"
+                          onFocus={() => setShowSpecDropdown(true)}
+                          onBlur={() =>
+                            setTimeout(() => setShowSpecDropdown(false), 150)
+                          }
+                        />
+
+                        {/* Dropdown */}
+                        {showSpecDropdown &&
+                          (specialisationSearch ||
+                            filteredSpecs.length > 0) && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-slate-50 dark:bg-dark-400 border border-dark-500 rounded-lg shadow-lg z-10 overflow-hidden">
+                              <div className="max-h-48 overflow-y-auto">
+                                {/* Add Custom */}
+                                {specialisationSearch &&
+                                  !filteredSpecs.includes(
+                                    specialisationSearch,
+                                  ) && (
+                                    <button
+                                      type="button"
+                                      onMouseDown={() =>
+                                        handleSpecSelect(specialisationSearch)
+                                      }
+                                      className="w-full p-3 flex items-center gap-3 hover:bg-dark-500 transition-colors text-left border-b border-dark-500"
+                                    >
+                                      <Plus className="w-4 h-4 text-green-500" />
+
+                                      <span className="text-14-regular">
+                                        Add "{specialisationSearch}"
+                                      </span>
+                                    </button>
+                                  )}
+
+                                {/* Suggestions */}
+                                {filteredSpecs.map((spec) => (
                                   <button
+                                    key={spec}
                                     type="button"
-                                    onMouseDown={() =>
-                                      handleSpecSelect(specialisationSearch)
-                                    }
-                                    className="w-full p-3 flex items-center gap-3 hover:bg-dark-500 transition-colors text-left border-b border-dark-500"
+                                    onMouseDown={() => handleSpecSelect(spec)}
+                                    className="w-full p-3 flex items-center gap-3 hover:bg-slate-200 dark:hover:bg-dark-500 transition-colors text-left"
                                   >
-                                    <Plus className="w-4 h-4 text-green-500" />
-
                                     <span className="text-14-regular">
-                                      Add "{specialisationSearch}"
+                                      {spec}
                                     </span>
                                   </button>
-                                )}
-
-                              {/* Suggestions */}
-                              {filteredSpecs.map((spec) => (
-                                <button
-                                  key={spec}
-                                  type="button"
-                                  onMouseDown={() => handleSpecSelect(spec)}
-                                  className="w-full p-3 flex items-center gap-3 hover:bg-slate-200 dark:hover:bg-dark-500 transition-colors text-left"
-                                >
-                                  <span className="text-14-regular">
-                                    {spec}
-                                  </span>
-                                </button>
-                              ))}
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Location Detection Section */}
               <div className="mt-6">

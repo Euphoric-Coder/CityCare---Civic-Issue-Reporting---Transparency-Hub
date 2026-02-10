@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { MapPin, Navigation, Link2, AlertCircle } from "lucide-react";
 import { useTheme } from "next-themes";
+import { set } from "date-fns";
 
-export default function Location({ formData, setFormData, errors }) {
+export default function Location({ formData, setFormData, errors, setErrors }) {
   const mapRef = useRef(null);
   const inputRef = useRef(null);
   const markerRef = useRef(null);
@@ -137,7 +138,7 @@ export default function Location({ formData, setFormData, errors }) {
       {
         fields: ["address_components", "geometry", "formatted_address"],
         componentRestrictions: { country: "in" },
-      }
+      },
     );
 
     autocomplete.addListener("place_changed", () => {
@@ -203,17 +204,25 @@ export default function Location({ formData, setFormData, errors }) {
       city: get("locality") || get("administrative_area_level_2") || "",
       state: get("administrative_area_level_1") || "",
       postal: get("postal_code") || "",
-      mapUrl: `https://www.google.com/maps?q=${lat},${lng}`,
+      googleMapUrl: `https://www.google.com/maps?q=${lat},${lng}`,
       latitude: lat,
       longitude: lng,
     });
+
+    setErrors((prev) => ({
+      ...prev,
+      address: "",
+      city: "",
+      state: "",
+      postal: "",
+    }));
   };
 
   // --- Reverse Geocoding for manual drag or current location ---
   const reverseGeocode = async (lat, lng) => {
     try {
       const res = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`,
       );
       const data = await res.json();
       const result = data.results?.[0];
@@ -233,10 +242,18 @@ export default function Location({ formData, setFormData, errors }) {
         city: get("locality") || get("administrative_area_level_2") || "",
         state: get("administrative_area_level_1") || "",
         postal: get("postal_code") || "",
-        mapUrl: `https://www.google.com/maps?q=${lat},${lng}`,
+        googleMapUrl: `https://www.google.com/maps?q=${lat},${lng}`,
         latitude: lat,
         longitude: lng,
       });
+
+      setErrors((prev) => ({
+        ...prev,
+        address: "",
+        city: "",
+        state: "",
+        postal: "",
+      }));
     } catch (err) {
       console.error("Reverse geocode failed:", err);
     }
@@ -250,8 +267,8 @@ export default function Location({ formData, setFormData, errors }) {
     try {
       const res = await fetch(
         `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
-          query
-        )}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
+          query,
+        )}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`,
       );
       const data = await res.json();
       const result = data.results?.[0];
@@ -278,10 +295,18 @@ export default function Location({ formData, setFormData, errors }) {
         city: get("locality") || get("administrative_area_level_2") || "",
         state: get("administrative_area_level_1") || "",
         postal: get("postal_code") || "",
-        mapUrl: `https://www.google.com/maps?q=${lat},${lng}`,
+        googleMapUrl: `https://www.google.com/maps?q=${lat},${lng}`,
         latitude: lat,
         longitude: lng,
       });
+
+      setErrors((prev) => ({
+        ...prev,
+        address: "",
+        city: "",
+        state: "",
+        postal: "",
+      }));
     } catch (err) {
       console.error("Manual geocode failed:", err);
     }
@@ -297,6 +322,13 @@ export default function Location({ formData, setFormData, errors }) {
       map.setZoom(15);
       markerRef.current.setPosition({ lat: latitude, lng: longitude });
       reverseGeocode(latitude, longitude);
+      setErrors((prev) => ({
+        ...prev,
+        address: "",
+        city: "",
+        state: "",
+        postal: "",
+      }));
     });
   };
 
@@ -325,10 +357,24 @@ export default function Location({ formData, setFormData, errors }) {
           type="text"
           placeholder="Type address..."
           value={formData.searchQuery || ""}
-          onChange={(e) =>
-            setFormData({ ...formData, searchQuery: e.target.value })
-          }
-          onKeyDown={(e) => e.key === "Enter" && handleManualSearch()}
+          onChange={(e) => {
+            setFormData({ ...formData, searchQuery: e.target.value });
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault(); // optional (prevents form submit)
+
+              handleManualSearch();
+
+              setErrors((prev) => ({
+                ...prev,
+                address: "",
+                city: "",
+                state: "",
+                postal: "",
+              }));
+            }
+          }}
           className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-800 outline-none transition-all duration-300"
         />
       </div>
@@ -348,9 +394,10 @@ export default function Location({ formData, setFormData, errors }) {
             </label>
             <input
               value={formData[key] || ""}
-              onChange={(e) =>
-                setFormData({ ...formData, [key]: e.target.value })
-              }
+              onChange={(e) => {
+                setFormData({ ...formData, [key]: e.target.value });
+                setErrors({ ...errors, [key]: "" });
+              }}
               placeholder={`Type ${key === "postal" ? "postal code" : key}...`}
               className={`w-full px-4 py-3 rounded-xl border-2 
               ${
@@ -378,10 +425,10 @@ export default function Location({ formData, setFormData, errors }) {
             />
           </label>
           <input
-            value={formData.mapUrl || ""}
+            value={formData.googleMapUrl || ""}
             placeholder="Paste Google Maps URL..."
             onChange={(e) =>
-              setFormData({ ...formData, mapUrl: e.target.value })
+              setFormData({ ...formData, googleMapUrl: e.target.value })
             }
             className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 dark:focus:ring-emerald-800 outline-none transition-all duration-300"
           />

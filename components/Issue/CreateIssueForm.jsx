@@ -19,8 +19,10 @@ const IssueForm = () => {
     title: "",
     description: "",
     category: "",
+    subcategory: [],
     otherCategoryName: "",
-    severity: "",
+    priority: "",
+    tags: [],
     photos: [],
     videos: [],
 
@@ -32,11 +34,11 @@ const IssueForm = () => {
     postal: "", // Postal code
     latitude: 20.5937, // Default center (India)
     longitude: 78.9629,
-    mapUrl: "", // Google Maps URL for location
+    googleMapUrl: "", // Google Maps URL for location
 
     // Reporter details
     isAnonymous: false,
-    email: "",
+    additionalEmail: "",
 
     createdAt: Date.now(),
   });
@@ -64,16 +66,12 @@ const IssueForm = () => {
         newErrors.category = "Please select a category";
       }
 
-      if (!formData.severity) {
-        newErrors.severity = "Please select a severity level";
+      if (!formData.priority) {
+        newErrors.priority = "Please select a priority level";
       }
 
       if (formData.photos.length === 0) {
         newErrors.photos = "At least one photo is required";
-      }
-
-      if (formData.videos.length === 0) {
-        newErrors.videos = "At least one video is required";
       }
 
       if (Object.keys(newErrors).length > 0) {
@@ -141,7 +139,7 @@ const IssueForm = () => {
       title: "",
       description: "",
       category: "",
-      severity: "",
+      priority: "",
       photoUrl: null,
 
       // --- Location details ---
@@ -201,6 +199,7 @@ const IssueForm = () => {
               formData={formData}
               setFormData={setFormData}
               errors={errors}
+              setErrors={setErrors}
             />
           )}
 
@@ -224,7 +223,10 @@ const IssueForm = () => {
           )}
 
           <button
-            onClick={handleNext}
+            onClick={(e) => {
+              e.preventDefault();
+              handleNext();
+            }}
             className="ml-auto px-8 py-3 rounded-xl bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 flex items-center gap-2"
           >
             {currentStep === 3 ? (

@@ -11,6 +11,14 @@ import {
   Check,
   Droplets,
   Video,
+  Trash,
+  Recycle,
+  MapPin,
+  Zap,
+  Package,
+  HeartPulse,
+  MoreHorizontal,
+  Plus,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { useMutation } from "convex/react";
@@ -30,34 +38,105 @@ const categories = [
   {
     value: "road",
     label: "Road & Infrastructure",
-    icon: Map,
+    icon: MapPin,
     color: "text-blue-600 dark:text-blue-400",
   },
   {
-    value: "lighting",
-    label: "Street Lighting",
-    icon: Lightbulb,
+    value: "electricity",
+    label: "Electricity & Lighting",
+    icon: Zap,
     color: "text-yellow-600 dark:text-yellow-400",
   },
   {
     value: "water",
-    label: "Water & Drainage",
+    label: "Water Supply",
     icon: Droplets,
     color: "text-cyan-600 dark:text-cyan-400",
   },
   {
-    value: "waste",
-    label: "Waste Management",
+    value: "sanitation",
+    label: "Sanitation & Waste",
     icon: Trash2,
     color: "text-green-600 dark:text-green-400",
   },
   {
+    value: "drainage",
+    label: "Drainage & Sewer",
+    icon: Recycle,
+    color: "text-purple-600 dark:text-purple-400",
+  },
+  {
+    value: "solid_waste",
+    label: "Solid Waste Management",
+    icon: Package,
+    color: "text-orange-600 dark:text-orange-400",
+  },
+  {
+    value: "public_health",
+    label: "Public Health",
+    icon: HeartPulse,
+    color: "text-red-600 dark:text-red-400",
+  },
+  {
     value: "other",
     label: "Other",
-    icon: Clipboard,
+    icon: MoreHorizontal,
     color: "text-gray-600 dark:text-gray-400",
   },
 ];
+
+const subcategory = {
+  sanitation: [
+    "Waste Collection",
+    "Drain Cleaning",
+    "Public Toilet Maintenance",
+    "Garbage Segregation",
+    "Sewage Handling",
+  ],
+
+  road: [
+    "Pothole Repair",
+    "Asphalt Laying",
+    "Footpath Repair",
+    "Speed Breaker Construction",
+    "Road Marking",
+  ],
+
+  water: [
+    "Pipeline Repair",
+    "Leakage Detection",
+    "Valve Maintenance",
+    "Tanker Management",
+    "Water Quality Testing",
+  ],
+
+  electricity: [
+    "Street Light Repair",
+    "Cable Maintenance",
+    "Transformer Inspection",
+    "Meter Repair",
+  ],
+
+  drainage: [
+    "Manhole Cleaning",
+    "Flood Prevention",
+    "Storm Water Management",
+    "Sewer Line Repair",
+  ],
+
+  solid_waste: [
+    "Dumping Site Management",
+    "Waste Transportation",
+    "Recycling Operations",
+  ],
+
+  public_health: [
+    "Mosquito Control",
+    "Disinfection",
+    "Disease Prevention",
+    "Sanitation Inspection",
+  ],
+};
 
 const severityLevels = [
   {
@@ -85,6 +164,8 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
   const [images, setImages] = useState([]);
   const [video, setVideo] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [subcategorySearch, setSpecialisationSearch] = useState("");
+  const [showSpecDropdown, setShowSpecDropdown] = useState(false);
 
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
@@ -199,6 +280,46 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
         ...p,
         videos: [],
       }));
+    }
+  };
+
+  const currentSpecs = subcategory[formData.category] || [];
+
+  const filteredSpecs = currentSpecs.filter((spec) =>
+    spec.toLowerCase().includes(subcategorySearch.toLowerCase()),
+  );
+
+  const availableSpecs = filteredSpecs.filter(
+    (spec) => !formData.subcategory.includes(spec),
+  );
+
+
+  // Add specialisation
+  const handleSpecSelect = (spec) => {
+    if (!formData.subcategory.includes(spec)) {
+      setFormData((prev) => ({
+        ...prev,
+        subcategory: [...prev.subcategory, spec],
+      }));
+    }
+
+    setSpecialisationSearch("");
+    setShowSpecDropdown(false);
+  };
+
+  // Remove specialisation
+  const removeSpec = (spec) => {
+    setFormData((prev) => ({
+      ...prev,
+      subcategory: prev.subcategory.filter((s) => s !== spec),
+    }));
+  };
+
+  // Enter key support
+  const handleSpecKeyPress = (e) => {
+    if (e.key === "Enter" && subcategorySearch.trim()) {
+      e.preventDefault();
+      handleSpecSelect(subcategorySearch.trim());
     }
   };
 
@@ -376,9 +497,9 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
                 <button
                   key={level.value}
                   type="button"
-                  onClick={() => handleInput("severity", level.value)}
+                  onClick={() => handleInput("priority", level.value)}
                   className={`flex-1 py-3 rounded-xl border-2 font-medium transition-all ${
-                    formData.severity === level.value
+                    formData.priority === level.value
                       ? `${level.color} ring-4 ring-opacity-60 scale-105`
                       : "bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500"
                   }`}
@@ -387,10 +508,10 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
                 </button>
               ))}
             </div>
-            {errors.severity && (
+            {errors.priority && (
               <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
                 <AlertCircle size={14} />
-                {errors.severity}
+                {errors.priority}
               </p>
             )}
           </div>
@@ -428,6 +549,94 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
               </p>
             </div>
           )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
+            Sub-Categories *
+          </label>
+          <div>
+            <div className="space-y-3">
+              {/* Selected Tags */}
+              {formData.subcategory.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.subcategory.map((spec, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 bg-emerald-500/20 border border-emerald-500/30 rounded-full px-3 py-1"
+                    >
+                      <span className="text-12-medium text-emerald-400">
+                        {spec}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => removeSpec(spec)}
+                        className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Input */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={subcategorySearch}
+                  onChange={(e) => setSpecialisationSearch(e.target.value)}
+                  onKeyPress={handleSpecKeyPress}
+                  placeholder="Type to search or add specialisation..."
+                  className="shad-input w-full p-3 rounded-2xl"
+                  onFocus={() => setShowSpecDropdown(true)}
+                  onBlur={() =>
+                    setTimeout(() => setShowSpecDropdown(false), 150)
+                  }
+                />
+
+                {/* Dropdown */}
+                {showSpecDropdown &&
+                  (subcategorySearch || filteredSpecs.length > 0) && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-slate-50 dark:bg-dark-400 border border-dark-500 rounded-lg shadow-lg z-10 overflow-hidden">
+                      <div className="max-h-48 overflow-y-auto">
+                        {/* Add Custom */}
+                        {subcategorySearch &&
+                          !filteredSpecs.includes(subcategorySearch) &&
+                          !formData.subcategory.includes(subcategorySearch) && (
+                            <button
+                              type="button"
+                              onMouseDown={() =>
+                                handleSpecSelect(subcategorySearch)
+                              }
+                              className="w-full p-3 flex items-center gap-3 hover:bg-dark-500 transition-colors text-left border-b border-dark-500"
+                            >
+                              <Plus className="w-4 h-4 text-green-500" />
+
+                              <span className="text-14-regular">
+                                Add "{subcategorySearch}" (Click to add or Press Enter / Return to add)
+                              </span>
+                            </button>
+                          )}
+
+                        {/* Suggestions */}
+                        {availableSpecs.map((spec) => (
+                          <button
+                            key={spec}
+                            type="button"
+                            onMouseDown={() => handleSpecSelect(spec)}
+                            className="w-full p-3 flex items-center gap-3 hover:bg-slate-200 dark:hover:bg-dark-500 transition-colors text-left"
+                          >
+                            <span className="text-14-regular">{spec}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Photo Upload */}

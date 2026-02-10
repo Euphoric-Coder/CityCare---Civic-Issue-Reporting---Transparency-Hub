@@ -55,52 +55,48 @@ const AnonymityToggle = ({ formData, setFormData, errors }) => {
         </div>
 
         {/* Email input when not anonymous */}
-        {!formData.isAnonymous && (
-          <div className="animate-fadeIn">
-            <label
-              htmlFor="email"
-              className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Email Address (Optional)
-            </label>
-            <div className="relative">
-              <Mail
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"
-                size={20}
-              />
-              <input
-                type="email"
-                id="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                placeholder="your.email@example.com"
-                className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 ${
-                  errors.email
-                    ? "border-red-300 dark:border-red-500 focus:border-red-500 dark:focus:border-red-400 focus:ring-red-100 dark:focus:ring-red-900/40"
-                    : "border-gray-200 dark:border-gray-700 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-emerald-100 dark:focus:ring-emerald-800"
-                } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-4 outline-none transition-all duration-300`}
-              />
-            </div>
-            {errors.email && (
-              <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
-                <AlertCircle size={14} />
-                {errors.email}
-              </p>
-            )}
-            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Receive updates about your report and resolution status
-            </p>
+        <div className="animate-fadeIn">
+          <label
+            htmlFor="email"
+            className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Additional Email Address (Optional)
+          </label>
+          <div className="relative">
+            <Mail
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"
+              size={20}
+            />
+            <input
+              type="email"
+              id="email"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, additionalEmail: e.target.value })
+              }
+              placeholder="your.email@example.com"
+              className={`w-full pl-12 pr-4 py-3 rounded-xl border-2 ${
+                errors.additionalEmail
+                  ? "border-red-300 dark:border-red-500 focus:border-red-500 dark:focus:border-red-400 focus:ring-red-100 dark:focus:ring-red-900/40"
+                  : "border-gray-200 dark:border-gray-700 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-emerald-100 dark:focus:ring-emerald-800"
+              } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-4 outline-none transition-all duration-300`}
+            />
           </div>
-        )}
+          {errors.additionalEmail && (
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+              <AlertCircle size={14} />
+              {errors.additionalEmail}
+            </p>
+          )}
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            Receive updates about your report and resolution status
+          </p>
+        </div>
 
         {/* Info cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6">
           {/* Secure */}
-          <div
-            className="group bg-gradient-to-br from-blue-50 to-white dark:from-gray-800 dark:to-gray-900 p-6 rounded-2xl border-blue-200 dark:border-gray-600 border-2 hover:border-blue-300 dark:hover:border-blue-400 hover:shadow-xl dark:hover:shadow-blue-700/40 transition-all transform hover:-translate-y-1 hover:scale-[1.02]"
-          >
+          <div className="group bg-gradient-to-br from-blue-50 to-white dark:from-gray-800 dark:to-gray-900 p-6 rounded-2xl border-blue-200 dark:border-gray-600 border-2 hover:border-blue-300 dark:hover:border-blue-400 hover:shadow-xl dark:hover:shadow-blue-700/40 transition-all transform hover:-translate-y-1 hover:scale-[1.02]">
             <div className="bg-blue-600 dark:bg-blue-500 w-14 h-14 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
               <Lock className="text-white" size={28} />
             </div>
@@ -113,9 +109,7 @@ const AnonymityToggle = ({ formData, setFormData, errors }) => {
           </div>
 
           {/* Updates */}
-          <div
-            className="group bg-gradient-to-br from-emerald-50 to-white dark:from-gray-800 dark:to-gray-900 p-6 rounded-2xl border-2 border-emerald-200 dark:border-gray-600 hover:border-emerald-300 dark:hover:border-emerald-400 hover:shadow-xl dark:hover:shadow-emerald-700/40 transition-all transform hover:-translate-y-1 hover:scale-[1.02]"
-          >
+          <div className="group bg-gradient-to-br from-emerald-50 to-white dark:from-gray-800 dark:to-gray-900 p-6 rounded-2xl border-2 border-emerald-200 dark:border-gray-600 hover:border-emerald-300 dark:hover:border-emerald-400 hover:shadow-xl dark:hover:shadow-emerald-700/40 transition-all transform hover:-translate-y-1 hover:scale-[1.02]">
             <div className="bg-emerald-600 dark:bg-emerald-500 w-14 h-14 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
               <Bell className="text-white" size={28} />
             </div>
@@ -128,9 +122,7 @@ const AnonymityToggle = ({ formData, setFormData, errors }) => {
           </div>
 
           {/* Recognition */}
-          <div
-            className="group bg-gradient-to-br from-cyan-50 to-white dark:from-gray-800 dark:to-gray-900 p-6 rounded-2xl border-2 border-cyan-200 dark:border-gray-600 hover:border-cyan-300 dark:hover:border-cyan-400 hover:shadow-xl dark:hover:shadow-cyan-700/40 transition-all transform hover:-translate-y-1 hover:scale-[1.02]"
-          >
+          <div className="group bg-gradient-to-br from-cyan-50 to-white dark:from-gray-800 dark:to-gray-900 p-6 rounded-2xl border-2 border-cyan-200 dark:border-gray-600 hover:border-cyan-300 dark:hover:border-cyan-400 hover:shadow-xl dark:hover:shadow-cyan-700/40 transition-all transform hover:-translate-y-1 hover:scale-[1.02]">
             <div className="bg-cyan-600 dark:bg-cyan-500 w-14 h-14 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
               <Award className="text-white" size={28} />
             </div>
