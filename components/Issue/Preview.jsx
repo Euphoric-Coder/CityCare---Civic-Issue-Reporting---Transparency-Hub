@@ -234,7 +234,7 @@ const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
               </p>
             ) : (
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                {formData.email || "No email provided"}
+                {formData.additionalEmail || "No email provided"}
               </p>
             )}
           </div>

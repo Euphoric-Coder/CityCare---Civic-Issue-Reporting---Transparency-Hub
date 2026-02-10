@@ -110,20 +110,23 @@ export default defineSchema({
     .index("by_unit_officer", ["reportingUnitOfficerId"]),
 
   issues: defineTable({
-    /* Identity */
+    // --- Core ---
     issueCode: v.string(),
 
     title: v.string(),
     description: v.string(),
 
     category: v.string(),
-    subcategory: v.optional(v.string()),
+
+    subcategory: v.array(v.string()),
+
+    otherCategoryName: v.union(v.string(), v.null()),
 
     priority: v.string(),
 
     tags: v.array(v.string()),
 
-    /* Location */
+    // --- Location ---
     latitude: v.string(),
     longitude: v.string(),
 
@@ -132,47 +135,46 @@ export default defineSchema({
     state: v.string(),
     postal: v.string(),
 
-    googleMapUrl: v.optional(v.string()),
+    googleMapUrl: v.string(),
 
-    /* Reporter */
+    // --- Reporter ---
     reportedBy: v.id("users"),
+
     isAnonymous: v.boolean(),
 
-    /* Media */
-    photos: v.array(v.id("_storage")),
-    videos: v.array(v.id("_storage")),
+    additionalEmail: v.union(v.string(), v.null()),
 
-    /* Workflow */
+    // --- Media ---
+    photos: v.array(v.id("_storage")),
+
+    // Single videos
+    videos: v.union(v.id("_storage"), v.null()),
+
+    // --- Workflow ---
     status: v.string(),
 
-    assignedUnitOfficer: v.optional(v.id("unitOfficers")),
-    assignedFieldOfficer: v.optional(v.id("fieldOfficers")),
+    assignedUnitOfficer: v.union(v.id("users"), v.null()),
+    assignedFieldOfficer: v.union(v.id("users"), v.null()),
 
     possibleDuplicateIds: v.array(v.id("issues")),
 
-    rejectionReason: v.optional(v.string()),
-
     escalatedToAdmin: v.boolean(),
 
-    /* SLA */
     slaCategory: v.string(),
-    slaDeadline: v.optional(v.string()),
+    slaDeadline: v.union(v.number(), v.null()),
     slaBreached: v.boolean(),
 
-    /* Resolution */
-    resolvedAt: v.optional(v.string()),
-    closedAt: v.optional(v.string()),
+    resolvedAt: v.union(v.number(), v.null()),
+    closedAt: v.union(v.number(), v.null()),
 
-    /* Feedback */
-    citizenRating: v.optional(v.number()),
-    citizenFeedback: v.optional(v.string()),
+    citizenRating: v.union(v.number(), v.null()),
+    citizenFeedback: v.union(v.string(), v.null()),
 
-    /* Reopen */
     reopenCount: v.number(),
-    reopenReason: v.optional(v.string()),
+    reopenReason: v.union(v.string(), v.null()),
     isReopened: v.boolean(),
 
-    createdAt: v.string(),
+    createdAt: v.number(),
   })
     .index("by_reporter", ["reportedBy"])
     .index("by_status", ["status"])

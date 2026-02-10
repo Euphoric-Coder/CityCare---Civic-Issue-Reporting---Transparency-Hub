@@ -1,18 +1,42 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 
+const CATEGORY_PREFIX = {
+  road: "RD",
+  electricity: "EL",
+  water: "WT",
+  sanitation: "SN",
+  drainage: "DR",
+  solid_waste: "SW",
+  public_health: "PH",
+  other: "OT",
+};
+
+function generateRandomCode(length = 6) {
+  return Math.random()
+    .toString(36)
+    .substring(2, 2 + length)
+    .toUpperCase();
+}
+
 export const createIssue = mutation({
   args: {
+    // --- Issue Details ---
     title: v.string(),
     description: v.string(),
 
     category: v.string(),
-    subcategory: v.optional(v.string()),
+
+    // Now array
+    subcategory: v.array(v.string()),
+
+    otherCategoryName: v.optional(v.string()),
 
     priority: v.string(),
 
     tags: v.array(v.string()),
 
+    // --- Location (numbers, not strings) ---
     latitude: v.string(),
     longitude: v.string(),
 
@@ -21,30 +45,47 @@ export const createIssue = mutation({
     state: v.string(),
     postal: v.string(),
 
+    googleMapUrl: v.string(),
+
+    // --- Reporter ---
     reportedBy: v.id("users"),
+
     isAnonymous: v.boolean(),
 
+    additionalEmail: v.optional(v.string()),
+
+    // --- Media ---
     photos: v.array(v.id("_storage")),
-    videos: v.array(v.id("_storage")),
+
+    // Single videos (optional)
+    videos: v.union(v.id("_storage"), v.null()),
   },
 
   handler: async (ctx, args) => {
-    const issueCode =
-      "ISS-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+    // Generate Issue Code
+    const prefix = CATEGORY_PREFIX[args.category] ?? "OT";
+
+    const randomPart = generateRandomCode(6);
+
+    const issueCode = `${prefix}-${randomPart}`;
 
     await ctx.db.insert("issues", {
+      // --- Core ---
       issueCode,
 
       title: args.title,
       description: args.description,
 
       category: args.category,
+
       subcategory: args.subcategory,
+      otherCategoryName: args.otherCategoryName ?? null,
 
       priority: args.priority,
 
       tags: args.tags,
 
+      // --- Location ---
       latitude: args.latitude,
       longitude: args.longitude,
 
@@ -53,12 +94,22 @@ export const createIssue = mutation({
       state: args.state,
       postal: args.postal,
 
+      googleMapUrl: args.googleMapUrl,
+
+      // --- Reporter ---
       reportedBy: args.reportedBy,
+
       isAnonymous: args.isAnonymous,
 
-      photos: args.photos,
-      videos: args.videos,
+      additionalEmail: args.additionalEmail ?? null,
 
+      // --- Media ---
+      photos: args.photos,
+
+      // Store as single ID (nullable)
+      videos: args.videos ?? null,
+
+      // --- Workflow ---
       status: "pending",
 
       assignedUnitOfficer: null,
@@ -82,9 +133,12 @@ export const createIssue = mutation({
       reopenReason: null,
       isReopened: false,
 
-      createdAt: new Date().toISOString(),
+      createdAt: Date.now(),
     });
 
-    return { success: true };
+    return {
+      success: true,
+      issueCode,
+    };
   },
 });

@@ -243,7 +243,7 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
 
       setFormData((prev) => ({
         ...prev,
-        videos: [id],
+        videos: id,
       }));
     } finally {
       setUploading(false);
@@ -272,7 +272,7 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
 
       setFormData((p) => ({
         ...p,
-        videos: [],
+        videos: undefined,
       }));
     }
   };

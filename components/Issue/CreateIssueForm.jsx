@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { CheckCircle2, HeartHandshake } from "lucide-react";
 import ProgressBar from "./ProgressBar";
@@ -7,12 +9,25 @@ import AnonymityToggle from "./AnonymityToggle";
 import Navbar from "./Navbar";
 import SuccessModal from "./Success";
 import PreviewModal from "./Preview";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useSession } from "next-auth/react";
 
 const IssueForm = () => {
+  const { data: session, status } = useSession();
+
+  console.log(
+    "Session data in IssueForm:",
+    session?.user?.id,
+    "Status:",
+    status,
+  );
   const [currentStep, setCurrentStep] = useState(1);
   const [showPreview, setShowPreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  const createIssue = useMutation(api.issues.createIssue);
 
   const [formData, setFormData] = useState({
     // --- Issue details ---
@@ -24,7 +39,7 @@ const IssueForm = () => {
     priority: "",
     tags: [],
     photos: [],
-    videos: [],
+    videos: null,
 
     // --- Location details ---
     searchQuery: "", // Raw search text typed or selected
@@ -127,40 +142,76 @@ const IssueForm = () => {
   };
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
+    try {
+      setIsSubmitting(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+      console.log("Submitting issue with data:", formData);
+      await createIssue({
+        title: formData.title,
+        description: formData.description,
 
-    console.log("Form submitted:", formData);
-    setIsSubmitting(false);
-    setShowPreview(false);
-    setFormData({
-      // --- Issue details ---
-      title: "",
-      description: "",
-      category: "",
-      priority: "",
-      photoUrl: null,
+        category: formData.category,
+        subcategory: formData.subcategory,
 
-      // --- Location details ---
-      searchQuery: "", // Raw search text typed or selected
-      address: "", // Full formatted address
-      city: "", // City or locality
-      state: "", // State / region
-      postal: "", // Postal code
-      latitude: 20.5937, // Default center (India)
-      longitude: 78.9629,
-      mapUrl: "", // Google Maps URL for location
+        priority: formData.priority,
 
-      // Reporter details
-      isAnonymous: false,
-      email: "",
+        tags: formData.tags,
 
-      createdAt: Date.now(),
-    });
-    setCurrentStep(1);
-    setShowSuccess(true);
-    // onSuccess();
+        latitude: String(formData.latitude),
+        longitude: String(formData.longitude),
+
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        postal: formData.postal,
+        googleMapUrl: formData.googleMapUrl,
+
+        isAnonymous: formData.isAnonymous,
+
+        additionalEmail: formData.additionalEmail || null,
+
+        reportedBy: session?.user?.id || null,
+
+        photos: formData.photos,
+        videos: formData.videos || null,
+      });
+
+      // Reset after success
+      setFormData({
+        title: "",
+        description: "",
+        category: "",
+        subcategory: [],
+        otherCategoryName: "",
+        priority: "",
+        tags: [],
+        photos: [],
+        videos: [],
+
+        searchQuery: "",
+        address: "",
+        city: "",
+        state: "",
+        postal: "",
+        latitude: 20.5937,
+        longitude: 78.9629,
+        googleMapUrl: "",
+
+        isAnonymous: false,
+        additionalEmail: "",
+
+        createdAt: Date.now(),
+      });
+
+      setShowPreview(false);
+      setShowSuccess(true);
+      setCurrentStep(1);
+    } catch (err) {
+      console.error("Submit failed:", err);
+      alert("Failed to submit issue. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
