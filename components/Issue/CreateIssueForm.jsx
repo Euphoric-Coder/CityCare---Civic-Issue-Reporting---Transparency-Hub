@@ -21,7 +21,8 @@ const IssueForm = () => {
     category: "",
     otherCategoryName: "",
     severity: "",
-    photoUrl: null,
+    photos: [],
+    videos: [],
 
     // --- Location details ---
     searchQuery: "", // Raw search text typed or selected
@@ -65,6 +66,19 @@ const IssueForm = () => {
 
       if (!formData.severity) {
         newErrors.severity = "Please select a severity level";
+      }
+
+      if (formData.photos.length === 0) {
+        newErrors.photos = "At least one photo is required";
+      }
+
+      if (formData.videos.length === 0) {
+        newErrors.videos = "At least one video is required";
+      }
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        return;
       }
     }
 

@@ -10,8 +10,21 @@ import {
   ChevronDown,
   Check,
   Droplets,
+  Video,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import MediaPreview from "./MediaPreview";
+import ImageCarousel from "./ImageCarousel";
+import { toast } from "sonner";
 
 const categories = [
   {
@@ -69,20 +82,124 @@ const severityLevels = [
 
 const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [images, setImages] = useState([]);
+  const [video, setVideo] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
-  const handlePhotoUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, photoUrl: reader.result });
-      };
-      reader.readAsDataURL(file);
+  const imageInputRef = useRef(null);
+  const videoInputRef = useRef(null);
+
+  const generateUploadUrl = useMutation(api.issuesMedia.generateUploadUrl);
+
+  const deleteMedia = useMutation(api.issuesMedia.deleteMedia);
+
+  const isVideoDisabled = !!video || uploading;
+
+  const uploadFile = async (file) => {
+    const url = await generateUploadUrl();
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": file.type,
+      },
+      body: file,
+    });
+
+    if (!res.ok) throw new Error("Upload failed");
+
+    const { storageId } = await res.json();
+
+    return storageId;
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+
+    if (!files.length) return;
+
+    setUploading(true);
+
+    const loadImage = toast.loading("Uploading images...");
+
+    try {
+      const uploaded = [];
+
+      for (const file of files) {
+        if (!file.type.startsWith("image/")) continue;
+
+        const id = await uploadFile(file);
+        uploaded.push(id);
+      }
+
+      setImages((prev) => [...prev, ...uploaded]);
+
+      setFormData((prev) => ({
+        ...prev,
+        photos: [...(prev.photos || []), ...uploaded],
+      }));
+
+      toast.dismiss(loadImage);
+      toast.success("Images uploaded successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error(`Failed to upload images: ${err.message}`);
+    } finally {
+      setUploading(false);
+
+      // Reset input so same file can be re-uploaded
+      if (imageInputRef.current) {
+        imageInputRef.current.value = "";
+      }
     }
   };
 
-  const removePhoto = () => {
-    setFormData({ ...formData, photoUrl: null });
+  const handleVideoUpload = async (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file || !file.type.startsWith("video/")) return;
+
+    setUploading(true);
+
+    try {
+      const id = await uploadFile(file);
+
+      setVideo(id);
+
+      setFormData((prev) => ({
+        ...prev,
+        videos: [id],
+      }));
+    } finally {
+      setUploading(false);
+
+      // Reset input
+      if (videoInputRef.current) {
+        videoInputRef.current.value = "";
+      }
+    }
+  };
+
+  const removeMedia = async (id, type) => {
+    await deleteMedia({ storageId: id });
+
+    if (type === "image") {
+      setImages((p) => p.filter((x) => x !== id));
+
+      setFormData((p) => ({
+        ...p,
+        photos: p.photos.filter((x) => x !== id),
+      }));
+    }
+
+    if (type === "video") {
+      setVideo(null);
+
+      setFormData((p) => ({
+        ...p,
+        videos: [],
+      }));
+    }
   };
 
   const handleInput = (name, value) => {
@@ -188,7 +305,7 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
                   <>
                     {(() => {
                       const selected = categories.find(
-                        (cat) => cat.value === formData.category
+                        (cat) => cat.value === formData.category,
                       );
                       const Icon = selected?.icon;
                       return Icon ? (
@@ -316,39 +433,178 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
         {/* Photo Upload */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
-            Photo (Optional)
+            Photo Evidence *
           </label>
 
-          {!formData.photoUrl ? (
-            <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-xl transition-all cursor-pointer bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700 hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 group">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <Camera className="w-10 h-10 text-gray-400 dark:text-gray-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-2" />
-                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
-                  Click to upload or drag and drop
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  PNG, JPG up to 10MB
-                </p>
-              </div>
-              <input
-                type="file"
-                className="hidden"
-                accept="image/*"
-                onChange={handlePhotoUpload}
+          <label
+            className={`flex flex-col items-center justify-center w-full h-40 
+    border-2 border-dashed rounded-xl transition-all cursor-pointer 
+    bg-gray-50 dark:bg-gray-800 group
+
+    ${
+      errors.photos
+        ? "border-red-300 dark:border-red-500 bg-red-50/40 dark:bg-red-950/30 hover:border-red-500"
+        : "border-gray-300 dark:border-gray-700 hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+    }`}
+          >
+            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <Camera
+                className={`w-10 h-10 mb-2 transition-colors
+
+        ${
+          errors.photos
+            ? "text-red-400 dark:text-red-400"
+            : "text-gray-400 dark:text-gray-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400"
+        }`}
               />
-            </label>
-          ) : (
-            <div className="relative rounded-xl overflow-hidden border-2 border-emerald-200 dark:border-emerald-700 shadow-md">
-              <img
-                src={formData.photoUrl}
-                alt="Preview"
-                className="w-full h-48 object-cover"
-              />
-              <button
-                onClick={removePhoto}
-                className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-full transition-colors shadow-lg"
+
+              <p
+                className={`text-sm font-medium
+
+        ${
+          errors.photos
+            ? "text-red-600 dark:text-red-400"
+            : "text-gray-600 dark:text-gray-300"
+        }`}
               >
-                <X size={16} />
+                Click to upload or drag and drop
+              </p>
+
+              <p
+                className={`text-xs mt-1
+
+        ${
+          errors.photos
+            ? "text-red-500 dark:text-red-400"
+            : "text-gray-500 dark:text-gray-400"
+        }`}
+              >
+                PNG, JPG up to 10MB
+              </p>
+            </div>
+
+            <input
+              ref={imageInputRef}
+              type="file"
+              multiple
+              hidden
+              accept="image/*"
+              onChange={(e) => {
+                handleImageUpload(e);
+
+                // Clear error when uploaded
+                setErrors((prev) => ({
+                  ...prev,
+                  photos: "",
+                }));
+              }}
+              disabled={uploading}
+            />
+          </label>
+
+          {/* Error Message */}
+          {errors.photos && (
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+              <AlertCircle size={14} />
+              {errors.photos}
+            </p>
+          )}
+
+          {/* IMAGE CAROUSEL */}
+          {images.length > 0 && (
+            <div className="mt-4">
+              {/* UPLOAD COUNT BADGE */}
+              <div
+                className="
+  px-4 py-1.5 rounded-full
+  bg-white/80 dark:bg-dark-400/80
+  backdrop-blur-md mb-2
+  border border-emerald-200 dark:border-emerald-700
+  shadow-md shadow-emerald-500/10
+  flex items-center gap-2
+  text-xs font-semibold text-gray-700 dark:text-gray-200"
+              >
+                <Camera className="w-4 h-4 text-emerald-500" />
+
+                <span>
+                  {images.length} Image{images.length > 1 ? "s" : ""}
+                </span>
+
+                <span className="text-emerald-600 dark:text-emerald-400">
+                  Uploaded
+                </span>
+              </div>
+              <ImageCarousel images={images} removeMedia={removeMedia} />
+            </div>
+          )}
+        </div>
+
+        {/* Video Upload */}
+        <div className="mt-6">
+          <label className="block text-sm font-semibold mb-2">
+            Video (Optional)
+          </label>
+
+          <label
+            className={`
+      flex flex-col items-center justify-center
+      w-full h-44 border-2 border-dashed rounded-xl
+      transition-all group
+
+      ${
+        isVideoDisabled
+          ? "border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 opacity-60 cursor-not-allowed pointer-events-none"
+          : "border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+      }
+    `}
+          >
+            <div className="flex flex-col items-center justify-center gap-2">
+              <Video
+                className={`
+          w-10 h-10 transition-colors
+          ${
+            isVideoDisabled
+              ? "text-gray-400"
+              : "text-gray-400 group-hover:text-emerald-500"
+          }
+        `}
+              />
+
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                {isVideoDisabled ? "Video Uploaded" : "Upload Video Evidence"}
+              </p>
+
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                MP4 / WebM • Max 50MB
+              </p>
+            </div>
+
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={handleVideoUpload}
+              disabled={isVideoDisabled}
+            />
+          </label>
+
+          {/* Preview */}
+          {video && (
+            <div className="relative mt-3 rounded-xl overflow-hidden shadow">
+              <MediaPreview storageId={video} isVideo />
+
+              <button
+                onClick={() => removeMedia(video, "video")}
+                className="
+          absolute top-2 right-2
+          bg-red-500 hover:bg-red-600
+          p-1.5 rounded-full
+          text-white shadow
+          transition
+        "
+              >
+                <X size={14} />
               </button>
             </div>
           )}
