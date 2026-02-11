@@ -160,22 +160,17 @@ const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
               )}
 
               {/* Videos */}
-              {formData.videos?.length > 0 && (
+              {formData.videos && (
                 <div>
                   <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                    Videos ({formData.videos.length})
+                    Videos ({formData.videos ? 1 : 0})
                   </p>
 
-                  <div className="space-y-3">
-                    {formData.videos.map((id) => (
-                      <div
-                        key={id}
-                        className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm"
-                      >
-                        <MediaPreview storageId={id} isVideo />
-                      </div>
-                    ))}
-                  </div>
+                  {formData.videos && (
+                    <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm">
+                      <MediaPreview storageId={formData.videos} isVideo />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -204,39 +199,54 @@ const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
           </div>
 
           {/* Contact / Anonymous */}
-          <div className="bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 border-2 border-emerald-200 dark:border-emerald-700 transition-colors">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Anonymous Status */}
+            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 border-2 border-emerald-200 dark:border-emerald-700 transition-colors">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield
+                  className="text-emerald-600 dark:text-emerald-400"
+                  size={20}
+                />
+
+                <span className="font-semibold text-gray-800 dark:text-gray-100">
+                  Anonymity Status
+                </span>
+              </div>
+
               {formData.isAnonymous ? (
-                <>
-                  <Shield
-                    className="text-emerald-600 dark:text-emerald-400"
-                    size={20}
-                  />
-                  <span className="font-semibold text-gray-800 dark:text-gray-100">
-                    Anonymous Report
-                  </span>
-                </>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  This report is submitted anonymously.
+                </p>
               ) : (
-                <>
-                  <Mail
-                    className="text-emerald-600 dark:text-emerald-400"
-                    size={20}
-                  />
-                  <span className="font-semibold text-gray-800 dark:text-gray-100">
-                    Contact Information
-                  </span>
-                </>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Reporter identity is visible to authorities.
+                </p>
               )}
             </div>
-            {formData.isAnonymous ? (
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Your identity will remain private.
-              </p>
-            ) : (
-              <p className="text-sm text-gray-600 dark:text-gray-300">
-                {formData.additionalEmail || "No email provided"}
-              </p>
-            )}
+
+            {/* Contact Information */}
+            <div className="bg-gradient-to-r from-cyan-50 to-emerald-50 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 border-2 border-emerald-200 dark:border-emerald-700 transition-colors">
+              <div className="flex items-center gap-2 mb-2">
+                <Mail
+                  className="text-emerald-600 dark:text-emerald-400"
+                  size={20}
+                />
+
+                <span className="font-semibold text-gray-800 dark:text-gray-100">
+                  Contact Information
+                </span>
+              </div>
+
+              {formData.additionalEmail ? (
+                <p className="text-sm text-gray-600 dark:text-gray-300 break-all">
+                  {formData.additionalEmail}
+                </p>
+              ) : (
+                <p className="text-sm text-gray-500 italic">
+                  No contact details provided.
+                </p>
+              )}
+            </div>
           </div>
         </div>
 

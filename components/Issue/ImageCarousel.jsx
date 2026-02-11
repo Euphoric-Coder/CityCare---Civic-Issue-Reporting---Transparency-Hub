@@ -101,30 +101,6 @@ export default function ImageCarousel({ images = [], removeMedia }) {
       bg-white dark:bg-gray-900 shadow-lg
     "
     >
-      {/* --------------------------------
-          TOP INFO BADGE
-      -------------------------------- */}
-      <div
-        className="
-        absolute top-3 left-1/2 -translate-x-1/2 z-20
-        px-4 py-1.5 rounded-full
-        bg-white/80 dark:bg-dark-400/80
-        backdrop-blur-md
-        border border-emerald-200 dark:border-emerald-700
-        shadow-md
-        flex items-center gap-2
-        text-xs font-semibold
-        text-gray-700 dark:text-gray-200
-      "
-      >
-        <Camera className="w-4 h-4 text-emerald-500" />
-
-        <span>
-          {images.length} Image{images.length > 1 ? "s" : ""}
-        </span>
-
-        <span className="text-emerald-600 dark:text-emerald-400">Uploaded</span>
-      </div>
 
       {/* --------------------------------
           SLIDE COUNT (1 / N)
