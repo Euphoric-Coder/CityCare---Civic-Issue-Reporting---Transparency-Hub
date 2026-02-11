@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Mail, Lock, ChevronDown, Check, AlertTriangle } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  ChevronDown,
+  Check,
+  AlertTriangle,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -14,7 +22,7 @@ import { ModeToggle } from "../ModeToggle";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const SignInPage = () => {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [showAlert, setShowAlert] = useState(false);
@@ -24,6 +32,7 @@ const SignInPage = () => {
     password: "",
     role: "citizen",
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -34,6 +43,17 @@ const SignInPage = () => {
       setShowAlert(true);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (session?.user) {
+      setFormData((prev) => ({
+        ...prev,
+
+        email: session.user.email || prev.email,
+        role: session.user.role || prev.role,
+      }));
+    }
+  }, [session]);
 
   // Auto-select role from URL if present
   useEffect(() => {
@@ -50,6 +70,7 @@ const SignInPage = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setError("");
   };
 
   const handleSubmit = async (e) => {
@@ -58,10 +79,27 @@ const SignInPage = () => {
     setLoading(true);
 
     try {
+      const roleData = await fetchQuery(api.users.getUserByEmail, {
+        email: formData.email,
+      });
+
+      if (!roleData) {
+        toast.error("Account not found");
+        setError("Account not found");
+        return;
+      }
+
+      // Compare role
+      if (roleData.role !== formData.role) {
+        toast.error("Selected role does not match your account");
+        setError("Selected role does not match your account");
+        return;
+      }
       const result = await signIn("credentials", {
         redirect: false,
         email: formData.email,
         password: formData.password,
+        role: formData.role,
       });
 
       if (result?.error) {
@@ -174,6 +212,7 @@ const SignInPage = () => {
                             type="button"
                             onClick={() => {
                               setFormData((prev) => ({ ...prev, role }));
+                              setError("");
                               setShowRoleDropdown(false);
                             }}
                             className="w-full p-4 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-dark-500 transition-colors text-left"
@@ -216,17 +255,35 @@ const SignInPage = () => {
                 <label className="shad-input-label block mb-2 text-slate-800 dark:text-white">
                   Password
                 </label>
+
                 <div className="relative">
+                  {/* Lock Icon */}
                   <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400 dark:text-dark-600" />
+
+                  {/* Input */}
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder="Enter your password"
-                    className="shad-input pl-10 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-lg"
+                    className="shad-input pl-10 pr-10 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-lg"
                     required
                   />
+
+                  {/* Show / Hide Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-3 text-slate-400 dark:text-dark-600 hover:text-emerald-500 transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
                 </div>
               </div>
 

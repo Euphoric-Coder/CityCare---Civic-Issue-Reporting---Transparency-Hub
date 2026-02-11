@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   User,
   Mail,
@@ -12,9 +12,11 @@ import {
   Phone,
   X,
   Plus,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { signUp } from "@/lib/auth";
 import { toast } from "sonner";
 import Image from "next/image";
@@ -25,11 +27,13 @@ import LocationPicker from "./LocationPicker";
 import { hash } from "bcryptjs";
 
 const SignUp = () => {
+  const { data: session } = useSession();
   const router = useRouter();
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [showDeptDropdown, setShowDeptDropdown] = useState(false);
   const [specialisationSearch, setSpecialisationSearch] = useState("");
   const [showSpecDropdown, setShowSpecDropdown] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -111,6 +115,18 @@ const SignUp = () => {
   const filteredSpecs = currentSpecs.filter((spec) =>
     spec.toLowerCase().includes(specialisationSearch.toLowerCase()),
   );
+
+  useEffect(() => {
+    if (session?.user) {
+      setFormData((prev) => ({
+        ...prev,
+
+        fullName: session.user.name || prev.fullName,
+        email: session.user.email || prev.email,
+        role: session.user.role || prev.role,
+      }));
+    }
+  }, [session]);
 
   // Add specialisation
   const handleSpecSelect = (spec) => {
@@ -349,18 +365,38 @@ const SignUp = () => {
 
               {/* Password */}
               <div>
-                <label className="shad-input-label mb-2">Password</label>
+                <label className="shad-input-label block mb-2 text-slate-800 dark:text-white">
+                  Password
+                </label>
+
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                  {/* Lock Icon */}
+                  <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400 dark:text-dark-600" />
+
+                  {/* Input */}
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
-                    placeholder="Enter password"
-                    className="shad-input pl-10 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-2xl"
+                    placeholder="Enter your password"
+                    className="shad-input pl-10 pr-10 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-lg"
                     required
                   />
+
+                  {/* Show / Hide Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-3 text-slate-400 dark:text-dark-600 hover:text-emerald-500 transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
                 </div>
               </div>
 

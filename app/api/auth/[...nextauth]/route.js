@@ -20,6 +20,7 @@ const handler = NextAuth({
       credentials: {
         email: { label: "Email", type: "text", placeholder: "you@example.com" },
         password: { label: "Password", type: "password" },
+        role: { label: "Role", type: "text" },
       },
       async authorize(credentials) {
         try {
@@ -31,6 +32,17 @@ const handler = NextAuth({
           });
 
           if (!user) return null;
+
+          // Check role match
+          if (user.role !== credentials.role) {
+            console.warn("Role mismatch:", {
+              selected: credentials.role,
+              actual: user.role,
+            });
+
+            return null;
+          }
+
 
           // Verify password
           const valid = await compare(credentials.password, user.password);
