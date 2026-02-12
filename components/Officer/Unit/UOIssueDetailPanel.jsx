@@ -24,9 +24,11 @@ import {
   Briefcase,
   Award,
   MapPinned,
+  VideoIcon,
 } from "lucide-react";
 import * as localStorageService from "@/lib/localStorageService";
 import { mockUsers } from "@/lib/mockData";
+import ImageCarousel from "./ImageCarousel";
 
 export function WOIssueDetailPanel({
   issue,
@@ -43,12 +45,12 @@ export function WOIssueDetailPanel({
       evidence_sufficient: false,
       not_duplicate: false,
       within_jurisdiction: false,
-    }
+    },
   );
   const [rejectionCategory, setRejectionCategory] = useState("spam");
   const [rejectionNotes, setRejectionNotes] = useState("");
   const [selectedOfficer, setSelectedOfficer] = useState(
-    issue.assigned_to || ""
+    issue.assigned_to || "",
   );
   const [updateMessage, setUpdateMessage] = useState("");
   const [slaDate, setSlaDate] = useState(issue.sla_due_date || "");
@@ -96,12 +98,12 @@ export function WOIssueDetailPanel({
       const updatedIssue = localStorageService.verifyAndApproveIssue(
         issue.id,
         authenticityCheck,
-        slaDate
+        slaDate,
       );
       if (updatedIssue) {
         onUpdate(updatedIssue);
         alert(
-          "Issue verified successfully! Now ready for field officer assignment."
+          "Issue verified successfully! Now ready for field officer assignment.",
         );
         setActiveTab("assignment");
       } else {
@@ -129,7 +131,7 @@ export function WOIssueDetailPanel({
         rejectionCategory || "spam",
         getRejectionReasonText(rejectionCategory),
         rejectionNotes,
-        user.id
+        user.id,
       );
       if (updatedIssue) {
         onUpdate(updatedIssue);
@@ -157,7 +159,7 @@ export function WOIssueDetailPanel({
     try {
       const updatedIssue = localStorageService.assignFieldOfficer(
         issue.id,
-        selectedOfficer
+        selectedOfficer,
       );
       if (updatedIssue) {
         onUpdate(updatedIssue);
@@ -203,7 +205,7 @@ export function WOIssueDetailPanel({
         issue.id,
         selectedOfficer,
         reasonText,
-        revisedSlaDate || undefined
+        revisedSlaDate || undefined,
       );
       if (updatedIssue) {
         onUpdate(updatedIssue);
@@ -241,7 +243,7 @@ export function WOIssueDetailPanel({
     try {
       const updatedIssue = localStorageService.approveResolution(
         issue.id,
-        user.id
+        user.id,
       );
       if (updatedIssue) {
         onUpdate(updatedIssue);
@@ -270,7 +272,7 @@ export function WOIssueDetailPanel({
       const updatedIssue = localStorageService.requestRework(
         issue.id,
         reworkReason,
-        user.id
+        user.id,
       );
       if (updatedIssue) {
         onUpdate(updatedIssue);
@@ -300,7 +302,7 @@ export function WOIssueDetailPanel({
         issue.id,
         updateMessage,
         user.id,
-        "ward_officer"
+        "ward_officer",
       );
       alert("Update posted successfully");
       setUpdateMessage("");
@@ -324,12 +326,12 @@ export function WOIssueDetailPanel({
       const updatedIssue = localStorageService.escalateToAdmin(
         issue.id,
         escalationReason,
-        user.id
+        user.id,
       );
       if (updatedIssue) {
         onUpdate(updatedIssue);
         alert(
-          "Issue escalated to admin successfully. Admin will review and take action."
+          "Issue escalated to admin successfully. Admin will review and take action.",
         );
         setEscalationReason("");
         onClose();
@@ -694,32 +696,55 @@ export function WOIssueDetailPanel({
               </div>
             </div>
 
-            {/* Evidence */}
+            {/* Photo Evidence */}
             {issue.photo_url && (
               <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border-2 border-gray-200 p-6 shadow-lg">
+                {/* Header */}
                 <h3 className="font-bold text-gray-900 mb-5 flex items-center gap-3 text-lg">
                   <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg shadow-md">
                     <ImageIcon size={20} className="text-white" />
                   </div>
                   Evidence Photos
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <img
-                    src={issue.photo_url}
-                    alt="Evidence"
-                    className="w-full rounded-xl border-2 border-gray-200 shadow-md hover:shadow-xl transition-shadow"
-                  />
-                  {issue.additional_photos?.map((photo, idx) => (
-                    <img
-                      key={idx}
-                      src={photo}
-                      alt={`Evidence ${idx + 1}`}
-                      className="w-full rounded-xl border-2 border-gray-200 shadow-md hover:shadow-xl transition-shadow"
-                    />
-                  ))}
-                </div>
+
+                {/* Carousel */}
+                <ImageCarousel
+                  images={[issue.photo_url, ...(issue.additional_photos || [])]}
+                />
               </div>
             )}
+
+            {/* Dummy Video Evidence */}
+            <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border-2 border-gray-200 p-6 shadow-lg mt-8">
+              {/* Header */}
+              <h3 className="font-bold text-gray-900 mb-5 flex items-center gap-3 text-lg">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg shadow-md">
+                  <VideoIcon size={20} className="text-white" />
+                </div>
+                Evidence Video
+              </h3>
+
+              {/* Video Player */}
+              <div className="relative rounded-xl overflow-hidden border-2 border-gray-200 shadow-md bg-black">
+                <video
+                  controls
+                  className="w-full h-[350px] object-contain bg-black"
+                  poster="https://images.pexels.com/photos/7722560/pexels-photo-7722560.jpeg"
+                >
+                  <source
+                    src="https://www.w3schools.com/html/mov_bbb.mp4"
+                    type="video/mp4"
+                  />
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+
+              {/* Info */}
+              <div className="mt-3 text-sm text-gray-600 flex items-center gap-2">
+                <span className="font-medium">Demo Video:</span>
+                <span>Road damage inspection footage</span>
+              </div>
+            </div>
 
             {/* Authenticity Checklist */}
             {issue.internal_status === "pending_verification" &&
@@ -1769,7 +1794,7 @@ export function WOIssueDetailPanel({
                           <option value="">-- Select Officer --</option>
                           {fieldOfficers
                             .filter(
-                              (officer) => officer.id !== issue.assigned_to
+                              (officer) => officer.id !== issue.assigned_to,
                             )
                             .map((officer) => (
                               <option key={officer.id} value={officer.id}>
