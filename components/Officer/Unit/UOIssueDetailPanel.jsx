@@ -302,7 +302,7 @@ export function WOIssueDetailPanel({
         issue.id,
         updateMessage,
         user.id,
-        "ward_officer",
+        "unit_officer",
       );
       alert("Update posted successfully");
       setUpdateMessage("");

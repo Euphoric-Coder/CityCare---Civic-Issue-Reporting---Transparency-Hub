@@ -69,7 +69,7 @@ export function IssueDetailModal({ issue, onClose }) {
 
   const prevPhoto = () => {
     setCurrentPhotoIndex(
-      (prev) => (prev - 1 + allPhotos.length) % allPhotos.length
+      (prev) => (prev - 1 + allPhotos.length) % allPhotos.length,
     );
   };
 
@@ -215,7 +215,7 @@ export function IssueDetailModal({ issue, onClose }) {
               </button>
             )}
 
-            {(issue.assignee || issue.ward_officer) && (
+            {(issue.assignee || issue.unit_officer) && (
               <button
                 onClick={() => setActiveTab("messages")}
                 className={`flex items-center gap-2 px-4 py-3 font-medium transition-all border-b-2 ${
@@ -313,7 +313,7 @@ export function IssueDetailModal({ issue, onClose }) {
                                       year: "numeric",
                                       hour: "2-digit",
                                       minute: "2-digit",
-                                    }
+                                    },
                                   )}
                                 </span>
                               </div>
@@ -326,7 +326,7 @@ export function IssueDetailModal({ issue, onClose }) {
                                     className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${
                                       update.updater.role === "admin"
                                         ? "bg-orange-600"
-                                        : update.updater.role === "ward_officer"
+                                        : update.updater.role === "unit_officer"
                                           ? "bg-teal-600"
                                           : update.updater.role ===
                                               "field_officer"
@@ -628,7 +628,7 @@ export function IssueDetailModal({ issue, onClose }) {
           )}
 
           {activeTab === "messages" &&
-            (issue.assignee || issue.ward_officer) && (
+            (issue.assignee || issue.unit_officer) && (
               <div className="h-full">
                 <IssueMessaging issue={issue} />
               </div>

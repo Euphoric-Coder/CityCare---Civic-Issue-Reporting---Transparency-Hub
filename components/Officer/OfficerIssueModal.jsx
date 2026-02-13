@@ -108,7 +108,7 @@ export function OfficerIssueModal({
   }
 
   const roleTitle =
-    officerRole === "ward_officer" ? "Ward Officer" : "Field Officer";
+    officerRole === "unit_officer" ? "Ward Officer" : "Field Officer";
   const canStart = issue.status === "pending";
   const canComplete = issue.status === "in_progress";
 
@@ -164,7 +164,7 @@ export function OfficerIssueModal({
               {(canStart || canComplete) && (
                 <div className="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-xl p-5">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                    {officerRole === "ward_officer" ? "🏛️" : "🔧"} {roleTitle}{" "}
+                    {officerRole === "unit_officer" ? "🏛️" : "🔧"} {roleTitle}{" "}
                     Actions
                   </h3>
 

@@ -60,7 +60,7 @@ export function AdminIssueModal({
   const [reassignReason, setReassignReason] = useState("");
   const [revokeReason, setRevokeReason] = useState("");
 
-  const wardOfficers = getMockUser().filter((u) => u.role === "ward_officer");
+  const wardOfficers = getMockUser().filter((u) => u.role === "unit_officer");
   const fieldOfficers = getMockUser().filter((u) => u.role === "field_officer");
 
   useEffect(() => {

@@ -98,7 +98,7 @@ export function AdminReassignModal({ issue, officers, onClose, onReassign }) {
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
-                      currentOfficer.role === "ward_officer"
+                      currentOfficer.role === "unit_officer"
                         ? "bg-gradient-to-br from-teal-600 to-emerald-700"
                         : "bg-gradient-to-br from-cyan-600 to-blue-700"
                     }`}
@@ -113,7 +113,7 @@ export function AdminReassignModal({ issue, officers, onClose, onReassign }) {
                       {currentOfficer.full_name}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {currentOfficer.role === "ward_officer"
+                      {currentOfficer.role === "unit_officer"
                         ? "🏛️ Ward Officer"
                         : "🔧 Field Officer"}
                       {currentOfficer.ward_zone &&
@@ -149,7 +149,7 @@ export function AdminReassignModal({ issue, officers, onClose, onReassign }) {
                   />
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
-                      officer.role === "ward_officer"
+                      officer.role === "unit_officer"
                         ? "bg-gradient-to-br from-teal-600 to-emerald-700"
                         : "bg-gradient-to-br from-cyan-600 to-blue-700"
                     }`}
@@ -164,7 +164,7 @@ export function AdminReassignModal({ issue, officers, onClose, onReassign }) {
                       {officer.full_name}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {officer.role === "ward_officer"
+                      {officer.role === "unit_officer"
                         ? "🏛️ Ward Officer"
                         : "🔧 Field Officer"}
                       {officer.ward_zone && ` - ${officer.ward_zone}`}

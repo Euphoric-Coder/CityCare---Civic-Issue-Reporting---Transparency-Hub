@@ -37,6 +37,8 @@ import { useTheme } from "next-themes";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { signOut, useSession } from "next-auth/react";
+import { MessagesCenter } from "@/components/MessageCenter";
+import { mockUsers } from "@/lib/mockData";
 
 export function WardOfficerWorkflow() {
   const { data: session, status } = useSession();
@@ -1182,13 +1184,10 @@ export function WardOfficerWorkflow() {
                     </div>
                   ) : activeView === "messages" ? (
                     <div className="text-center py-12">
-                      <MessageSquare
-                        className="mx-auto text-gray-400 dark:text-gray-600 mb-4"
-                        size={48}
+                      <MessagesCenter
+                        user={mockUsers[2]}
+                        profile={{ role: "unit_officer" }}
                       />
-                      <p className="text-gray-600 dark:text-gray-400">
-                        Messages feature coming soon
-                      </p>
                     </div>
                   ) : filteredIssues.length === 0 ? (
                     <div className="text-center py-12">

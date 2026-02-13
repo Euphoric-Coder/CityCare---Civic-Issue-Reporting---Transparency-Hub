@@ -16,7 +16,7 @@ export function AdminMessageModal({ officer, issues, onClose, onSend }) {
       onSend(
         officer.id,
         message,
-        selectedIssues.length > 0 ? selectedIssues : undefined
+        selectedIssues.length > 0 ? selectedIssues : undefined,
       );
       setSending(false);
       onClose();
@@ -27,7 +27,7 @@ export function AdminMessageModal({ officer, issues, onClose, onSend }) {
     setSelectedIssues((prev) =>
       prev.includes(issueId)
         ? prev.filter((id) => id !== issueId)
-        : [...prev, issueId]
+        : [...prev, issueId],
     );
   }
 
@@ -58,7 +58,7 @@ export function AdminMessageModal({ officer, issues, onClose, onSend }) {
             <div className="flex items-center gap-4">
               <div
                 className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ${
-                  officer.role === "ward_officer"
+                  officer.role === "unit_officer"
                     ? "bg-gradient-to-br from-teal-600 to-emerald-700"
                     : "bg-gradient-to-br from-cyan-600 to-blue-700"
                 }`}
@@ -75,12 +75,12 @@ export function AdminMessageModal({ officer, issues, onClose, onSend }) {
                 <div className="flex items-center gap-2 mt-1">
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      officer.role === "ward_officer"
+                      officer.role === "unit_officer"
                         ? "bg-teal-200 text-teal-800"
                         : "bg-cyan-200 text-cyan-800"
                     }`}
                   >
-                    {officer.role === "ward_officer"
+                    {officer.role === "unit_officer"
                       ? "🏛️ Ward Officer"
                       : "🔧 Field Officer"}
                   </span>

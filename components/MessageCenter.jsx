@@ -63,7 +63,7 @@ export function MessagesCenter({ user, profile }) {
 
     const allMessages = getStoredMessages();
     const userMessages = allMessages.filter(
-      (m) => m.from_user_id === user.id || m.to_user_id === user.id
+      (m) => m.from_user_id === user.id || m.to_user_id === user.id,
     );
 
     const threadMap = new Map();
@@ -84,11 +84,11 @@ export function MessagesCenter({ user, profile }) {
 
       const sortedMessages = messages.sort(
         (a, b) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       );
 
       const unreadCount = messages.filter(
-        (m) => m.to_user_id === user.id && !m.read
+        (m) => m.to_user_id === user.id && !m.read,
       ).length;
 
       threadsList.push({
@@ -102,7 +102,7 @@ export function MessagesCenter({ user, profile }) {
     threadsList.sort(
       (a, b) =>
         new Date(b.lastMessage.created_at).getTime() -
-        new Date(a.lastMessage.created_at).getTime()
+        new Date(a.lastMessage.created_at).getTime(),
     );
 
     setThreads(threadsList);
@@ -163,7 +163,7 @@ export function MessagesCenter({ user, profile }) {
     loadMessages();
 
     const updatedThread = threads.find(
-      (t) => t.otherUser.id === selectedThread.otherUser.id
+      (t) => t.otherUser.id === selectedThread.otherUser.id,
     );
     if (updatedThread) {
       setSelectedThread({
@@ -208,9 +208,9 @@ export function MessagesCenter({ user, profile }) {
   function getAvailableColleagues() {
     if (!user || !profile) return [];
 
-    const allowedRoles = ["admin", "ward_officer", "field_officer"];
+    const allowedRoles = ["admin", "unit_officer", "field_officer"];
     const allColleagues = mockUsers.filter(
-      (u) => u.id !== user.id && allowedRoles.includes(u.role)
+      (u) => u.id !== user.id && allowedRoles.includes(u.role),
     );
 
     if (!colleagueSearchTerm.trim()) return allColleagues;
@@ -220,7 +220,7 @@ export function MessagesCenter({ user, profile }) {
       (colleague) =>
         colleague.full_name.toLowerCase().includes(searchLower) ||
         colleague.email.toLowerCase().includes(searchLower) ||
-        colleague.role.toLowerCase().includes(searchLower)
+        colleague.role.toLowerCase().includes(searchLower),
     );
   }
 
@@ -230,10 +230,10 @@ export function MessagesCenter({ user, profile }) {
     const allIssues = getIssues();
     if (profile.role === "admin") {
       return allIssues;
-    } else if (profile.role === "ward_officer") {
-      return allIssues.filter((issue) => issue.ward_officer_id === user.id);
+    } else if (profile.role === "unit_officer") {
+      return allIssues.filter((issue) => issue.wardOfficer?.id === user.id);
     } else if (profile.role === "field_officer") {
-      return allIssues.filter((issue) => issue.assigned_to === user.id);
+      return allIssues.filter((issue) => issue.assignedTo === user.id);
     }
 
     return [];
@@ -246,9 +246,9 @@ export function MessagesCenter({ user, profile }) {
     const searchLower = issueSearchTerm.toLowerCase();
     return availableIssues.filter(
       (issue) =>
-        issue.ticket_id.toLowerCase().includes(searchLower) ||
+        issue.ticket.toLowerCase().includes(searchLower) ||
         issue.title.toLowerCase().includes(searchLower) ||
-        issue.description.toLowerCase().includes(searchLower)
+        issue.description.toLowerCase().includes(searchLower),
     );
   }
 
@@ -322,7 +322,7 @@ export function MessagesCenter({ user, profile }) {
                         className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow-lg ${
                           thread.otherUser.role === "admin"
                             ? "bg-gradient-to-br from-orange-600 to-red-700"
-                            : thread.otherUser.role === "ward_officer"
+                            : thread.otherUser.role === "unit_officer"
                               ? "bg-gradient-to-br from-teal-600 to-emerald-700"
                               : "bg-gradient-to-br from-cyan-600 to-blue-700"
                         }`}
@@ -339,7 +339,7 @@ export function MessagesCenter({ user, profile }) {
                         <p className="text-xs text-gray-500">
                           {thread.otherUser.role === "admin"
                             ? "Admin"
-                            : thread.otherUser.role === "ward_officer"
+                            : thread.otherUser.role === "unit_officer"
                               ? "Ward Officer"
                               : "Field Officer"}
                         </p>
@@ -393,7 +393,7 @@ export function MessagesCenter({ user, profile }) {
                     className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-white font-bold text-sm md:text-lg shadow-lg ${
                       selectedThread.otherUser.role === "admin"
                         ? "bg-gradient-to-br from-orange-600 to-red-700"
-                        : selectedThread.otherUser.role === "ward_officer"
+                        : selectedThread.otherUser.role === "unit_officer"
                           ? "bg-gradient-to-br from-teal-600 to-emerald-700"
                           : "bg-gradient-to-br from-cyan-600 to-blue-700"
                     }`}
@@ -431,7 +431,7 @@ export function MessagesCenter({ user, profile }) {
                 const allIssues = getIssues();
                 const referencedIssues = msg.issue_ids
                   ? allIssues.filter((issue) =>
-                      msg.issue_ids.includes(issue.id)
+                      msg.issue_ids.includes(issue.id),
                     )
                   : [];
 
@@ -480,7 +480,7 @@ export function MessagesCenter({ user, profile }) {
                                     <span
                                       className={`font-mono text-xs ${isFromMe ? "opacity-80" : "text-gray-500"}`}
                                     >
-                                      {issue.ticket_id}
+                                      {issue.ticket}
                                     </span>
                                     <span className="font-medium truncate">
                                       {issue.title}
@@ -489,7 +489,7 @@ export function MessagesCenter({ user, profile }) {
                                   <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-50 w-80">
                                     <div className="bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
                                       <div className="font-semibold mb-1">
-                                        {issue.ticket_id}: {issue.title}
+                                        {issue.ticket}: {issue.title}
                                       </div>
                                       <div className="text-gray-300 mb-2">
                                         {issue.description}
@@ -544,7 +544,7 @@ export function MessagesCenter({ user, profile }) {
                     }
                   >
                     {selectedIssue
-                      ? `${selectedIssue.ticket_id} - ${selectedIssue.title}`
+                      ? `${selectedIssue.ticket} - ${selectedIssue.title}`
                       : "No issue reference"}
                   </span>
                   <ChevronDown
@@ -593,7 +593,7 @@ export function MessagesCenter({ user, profile }) {
                             }`}
                           >
                             <div className="font-medium text-gray-900 mb-1">
-                              {issue.ticket_id} - {issue.title}
+                              {issue.ticket} - {issue.title}
                             </div>
                             <div className="text-xs text-gray-600 line-clamp-2">
                               {issue.description}
@@ -724,7 +724,7 @@ export function MessagesCenter({ user, profile }) {
                           className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-white font-bold text-sm md:text-lg shadow-lg ${
                             colleague.role === "admin"
                               ? "bg-gradient-to-br from-orange-600 to-red-700"
-                              : colleague.role === "ward_officer"
+                              : colleague.role === "unit_officer"
                                 ? "bg-gradient-to-br from-teal-600 to-emerald-700"
                                 : "bg-gradient-to-br from-cyan-600 to-blue-700"
                           }`}
@@ -741,7 +741,7 @@ export function MessagesCenter({ user, profile }) {
                           <p className="text-xs md:text-sm text-gray-500">
                             {colleague.role === "admin"
                               ? "Admin"
-                              : colleague.role === "ward_officer"
+                              : colleague.role === "unit_officer"
                                 ? "Ward Officer"
                                 : "Field Officer"}
                           </p>

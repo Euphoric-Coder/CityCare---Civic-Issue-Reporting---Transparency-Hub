@@ -50,7 +50,7 @@ export function AdminDashboard() {
       await new Promise((resolve) => setTimeout(resolve, 300));
       const data = getIssues().sort(
         (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
       setIssues(data);
     } catch (error) {
@@ -68,7 +68,7 @@ export function AdminDashboard() {
         (issue) =>
           issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           issue.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          issue.ticket.toLowerCase().includes(searchTerm.toLowerCase())
+          issue.ticket.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     }
 
@@ -86,8 +86,8 @@ export function AdminDashboard() {
   function handleIssueUpdated(issueId, updates) {
     setIssues(
       issues.map((issue) =>
-        issue.id === issueId ? { ...issue, ...updates } : issue
-      )
+        issue.id === issueId ? { ...issue, ...updates } : issue,
+      ),
     );
     setSelectedIssue(null);
   }
@@ -119,7 +119,7 @@ export function AdminDashboard() {
     }
 
     alert(
-      `Message sent successfully!\n\nThe officer will be notified and can reply from their Messages Center.`
+      `Message sent successfully!\n\nThe officer will be notified and can reply from their Messages Center.`,
     );
     setMessageOfficer(null);
     setMessageIssues([]);
@@ -138,8 +138,8 @@ export function AdminDashboard() {
               assignedTo: newOfficerId,
               updatedAt: new Date().toISOString(),
             }
-          : i
-      )
+          : i,
+      ),
     );
 
     console.log("Reassignment recorded:", {
@@ -151,7 +151,7 @@ export function AdminDashboard() {
     });
 
     alert(
-      `Issue reassigned successfully!\n\nFrom: ${oldOfficer?.full_name || "Unassigned"}\nTo: ${newOfficer?.full_name}\nReason: ${reason}\n\nBoth officers have been notified.`
+      `Issue reassigned successfully!\n\nFrom: ${oldOfficer?.full_name || "Unassigned"}\nTo: ${newOfficer?.full_name}\nReason: ${reason}\n\nBoth officers have been notified.`,
     );
     setReassignIssue(null);
     setSelectedIssue(null);
@@ -176,8 +176,8 @@ export function AdminDashboard() {
               status: "pending",
               updatedAt: new Date().toISOString(),
             }
-          : i
-      )
+          : i,
+      ),
     );
 
     console.log("Assignment revoked:", {
@@ -188,7 +188,7 @@ export function AdminDashboard() {
     });
 
     alert(
-      `Assignment revoked successfully!\n\nFrom: ${officer?.full_name}\nReason: ${reason}\n\nThe officer has been notified and the issue is now unassigned.`
+      `Assignment revoked successfully!\n\nFrom: ${officer?.full_name}\nReason: ${reason}\n\nThe officer has been notified and the issue is now unassigned.`,
     );
     setSelectedIssue(null);
   }
@@ -201,17 +201,17 @@ export function AdminDashboard() {
   };
 
   const officers = mockUsers.filter(
-    (u) => u.role === "ward_officer" || u.role === "field_officer"
+    (u) => u.role === "unit_officer" || u.role === "field_officer",
   );
 
   const officerWorkload = officers.map((officer) => {
     const assignedIssues = issues.filter((i) => i.assignedTo === officer.id);
     const pending = assignedIssues.filter((i) => i.status === "pending").length;
     const inProgress = assignedIssues.filter(
-      (i) => i.status === "in_progress"
+      (i) => i.status === "in_progress",
     ).length;
     const resolved = assignedIssues.filter(
-      (i) => i.status === "resolved"
+      (i) => i.status === "resolved",
     ).length;
     const total = assignedIssues.length;
 
@@ -422,7 +422,7 @@ export function AdminDashboard() {
                   >
                     <div
                       className={`p-6 ${
-                        officer.role === "ward_officer"
+                        officer.role === "unit_officer"
                           ? "bg-gradient-to-r from-teal-50 to-emerald-50 border-b-2 border-teal-200"
                           : "bg-gradient-to-r from-cyan-50 to-blue-50 border-b-2 border-cyan-200"
                       }`}
@@ -431,7 +431,7 @@ export function AdminDashboard() {
                         <div className="flex items-center gap-4">
                           <div
                             className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg ${
-                              officer.role === "ward_officer"
+                              officer.role === "unit_officer"
                                 ? "bg-gradient-to-br from-teal-600 to-emerald-700"
                                 : "bg-gradient-to-br from-cyan-600 to-blue-700"
                             }`}
@@ -448,12 +448,12 @@ export function AdminDashboard() {
                             <div className="flex items-center gap-2 mt-1">
                               <span
                                 className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                  officer.role === "ward_officer"
+                                  officer.role === "unit_officer"
                                     ? "bg-teal-200 text-teal-800"
                                     : "bg-cyan-200 text-cyan-800"
                                 }`}
                               >
-                                {officer.role === "ward_officer"
+                                {officer.role === "unit_officer"
                                   ? "🏛️ Ward Officer"
                                   : "🔧 Field Officer"}
                               </span>
@@ -612,7 +612,7 @@ export function AdminDashboard() {
                                   </div>
                                   <div className="text-xs font-medium text-gray-700">
                                     {new Date(
-                                      issue.updatedAt
+                                      issue.updatedAt,
                                     ).toLocaleDateString()}
                                   </div>
                                 </div>
@@ -646,7 +646,7 @@ export function AdminDashboard() {
                       </div>
                     )}
                   </div>
-                )
+                ),
               )}
 
               {officerWorkload.every((o) => o.total === 0) && (
