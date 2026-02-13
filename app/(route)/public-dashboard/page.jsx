@@ -8,7 +8,8 @@ const page = () => {
   return (
     <div>
       <PublicNavbar />
-      <PublicDashboard />
+      <div className="text-center py-12">Public dashboard coming soon... </div>
+      {/* <PublicDashboard /> */}
     </div>
   );
 };
