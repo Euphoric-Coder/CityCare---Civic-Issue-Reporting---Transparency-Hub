@@ -102,9 +102,9 @@ export function IssueCard({ issue, onClick }) {
           </p>
         </div>
 
-        {issue.photo_url ? (
+        {issue.photoUrl ? (
           <img
-            src={issue.photo_url}
+            src={issue.photoUrl}
             alt={issue.title}
             className="w-20 h-20 rounded-lg object-cover border-2 border-white shadow-md ml-4"
           />

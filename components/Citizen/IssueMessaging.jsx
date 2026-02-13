@@ -65,22 +65,29 @@ export function IssueMessaging({ issue }) {
 
       const mockMessages = getIssueMessages(issue.id).filter(
         (msg) =>
-          (msg.sender_id === user.id && msg.recipient_id === recipientId) ||
-          (msg.sender_id === recipientId && msg.recipient_id === user.id)
+          (msg.sender_id == user.id && msg.recipient_id == recipientId) ||
+          (msg.sender_id == recipientId && msg.recipient_id == user.id),
       );
+
+      // fix === instead of == (TODO)
+      // const mockMessages = getIssueMessages(issue.id).filter(
+      //   (msg) =>
+      //     (msg.sender_id === user.id && msg.recipient_id === recipientId) ||
+      //     (msg.sender_id === recipientId && msg.recipient_id === user.id)
+      // );
 
       console.log("Filtered messages:", mockMessages);
 
       const messagesWithSender = mockMessages.map((msg) => ({
         ...msg,
         sender:
-          msg.sender_id === user.id
+          msg.sender_id == user.id
             ? {
                 id: user.id,
                 full_name: profile?.full_name || "You",
                 role: profile?.role || "citizen",
               }
-            : selectedOfficer === "field"
+            : selectedOfficer == "field"
               ? {
                   id: issue.assignee.id,
                   full_name: issue.assignee.full_name,
@@ -92,6 +99,29 @@ export function IssueMessaging({ issue }) {
                   role: issue.wardOfficer.role,
                 },
       }));
+
+      // fix === instead of == (TODO)
+      // const messagesWithSender = mockMessages.map((msg) => ({
+      //   ...msg,
+      //   sender:
+      //     msg.sender_id === user.id
+      //       ? {
+      //           id: user.id,
+      //           full_name: profile?.full_name || "You",
+      //           role: profile?.role || "citizen",
+      //         }
+      //       : selectedOfficer === "field"
+      //         ? {
+      //             id: issue.assignee.id,
+      //             full_name: issue.assignee.full_name,
+      //             role: issue.assignee.role,
+      //           }
+      //         : {
+      //             id: issue.wardOfficer.id,
+      //             full_name: issue.wardOfficer.full_name,
+      //             role: issue.wardOfficer.role,
+      //           },
+      // }));
 
       setMessages(messagesWithSender);
     } catch (error) {
@@ -236,7 +266,8 @@ export function IssueMessaging({ issue }) {
           </div>
         ) : (
           messages.map((msg) => {
-            const isOwnMessage = msg.sender_id === user.id;
+            // TODO: fix == vs === (currently using == to match mock data, but should be === in real implementation)
+            const isOwnMessage = msg.sender_id == user.id;
             return (
               <div
                 key={msg.id}
@@ -301,4 +332,3 @@ export function IssueMessaging({ issue }) {
     </div>
   );
 }
-
