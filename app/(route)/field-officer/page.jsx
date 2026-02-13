@@ -6,7 +6,10 @@ import React from "react";
 const page = () => {
   return (
     <div>
-      <FieldOfficerDashboard />
+      {/* <FieldOfficerDashboard /> */}
+      <div className="text-center py-12">
+        Field officer dashboard coming soon...{" "}
+      </div>
     </div>
   );
 };
