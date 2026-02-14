@@ -63,9 +63,7 @@ export default function FieldOfficerLayout({ children }) {
     }
   }, [dbUser, dbRole]);
 
-  /* -----------------------------------
-     Initial Auth + DB Load
-  ------------------------------------ */
+  // Initial Auth & DB Load
   useEffect(() => {
     if (status === "authenticated") {
       loadUserFromDB().finally(() => setLoading(false));

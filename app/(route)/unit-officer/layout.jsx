@@ -20,9 +20,6 @@ export default function UnitOfficerLayout({ children }) {
   const [accountApproved, setAccountApproved] = useState(null);
   const [approvalLoading, setApprovalLoading] = useState(true);
 
-  /* -----------------------------------
-     Load User From Convex (Source Truth)
-  ------------------------------------ */
   const loadUserFromDB = useCallback(async () => {
     if (!session?.user?.email) return;
 
@@ -30,9 +27,6 @@ export default function UnitOfficerLayout({ children }) {
       const user = await fetchQuery(api.users.getUserByEmail, {
         email: session.user.email,
       });
-
-      console.log("Fetched User from DB:", user);
-      console.log(user.role);
 
       if (!user) {
         router.replace("/sign-in");
@@ -58,20 +52,15 @@ export default function UnitOfficerLayout({ children }) {
         { userId: dbUser._id },
       );
 
-      console.log("Fetched Officer Data:", officer);
-
       setAccountApproved(officer?.accountApproved ?? false);
     } catch (err) {
       console.error("Account approval fetch error:", err);
     } finally {
       setApprovalLoading(false);
-      console.log("Database User:", dbUser, dbRole);
     }
   }, [dbUser, dbRole]);
 
-  /* -----------------------------------
-     Initial Auth + DB Load
-  ------------------------------------ */
+  // Initial Auth & DB Load
   useEffect(() => {
     if (status === "authenticated") {
       loadUserFromDB().finally(() => setLoading(false));
@@ -88,9 +77,7 @@ export default function UnitOfficerLayout({ children }) {
     }
   }, [dbUser, dbRole, officerAccountApproval]);
 
-  /* -----------------------------------
-     Loading Screen
-  ------------------------------------ */
+  // Loading Screen
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-dark-300 transition-colors">

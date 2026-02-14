@@ -25,6 +25,9 @@ import {
   Award,
   MapPinned,
   VideoIcon,
+  CircleCheckBig,
+  Map,
+  Camera,
 } from "lucide-react";
 import * as localStorageService from "@/lib/localStorageService";
 import { mockUsers } from "@/lib/mockData";
@@ -627,17 +630,6 @@ export function WOIssueDetailPanel({
                   </div>
                   <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
                     <span className="font-semibold text-teal-700 text-sm uppercase tracking-wide block mb-2">
-                      Priority Score
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <Award size={18} className="text-amber-500" />
-                      <p className="text-gray-800 font-bold text-lg">
-                        {issue.priority_score.toFixed(1)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
-                    <span className="font-semibold text-teal-700 text-sm uppercase tracking-wide block mb-2">
                       Upvotes
                     </span>
                     <div className="flex items-center gap-2">
@@ -647,7 +639,7 @@ export function WOIssueDetailPanel({
                       </p>
                     </div>
                   </div>
-                  <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                  <div className="bg-white col-span-2 rounded-xl p-4 border border-gray-200 shadow-sm">
                     <span className="font-semibold text-teal-700 text-sm uppercase tracking-wide block mb-2">
                       Reported By
                     </span>
@@ -1229,6 +1221,30 @@ export function WOIssueDetailPanel({
         {/* VERIFICATION TAB */}
         {activeTab === "verification" && (
           <div className="space-y-6">
+            {/* FO Issue Photo (Before Work - Dummy Data) */}
+            <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border-2 border-gray-200 p-6 shadow-xl mb-6">
+              <h3 className="font-bold text-gray-900 mb-5 flex items-center gap-3 text-lg">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-md">
+                  <Camera size={20} className="text-white" />
+                </div>
+                Field Officer Issue Capture (Before Work)
+              </h3>
+
+              <div className="space-y-3">
+                <p className="text-gray-600 text-sm">
+                  Photo captured by Field Officer at the issue location before
+                  starting the work. (Dummy image used for demonstration
+                  purposes.)
+                </p>
+
+                <img
+                  src="https://images.pexels.com/photos/2097090/pexels-photo-2097090.jpeg?auto=compress&cs=tinysrgb&w=800"
+                  alt="Field officer issue capture"
+                  className="w-full rounded-2xl border-2 border-gray-200 shadow-lg hover:shadow-2xl transition-shadow"
+                />
+              </div>
+            </div>
+
             {/* FO Completion Proof */}
             {issue.fo_completion_proof &&
             issue.fo_completion_proof.length > 0 ? (
@@ -1270,31 +1286,116 @@ export function WOIssueDetailPanel({
             )}
 
             {/* FO Location Trace */}
-            {issue.fo_location_trace && issue.fo_location_trace.length > 0 && (
-              <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border-2 border-gray-200 p-6 shadow-xl">
-                <h3 className="font-bold text-gray-900 mb-5 flex items-center gap-3 text-lg">
-                  <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-md">
-                    <MapPin size={20} className="text-white" />
-                  </div>
-                  Field Officer Location Trace
-                </h3>
-                <div className="space-y-3">
-                  {issue.fo_location_trace.map((trace, idx) => (
-                    <div
-                      key={idx}
-                      className="flex justify-between items-center py-3 px-4 bg-white rounded-xl border border-gray-200 shadow-sm"
-                    >
-                      <span className="text-gray-700 font-medium">
-                        {trace.lat.toFixed(4)}, {trace.lng.toFixed(4)}
-                      </span>
-                      <span className="text-gray-500 text-sm">
-                        {new Date(trace.timestamp).toLocaleTimeString()}
-                      </span>
+            {issue.fo_location_trace &&
+              issue.fo_location_trace.length > 0 &&
+              (() => {
+                const beforeLocation = issue.fo_location_trace[0];
+                const afterLocation =
+                  issue.fo_location_trace[issue.fo_location_trace.length - 1];
+
+                const generateMapsLink = (lat, lng) =>
+                  `https://www.google.com/maps?q=${lat},${lng}`;
+
+                return (
+                  <div className="bg-gradient-to-br from-white to-gray-50 rounded-2xl border-2 border-gray-200 p-6 shadow-xl">
+                    <h3 className="font-bold text-gray-900 mb-5 flex items-center gap-3 text-lg">
+                      <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-md">
+                        <MapPin size={20} className="text-white" />
+                      </div>
+                      Field Officer Location Verification
+                    </h3>
+
+                    <div className="space-y-4">
+                      {/* BEFORE WORK */}
+                      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex justify-between items-center">
+                        <div>
+                          <p className="font-semibold text-gray-800">
+                            <MapPin className="inline mr-2 text-blue-600" />
+                            Before Work (Issue Stage)
+                          </p>
+
+                          <p className="text-gray-600 text-sm">
+                            Sigra Area, Varanasi
+                          </p>
+
+                          <p className="text-gray-400 text-xs mt-1">
+                            {new Date(
+                              beforeLocation.timestamp,
+                            ).toLocaleString()}
+                          </p>
+                        </div>
+
+                        <a
+                          href={generateMapsLink(
+                            beforeLocation.lat,
+                            beforeLocation.lng,
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
+                        >
+                          View on Maps
+                        </a>
+                      </div>
+
+                      {/* AFTER COMPLETION */}
+                      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex justify-between items-center">
+                        <div>
+                          <p className="font-semibold text-gray-800">
+                            <CircleCheckBig className="inline mr-2 text-green-600" />
+                            After Completion (Proof Submission)
+                          </p>
+
+                          <p className="text-gray-600 text-sm">
+                            Sigra Area, Varanasi
+                          </p>
+
+                          <p className="text-gray-400 text-xs mt-1">
+                            {new Date(afterLocation.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+
+                        <a
+                          href={generateMapsLink(
+                            afterLocation.lat,
+                            afterLocation.lng,
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition"
+                        >
+                          View on Maps
+                        </a>
+                      </div>
+
+                      {/* OFFICIAL ISSUE ADDRESS */}
+                      <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex justify-between items-center">
+                        <div>
+                          <p className="font-semibold text-indigo-900 flex items-center gap-2">
+                            <Map className="text-indigo-600" /> Official Issue
+                            Address
+                          </p>
+                          <p className="text-indigo-700 text-sm mt-1">
+                            {issue.address}
+                          </p>
+                        </div>
+
+                        <a
+                          href={generateMapsLink(
+                            issue.latitude,
+                            issue.longitude,
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition"
+                        >
+                          View on Maps
+                        </a>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                  </div>
+                );
+              })()}
 
             {/* Verification Actions */}
             <div className="space-y-4">
