@@ -316,9 +316,14 @@ const SignInPage = () => {
         {/* Right Side */}
         <div className="hidden md:flex flex-1 relative overflow-hidden">
           <img
-            src="https://images.pexels.com/photos/7722560/pexels-photo-7722560.jpeg?auto=compress&cs=tinysrgb&w=1200"
+            src="/signin.jpg"
             alt="City view"
-            className="side-img max-h-screen w-full object-cover"
+            className="side-img dark:hidden"
+          />
+          <img
+            src="/signup-dark.jpg"
+            alt="City view"
+            className="side-img dark:block hidden object-fill"
           />
           <div className="absolute inset-0 bg-gradient-to-l from-transparent to-white/40 dark:to-dark-300/20"></div>
         </div>

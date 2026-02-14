@@ -373,8 +373,7 @@ export function LandingPage({ onGetStarted }) {
               <p className="text-gray-600 dark:text-gray-200 leading-relaxed mb-4">
                 Monitor your issue's journey from pending to resolution with
                 real-time status updates.
-              </p>{" "}
-              dark:text-gray-200
+              </p>
               <ul className="space-y-2">
                 <li className="flex items-start">
                   <CheckCircle
