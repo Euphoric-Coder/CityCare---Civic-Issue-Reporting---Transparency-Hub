@@ -64,7 +64,7 @@ const SignUp = () => {
       "Sewage Handling",
     ],
 
-    roads_infrastructure: [
+    road: [
       "Pothole Repair",
       "Asphalt Laying",
       "Footpath Repair",
@@ -72,7 +72,7 @@ const SignUp = () => {
       "Road Marking",
     ],
 
-    water_supply: [
+    water: [
       "Pipeline Repair",
       "Leakage Detection",
       "Valve Maintenance",
@@ -197,7 +197,7 @@ const SignUp = () => {
       }
 
       // Field Officer → specialisations
-      if (formData.role === "field_worker") {
+      if (formData.role === "field_officer") {
         payload.specialisations = formData.specialisations;
       }
 
@@ -225,6 +225,7 @@ const SignUp = () => {
         email: formData.email,
         password: formData.password,
         redirect: false,
+        role: formData.role,
       });
 
       if (result?.error) {
@@ -320,7 +321,7 @@ const SignUp = () => {
                           Select Role
                         </span>
                       </div>
-                      {["citizen", "unit_officer", "field_worker"].map(
+                      {["citizen", "unit_officer", "field_officer"].map(
                         (role) => (
                           <button
                             key={role}
@@ -400,7 +401,7 @@ const SignUp = () => {
                 </div>
               </div>
 
-              {(formData.role === "field_worker" ||
+              {(formData.role === "field_officer" ||
                 formData.role === "unit_officer") && (
                 <div className="space-y-6">
                   {/* Phone */}
@@ -498,7 +499,7 @@ const SignUp = () => {
               )}
 
               {/* Specialisations */}
-              {formData.role === "field_worker" &&
+              {formData.role === "field_officer" &&
                 formData.department.length > 0 && (
                   <div className="mt-6">
                     <label className="shad-input-label block mb-2">

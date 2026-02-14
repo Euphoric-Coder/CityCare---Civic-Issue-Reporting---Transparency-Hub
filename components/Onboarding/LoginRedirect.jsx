@@ -49,7 +49,7 @@ export default function LoginRedirect() {
             router.replace("/unit-officer");
             break;
 
-          case "field_worker":
+          case "field_officer":
             router.replace("/field-officer");
             break;
 

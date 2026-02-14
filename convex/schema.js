@@ -10,7 +10,7 @@ export default defineSchema({
     role: v.union(
       v.literal("citizen"),
       v.literal("unit_officer"),
-      v.literal("field_worker"),
+      v.literal("field_officer"),
       v.literal("admin"),
     ),
 
@@ -58,6 +58,8 @@ export default defineSchema({
 
     avgResolutionTime: v.number(),
 
+    accountApproved: v.boolean(),
+
     rating: v.number(),
     efficiencyScore: v.number(),
 
@@ -99,6 +101,8 @@ export default defineSchema({
 
     avgResolutionTime: v.number(),
     onTimeCompletionRate: v.number(),
+
+    accountApproved: v.boolean(),
 
     rating: v.number(),
     efficiencyScore: v.number(),

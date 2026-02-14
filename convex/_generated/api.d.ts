@@ -8,9 +8,11 @@
  * @module
  */
 
+import type * as fieldOfficers from "../fieldOfficers.js";
 import type * as issues from "../issues.js";
 import type * as issuesMedia from "../issuesMedia.js";
 import type * as signUp from "../signUp.js";
+import type * as unitOfficers from "../unitOfficers.js";
 import type * as users from "../users.js";
 
 import type {
@@ -28,9 +30,11 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  fieldOfficers: typeof fieldOfficers;
   issues: typeof issues;
   issuesMedia: typeof issuesMedia;
   signUp: typeof signUp;
+  unitOfficers: typeof unitOfficers;
   users: typeof users;
 }>;
 declare const fullApiWithMounts: typeof fullApi;

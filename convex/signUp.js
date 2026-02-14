@@ -10,7 +10,7 @@ export const signUp = mutation({
     role: v.union(
       v.literal("citizen"),
       v.literal("unit_officer"),
-      v.literal("field_worker"),
+      v.literal("field_officer"),
       v.literal("admin"),
     ),
 
@@ -106,6 +106,8 @@ export const signUp = mutation({
 
         avgResolutionTime: 0,
 
+        accountApproved: false,
+
         rating: 0,
         efficiencyScore: 0,
 
@@ -118,7 +120,7 @@ export const signUp = mutation({
     }
 
     // Field Officer Profile
-    if (args.role === "field_worker") {
+    if (args.role === "field_officer") {
       await ctx.db.insert("fieldOfficers", {
         userId,
 
@@ -146,6 +148,8 @@ export const signUp = mutation({
 
         avgResolutionTime: 0,
         onTimeCompletionRate: 0,
+
+        accountApproved: false,
 
         rating: 0,
         efficiencyScore: 0,

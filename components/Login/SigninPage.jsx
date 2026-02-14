@@ -204,7 +204,7 @@ const SignInPage = () => {
                         {[
                           "citizen",
                           "unit_officer",
-                          "field_worker",
+                          "field_officer",
                           "admin",
                         ].map((role) => (
                           <button
