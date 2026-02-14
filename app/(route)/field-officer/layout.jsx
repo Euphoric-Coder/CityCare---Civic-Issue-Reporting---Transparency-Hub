@@ -50,23 +50,12 @@ export default function FieldOfficerLayout({ children }) {
     try {
       setApprovalLoading(true);
 
-      if (dbRole === "unit_officer") {
-        const officer = await fetchQuery(
-          api.unitOfficers.getUnitOfficerByUserId,
-          { userId: dbUser._id },
-        );
+      const officer = await fetchQuery(
+        api.fieldOfficers.getFieldOfficerByUserId,
+        { userId: dbUser._id },
+      );
 
-        setAccountApproved(officer?.accountApproved ?? false);
-      }
-
-      if (dbRole === "field_officer") {
-        const officer = await fetchQuery(
-          api.fieldOfficers.getFieldOfficerByUserId,
-          { userId: dbUser._id },
-        );
-
-        setAccountApproved(officer?.accountApproved ?? false);
-      }
+      setAccountApproved(officer?.accountApproved ?? false);
     } catch (err) {
       console.error("Account approval fetch error:", err);
     } finally {
@@ -88,7 +77,7 @@ export default function FieldOfficerLayout({ children }) {
   }, [status, loadUserFromDB]);
 
   useEffect(() => {
-    if (dbUser && dbRole === "field_officer") {
+    if (dbUser && dbRole) {
       officerAccountApproval();
     }
   }, [dbUser, dbRole, officerAccountApproval]);

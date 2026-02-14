@@ -31,6 +31,9 @@ export default function UnitOfficerLayout({ children }) {
         email: session.user.email,
       });
 
+      console.log("Fetched User from DB:", user);
+      console.log(user.role);
+
       if (!user) {
         router.replace("/sign-in");
         return;
@@ -50,27 +53,19 @@ export default function UnitOfficerLayout({ children }) {
     try {
       setApprovalLoading(true);
 
-      if (dbRole === "unit_officer") {
-        const officer = await fetchQuery(
-          api.unitOfficers.getUnitOfficerByUserId,
-          { userId: dbUser._id },
-        );
+      const officer = await fetchQuery(
+        api.unitOfficers.getUnitOfficerByUserId,
+        { userId: dbUser._id },
+      );
 
-        setAccountApproved(officer?.accountApproved ?? false);
-      }
+      console.log("Fetched Officer Data:", officer);
 
-      if (dbRole === "field_officer") {
-        const officer = await fetchQuery(
-          api.fieldOfficers.getFieldOfficerByUserId,
-          { userId: dbUser._id },
-        );
-
-        setAccountApproved(officer?.accountApproved ?? false);
-      }
+      setAccountApproved(officer?.accountApproved ?? false);
     } catch (err) {
       console.error("Account approval fetch error:", err);
     } finally {
       setApprovalLoading(false);
+      console.log("Database User:", dbUser, dbRole);
     }
   }, [dbUser, dbRole]);
 
@@ -88,7 +83,7 @@ export default function UnitOfficerLayout({ children }) {
   }, [status, loadUserFromDB]);
 
   useEffect(() => {
-    if (dbUser && dbRole === "unit_officer") {
+    if (dbUser && dbRole) {
       officerAccountApproval();
     }
   }, [dbUser, dbRole, officerAccountApproval]);
