@@ -27,6 +27,7 @@ import { api } from "@/convex/_generated/api";
 import MediaPreview from "./MediaPreview";
 import ImageCarousel from "./ImageCarousel";
 import { toast } from "sonner";
+import { set } from "date-fns";
 
 const categories = [
   {
@@ -304,6 +305,7 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
         ...prev,
         subcategory: [...prev.subcategory, spec],
       }));
+      setErrors((prev) => ({ ...prev, subcategory: "" }));
     }
 
     setSpecialisationSearch("");
@@ -624,7 +626,11 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
                   onChange={(e) => setSpecialisationSearch(e.target.value)}
                   onKeyPress={handleSpecKeyPress}
                   placeholder="Type to search or add specialisation..."
-                  className="shad-input w-full p-3 rounded-2xl"
+                  className={`w-full p-3 rounded-2xl border-2 transition-all outline-none focus:ring-4 ${
+                    errors.subcategory
+                      ? "border-red-300 dark:border-red-500 focus:border-red-500 focus:ring-red-200 dark:focus:ring-red-800"
+                      : "border-gray-200 dark:border-gray-700 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-emerald-100 dark:focus:ring-emerald-800"
+                  } bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100`}
                   onFocus={() => setShowSpecDropdown(true)}
                   onBlur={() =>
                     setTimeout(() => setShowSpecDropdown(false), 150)
@@ -670,6 +676,13 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
                       </div>
                     </div>
                   )}
+                {/* Error Message */}
+                {errors.subcategory && (
+                  <p className="mt-2 text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+                    <AlertCircle size={14} />
+                    {errors.subcategory}
+                  </p>
+                )}
               </div>
             </div>
           </div>

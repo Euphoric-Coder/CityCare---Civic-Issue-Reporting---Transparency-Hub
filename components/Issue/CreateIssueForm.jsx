@@ -81,6 +81,10 @@ const IssueForm = () => {
         newErrors.category = "Please select a category";
       }
 
+      if (!formData.subcategory || formData.subcategory.length === 0) {
+        newErrors.subcategory = "Please select at least one subcategory";
+      }
+
       if (!formData.priority) {
         newErrors.priority = "Please select a priority level";
       }
