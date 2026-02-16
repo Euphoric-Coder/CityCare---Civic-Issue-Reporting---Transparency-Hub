@@ -107,23 +107,17 @@ export default function UnitOfficerLayout({ children }) {
     );
   }
 
-  /* -----------------------------------
-     Not Logged In
-  ------------------------------------ */
+  // Not Logged In
   if (status === "unauthenticated") {
     return <LoginRedirect />;
   }
 
-  /* -----------------------------------
-     Invalid DB User
-  ------------------------------------ */
+  // Invalid DB User
   if (!dbUser) {
     return <LoginRedirect />;
   }
 
-  /* -----------------------------------
-     Role Restriction
-  ------------------------------------ */
+  // Role Restriction
   if (dbRole !== "unit_officer") {
     return (
       <div
@@ -180,9 +174,7 @@ export default function UnitOfficerLayout({ children }) {
     );
   }
 
-  /* -----------------------------------
-   Account Approval Check
------------------------------------- */
+  // Account Approval Check
   if (dbUser.role === "unit_officer" && accountApproved === false) {
     return (
       <div
@@ -239,8 +231,6 @@ export default function UnitOfficerLayout({ children }) {
     );
   }
 
-  /* -----------------------------------
-     Authorized
-  ------------------------------------ */
+  // If all checks pass, render the children components (dashboard)
   return <>{children}</>;
 }
