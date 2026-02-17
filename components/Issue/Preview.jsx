@@ -13,8 +13,29 @@ import {
   Map,
 } from "lucide-react";
 import MediaPreview from "./MediaPreview";
+import { useQuery } from "convex/react";
+import { duplicateTracker } from "@/lib/duplicateTracker";
+import { useEffect, useState } from "react";
+import { api } from "@/convex/_generated/api";
+import { Alert } from "../ui/alert";
 
 const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
+  const [duplicates, setDuplicates] = useState([]);
+
+  const activeIssues = useQuery(
+    api.duplicateIssues.getActiveIssuesForDuplicateCheck,
+    formData.city ? { city: formData.city } : "skip",
+  );
+
+  useEffect(() => {
+    if (!activeIssues) return;
+    if (!formData.title || !formData.description) return;
+
+    const results = duplicateTracker(formData, activeIssues);
+
+    setDuplicates(results);
+  }, [formData, activeIssues]);
+
   const getCategoryLabel = (value) => {
     switch (value) {
       case "road":
@@ -197,6 +218,74 @@ const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
               </div>
             </div>
           </div>
+
+          {/* Duplicate Detection */}
+          {duplicates.length > 0 && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded-2xl p-5 shadow-lg animate-fadeIn">
+              <div className="flex items-center gap-3 mb-4">
+                <AlertTriangle
+                  className="text-yellow-600 dark:text-yellow-400"
+                  size={22}
+                />
+                <h3 className="font-bold text-yellow-800 dark:text-yellow-300 text-lg">
+                  Similar Active Issues Found
+                </h3>
+              </div>
+
+              <p className="text-xs text-yellow-700 dark:text-yellow-400 mb-4">
+                Matching threshold: {70}/100
+              </p>
+
+              <div className="space-y-4">
+                {duplicates.map((dup) => (
+                  <div
+                    key={dup.issueId}
+                    className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-yellow-200 dark:border-yellow-600 shadow-sm"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                        Issue ID: {dup.issueId}
+                      </p>
+
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          dup.score >= 85
+                            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                            : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300"
+                        }`}
+                      >
+                        {dup.score}/100 Match
+                      </span>
+                    </div>
+
+                    {/* Match Reasons */}
+                    <ul className="text-xs text-gray-600 dark:text-gray-400 list-disc list-inside space-y-1">
+                      {dup.reasons.map((reason, i) => (
+                        <li key={i}>{reason}</li>
+                      ))}
+                    </ul>
+
+                    {/* Strong Duplicate Warning */}
+                    {dup.strongDuplicate && (
+                      <div className="mt-3 p-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-600">
+                        <p className="text-xs font-bold text-red-600 dark:text-red-400">
+                          <AlertTriangle
+                            className="inline mr-1 text-red-600"
+                            size={14}
+                          />{" "}
+                          Strong Duplicate Detected
+                        </p>
+                        <p className="text-xs text-red-500 dark:text-red-300">
+                          This issue is highly similar to an existing active
+                          report. Consider reviewing it before submitting.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Contact / Anonymous */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
