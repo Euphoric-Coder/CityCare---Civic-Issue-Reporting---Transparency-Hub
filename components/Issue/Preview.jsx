@@ -17,24 +17,39 @@ import { useQuery } from "convex/react";
 import { duplicateTracker } from "@/lib/duplicateTracker";
 import { useEffect, useState } from "react";
 import { api } from "@/convex/_generated/api";
-import { Alert } from "../ui/alert";
+import { useSession } from "next-auth/react";
 
 const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
+  const { data: session, status } = useSession();
   const [duplicates, setDuplicates] = useState([]);
 
+  // Only run query when:
+  // 1. Session finished loading
+  // 2. User authenticated
+  // 3. City exists
   const activeIssues = useQuery(
     api.duplicateIssues.getActiveIssuesForDuplicateCheck,
-    formData.city ? { city: formData.city } : "skip",
+    status === "authenticated" && formData.city
+      ? {
+          city: formData.city,
+        }
+      : "skip",
   );
 
+  // Filter only issues posted by same citizen
+  const filteredIssues =
+    activeIssues && session?.user?.id
+      ? activeIssues.filter((issue) => issue.reportedBy === session.user.id)
+      : [];
+
   useEffect(() => {
-    if (!activeIssues) return;
+    if (status !== "authenticated") return;
+    if (!filteredIssues.length) return;
     if (!formData.title || !formData.description) return;
 
-    const results = duplicateTracker(formData, activeIssues);
-
+    const results = duplicateTracker(formData, filteredIssues);
     setDuplicates(results);
-  }, [formData, activeIssues]);
+  }, [formData, filteredIssues]);
 
   const getCategoryLabel = (value) => {
     switch (value) {
