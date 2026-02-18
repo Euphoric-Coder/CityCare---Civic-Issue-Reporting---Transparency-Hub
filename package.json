@@ -12,7 +12,7 @@
   "dependencies": {
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-slot": "^1.2.4",
-    "@react-google-maps/api": "^2.20.7",
+    "@react-google-maps/api": "^2.20.8",
     "@turf/turf": "^7.3.2",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
