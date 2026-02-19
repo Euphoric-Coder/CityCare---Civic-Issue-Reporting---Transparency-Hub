@@ -1,12 +1,14 @@
 "use client";
 
 import { PublicDashboard } from "@/components/Public/PublicDashboard";
-import React from "react";
+import React, { Suspense } from "react";
 
 const page = () => {
   return (
     <div>
-      <PublicDashboard />
+      <Suspense fallback={<div className="text-center mt-10">Loading...</div>}>
+        <PublicDashboard />
+      </Suspense>
     </div>
   );
 };
