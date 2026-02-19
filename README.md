@@ -1,115 +1,255 @@
-# CityCare — Civic Issue Reporting & Transparency Hub
+# CityCare — Smart Civic Issue Management Platform
 
-**CityCare** is a smart and user-friendly civic engagement platform that empowers citizens to **report, track, and resolve neighborhood issues** such as potholes, garbage, streetlight failures, and more — all while ensuring **transparency, accountability, and collaboration** between the public and authorities.
+**CityCare** is a full-stack civic issue reporting and transparency platform designed to streamline communication between citizens and city authorities.
 
----
-
-## Overview
-
-Citizens often face challenges reporting local problems, leading to delays and lack of transparency.  
-**CityCare** bridges this gap by providing a unified digital platform for:
-
-- Citizens to **report issues** with images and location.
-- Authorities to **track, update, and resolve** complaints efficiently.
-- The public to **view resolved cases** and stay informed about civic improvements.
-
-Built with a **citizen-first design philosophy**, CityCare follows key **Human-Computer Interaction (HCI)** principles — focusing on clarity, feedback, consistency, accessibility, and intuitive interaction.
+It enables structured reporting, intelligent duplicate detection, role-based issue management, and a public transparency dashboard — ensuring accountability, efficiency, and trust in civic governance.
 
 ---
 
-## Features
+## Project Context
 
-### Citizen Experience
-- **Easy Complaint Logging** – Add issue title, description, and upload photos.
-- **Google Maps Integration** – Auto-detect and pin complaint location.
-- **Categorized Issues** – Roads, Lighting, Waste, Water, Parks, etc.
-- **Gamification & Leaderboard** – Earn badges and ranks for verified reports.
-- **Anonymous Reporting** – Submit issues without creating an account.
-- **Community Discussion Threads** – Comment and react on ongoing issues.
-- **Multi-Language Support** – Available in multiple regional languages.
+CityCare is developed as part of an academic Study Project / Capstone progression model, with:
 
----
+- Phase 1: Problem Identification & Planning
+- Phase 2: System Design & Proof of Concept
+- Phase 3: Implementation & Validation (In Progress)
 
-### Intelligent Features (AI Layer)[Future Plan]
-- **Automated Issue Classification** – Detect issue type and severity from photo/text.  
-- **Smart Prioritization Engine** – Rank issues based on urgency, location, and public votes.  
-- **Predictive Analytics Dashboard** – Identify recurring issues and hotspots.  
-- **Sentiment Analysis** – Understand citizen emotions for better response management. 
+The system follows structured workflows, RBAC architecture, and transparency-first design principles.
 
 ---
 
-### Role-Based Access Control (RBAC)
-| Role | Capabilities |
-|------|---------------|
-| **Citizen** | Report issues, view updates, and comment. |
-| **Ward Officer** | Manage issues within assigned zones. |
-| **Field Worker** | Update issue progress and upload resolution photos. |
-| **Admin** | Full access — assign tasks, manage users, and view analytics. |
+# 🚀 Core Features
 
-- **Secure Login System** – Role-based authentication via Clerk / Firebase Auth.  
-- **Data Visibility Rules** – Each role can only access relevant regional data.  
-- **Admin Dashboard** – View analytics, assign staff, and generate reports.  
+## 👤 Citizen Module
 
----
-
-### Notifications & Transparency
-- Real-time **email/push notifications** on complaint status.  
-- **Public Dashboard** for resolved issues with visual proof.  
-- **Analytics View** – Total complaints, resolved count, and response times.
+- Report civic issues with:
+  - Title
+  - Description
+  - Category & Subcategory
+  - Location (Google Maps auto-pin)
+  - Photo evidence
+- Anonymous reporting option
+- Upvote & community interaction
+- Real-time status tracking
+- Duplicate issue detection before submission
+- Public transparency access (Resolved & Rejected issues)
 
 ---
 
-### HCI-Driven UI Design
+## 🛠️ Officer Modules
 
-CityCare emphasizes **usability and inclusivity** through design principles:
-- **Consistency** – Uniform colors, icons, and interaction patterns.  
-- **Feedback** – Visual cues (status colors, loaders, success toasts).  
-- **Accessibility** – WCAG-compliant text, ARIA labels, keyboard navigation.  
-- **Responsiveness** – Optimized for mobile and desktop. 
+### 🧑‍🔧 Field Officer
+- View assigned issues
+- Update issue progress
+- Upload before & after resolution photos
+- Add public resolution notes
+- Change status (In Progress → Resolved)
 
----
-
-## Tech Stack
-
-| Layer | Technologies |
-|-------|---------------|
-| **Frontend** | React / Next.js, TailwindCSS, Google Maps API |
-| **Backend** | Node.js (Express) or FastAPI |
-| **Database** | ConvexDB |
-| **Auth & Roles** | NextAuth.js |
-| **AI Layer (Future Plan)** | Custom NLP & CV models (external API integration ready) (For now Gemini API can be used) |
-| **Notifications** | Resend / In-Built |
+### 🏢 Ward / Unit Officer
+- Verify reported issues
+- Assign issues to field officers
+- Reassign issues if required
+- Approve final resolution
+- Manage regional workload
 
 ---
 
-# Installation & Setup Guide — CityCare
+## 👨‍💼 City Administrator Dashboard
 
-Follow the steps below to set up and run **CityCare** on your local machine for development or testing.
-
----
-
-<!-- ## 🧩 Prerequisites
-
-Before you begin, ensure you have the following installed:
-
-- **Node.js** (v18 or above)  
-- **npm** or **yarn** package manager  
-- **MongoDB** or **Firebase Firestore** (for backend database)  
-- **Google Maps API key** (for location tagging)  
-- **Clerk** or **Firebase Authentication** credentials (for RBAC-based login)  
-
-Optional (for AI and analytics):
-- Python (if using FastAPI backend)
-- Any preferred AI model API key (custom, not Gemini) -->
+- View city-wide analytics
+- Heatmap & pin-based issue visualization
+- Role management & account approval
+- Audit logs of actions
+- Public transparency controls
+- KPI metrics:
+  - Total Resolved
+  - Total Rejected
+  - Avg Resolution Time
+  - Citizen Satisfaction Rating
 
 ---
 
-## 📥 Step 1: Clone the Repository
+# 🗺️ Public Transparency Dashboard
+
+Accessible without login.
+
+Displays:
+- Resolved issues with before/after proof
+- Rejected issues with official reason
+- Interactive Google Maps:
+  - Heatmap view
+  - Pin view (toggle)
+- Filters (Ward, Category, Status)
+- Trust & Transparency metrics
+- Shareable issue links
+
+---
+
+# Intelligent Layer (Implemented & Planned)
+
+## Implemented
+- Rule-based duplicate detection system
+  - Location proximity scoring (Haversine distance)
+  - Category & subcategory matching
+  - Title & description similarity scoring
+  - Weighted scoring threshold logic
+
+<!-- ## 🔮 Future AI Enhancements
+- Automated issue classification (NLP + CV)
+- Smart prioritization engine
+- Sentiment analysis on public comments
+- Recurring hotspot detection
+- Predictive civic analytics -->
+
+---
+
+# Role-Based Access Control (RBAC)
+
+| Role | Permissions |
+|------|-------------|
+| Citizen | Report, view, upvote, comment |
+| Field Officer | Update assigned issues |
+| Ward Officer | Verify & assign issues |
+| City Admin | Full system access |
+
+Authentication handled via **NextAuth.js** with role-based route protection.
+
+Account approval system implemented for officers.
+
+---
+
+# HCI & UX Principles Applied
+
+- Consistency in layout & color semantics
+- Status color coding (Green = Resolved, Red = Rejected, Yellow = Pending)
+- Immediate feedback (toasts, loaders, transitions)
+- Accessibility-first design (ARIA ready)
+- Responsive mobile-first UI
+- Structured workflow lifecycle
+
+---
+
+# Tech Stack
+
+## Frontend
+- Next.js (Full-stack React framework)
+- TailwindCSS
+- ShadCN UI Components
+- Lucide Icons
+- Google Maps API
+
+## Backend / Data Layer
+- ConvexDB (Real-time reactive database)
+- Convex functions (queries & mutations)
+- Rule-based duplicate detection engine
+
+## Authentication
+- NextAuth.js
+- Role-based session validation
+
+## Notifications
+- In-app toasts
+- Email integration ready
+
+---
+
+# Structured Issue Lifecycle
+
+1. Citizen Reports Issue
+2. Ward Officer Verifies
+3. Issue Assigned to Field Officer
+4. Field Officer Resolves & Uploads Evidence
+5. Ward Officer Confirms
+6. Status Updated Publicly
+7. Citizen Feedback (Optional)
+
+No arbitrary time limits — resolution based on workflow completion.
+
+---
+
+# Installation & Setup Guide
+
+## Step 1: Clone Repository
 
 ```bash
 git clone https://github.com/Euphoric-Coder/CityCare---Civic-Issue-Reporting---Transparency-Hub.git
-```
-```bash
 cd CityCare
 ```
 
+---
+
+## 📦 Step 2: Install Dependencies
+
+```bash
+npm install
+```
+
+---
+
+## 🔑 Step 3: Configure Environment Variables
+
+Create a `.env.local` file:
+
+```
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
+NEXTAUTH_SECRET=
+NEXTAUTH_URL=
+CONVEX_DEPLOYMENT=
+NEXT_PUBLIC_CONVEX_URL=
+```
+
+---
+
+## 🗄️ Step 4: Install Convex
+
+```bash
+npm install convex
+```
+
+---
+## 🗄️ Step 5: Start Convex
+
+```bash
+npx convex dev
+```
+
+---
+
+## ▶️ Step 6: Run Development Server
+
+```bash
+npm run dev
+```
+
+Open:
+
+```
+http://localhost:3000
+```
+
+---
+
+# 🧪 Current Implementation Status
+
+| Module | Status |
+|--------|--------|
+| Citizen Reporting | ✅ Completed |
+| Duplicate Detection | ✅ Completed |
+| Officer Workflow | ✅ Completed |
+| Public Dashboard | ✅ Completed |
+| Heatmap & Pins | ✅ Completed |
+| Account Approval System | ✅ Completed |
+| AI Layer | 🔄 Planned for Capstone Project |
+
+---
+
+# 🌍 Vision
+
+CityCare aims to evolve into a scalable civic-tech platform capable of:
+
+- Multi-city deployment
+- AI-powered governance analytics
+- Transparent civic performance scoring
+- Smart municipal workflow automation
+
+---
