@@ -15,22 +15,43 @@ export default function Location({ formData, setFormData, errors, setErrors }) {
      Load Google Maps Script (ONLY ONCE)
   -------------------------------------------------- */
   useEffect(() => {
-    if (window.google?.maps) {
-      initializeMap();
-      return;
-    }
+    let isMounted = true;
 
-    if (document.getElementById("google-maps-script")) return;
+    const loadGoogleMaps = async () => {
+      if (!isMounted) return;
 
-    const script = document.createElement("script");
-    script.id = "google-maps-script";
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&v=weekly&loading=async`;
-    script.async = true;
+      // If already loaded
+      if (window.google?.maps && mapRef.current) {
+        initializeMap();
+        return;
+      }
 
-    script.onload = initializeMap;
+      // Prevent duplicate script loading
+      if (!document.getElementById("google-maps-script")) {
+        const script = document.createElement("script");
+        script.id = "google-maps-script";
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&v=weekly&libraries=maps,marker,places`;
 
-    document.head.appendChild(script);
+        script.async = true;
+
+        document.head.appendChild(script);
+
+        script.onload = () => {
+          if (mapRef.current) {
+            initializeMap();
+          }
+        };
+      }
+    };
+
+    // Small delay ensures DOM ref exists
+    setTimeout(loadGoogleMaps, 0);
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
 
   /* --------------------------------------------------
      Initialize Map + Modern Autocomplete
