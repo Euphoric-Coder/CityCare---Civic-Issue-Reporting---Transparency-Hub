@@ -15,7 +15,7 @@ import {
 import MediaPreview from "./MediaPreview";
 import { useQuery } from "convex/react";
 import { duplicateTracker } from "@/lib/duplicateTracker";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { useSession } from "next-auth/react";
 
@@ -37,10 +37,12 @@ const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
   );
 
   // Filter only issues posted by same citizen
-  const filteredIssues =
-    activeIssues && session?.user?.id
-      ? activeIssues.filter((issue) => issue.reportedBy === session.user.id)
-      : [];
+  const filteredIssues = useMemo(() => {
+    if (!activeIssues || !session?.user?.id) return [];
+
+    return activeIssues.filter((issue) => issue.reportedBy === session.user.id);
+  }, [activeIssues, session?.user?.id]);
+
 
   useEffect(() => {
     if (status !== "authenticated") return;

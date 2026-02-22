@@ -15,13 +15,6 @@ import { useSession } from "next-auth/react";
 
 const IssueForm = () => {
   const { data: session, status } = useSession();
-
-  console.log(
-    "Session data in IssueForm:",
-    session?.user?.id,
-    "Status:",
-    status,
-  );
   const [currentStep, setCurrentStep] = useState(1);
   const [showPreview, setShowPreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
