@@ -13,15 +13,36 @@ import {
   Map,
 } from "lucide-react";
 import MediaPreview from "./MediaPreview";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { duplicateTracker } from "@/lib/duplicateTracker";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { useSession } from "next-auth/react";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
-const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
+const PreviewModal = ({
+  formData,
+  setFormData,
+  onClose,
+  setCurrentStep,
+  onSubmit,
+  isSubmitting,
+}) => {
   const { data: session, status } = useSession();
   const [duplicates, setDuplicates] = useState([]);
+  // values: "cancel" | "submit"
+  const [dialogType, setDialogType] = useState(null);
+
+  const hasStrongDuplicate = duplicates.some((dup) => dup.strongDuplicate);
 
   // Only run query when:
   // 1. Session finished loading
@@ -43,15 +64,83 @@ const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
     return activeIssues.filter((issue) => issue.reportedBy === session.user.id);
   }, [activeIssues, session?.user?.id]);
 
-
   useEffect(() => {
     if (status !== "authenticated") return;
     if (!filteredIssues.length) return;
     if (!formData.title || !formData.description) return;
 
     const results = duplicateTracker(formData, filteredIssues);
-    setDuplicates(results);
+
+    // Attach full issue details
+    const enrichedResults = results.map((dup) => {
+      const fullIssue = filteredIssues.find(
+        (issue) => issue._id === dup.issueId,
+      );
+
+      return {
+        ...dup,
+        fullIssue,
+      };
+    });
+
+    setDuplicates(enrichedResults);
   }, [formData, filteredIssues]);
+
+  const deleteMedia = useMutation(api.issuesMedia.deleteMedia);
+
+  const handleCancelSubmission = async () => {
+    try {
+      // Delete all photos
+      if (formData.photos?.length > 0) {
+        await Promise.all(
+          formData.photos.map((storageId) => deleteMedia({ storageId })),
+        );
+      }
+
+      // Delete video if exists
+      if (formData.videos) {
+        await deleteMedia({ storageId: formData.videos });
+      }
+
+      // Reset duplicate state
+      setDuplicates([]);
+
+      // Resets Issue Data
+      setFormData({
+        title: "",
+        description: "",
+        category: "",
+        subcategory: [],
+        otherCategoryName: "",
+        priority: "",
+        tags: [],
+        photos: [],
+        videos: [],
+
+        searchQuery: "",
+        address: "",
+        city: "",
+        state: "",
+        postal: "",
+        latitude: 20.5937,
+        longitude: 78.9629,
+        googleMapUrl: "",
+
+        isAnonymous: false,
+        additionalEmail: "",
+
+        createdAt: Date.now(),
+      });
+
+      // Reset to Step 1
+      setCurrentStep(1);
+
+      // Close modal
+      onClose();
+    } catch (error) {
+      console.error("Error deleting media:", error);
+    }
+  };
 
   const getCategoryLabel = (value) => {
     switch (value) {
@@ -198,10 +287,10 @@ const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
               )}
 
               {/* Videos */}
-              {formData.videos && (
+              {formData.videos?.length > 0 && (
                 <div>
                   <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
-                    Videos ({formData.videos ? 1 : 0})
+                    Video
                   </p>
 
                   {formData.videos && (
@@ -260,20 +349,48 @@ const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
                     className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-yellow-200 dark:border-yellow-600 shadow-sm"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
-                        Issue ID: {dup.issueId}
-                      </p>
+                      <div className="space-y-2">
+                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                          {dup.fullIssue?.title || "Untitled Issue"}
+                        </p>
 
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          dup.score >= 85
-                            ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-                            : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300"
-                        }`}
-                      >
-                        {dup.score}/100 Match
-                      </span>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                          {dup.fullIssue?.description}
+                        </p>
+
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md">
+                            Category: {dup.fullIssue?.category}
+                          </span>
+
+                          {dup.fullIssue?.subcategory?.map((sub) => (
+                            <span
+                              key={sub}
+                              className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md"
+                            >
+                              {sub}
+                            </span>
+                          ))}
+
+                          <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md">
+                            Priority: {dup.fullIssue?.priority}
+                          </span>
+                        </div>
+
+                        <p className="text-[11px] text-gray-400">
+                          Issue ID: {dup.issueId}
+                        </p>
+                      </div>
                     </div>
+                    <span
+                      className={`flex-1 items-end px-3 py-1 rounded-full text-xs font-bold ${
+                        dup.score >= 85
+                          ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                          : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300"
+                      }`}
+                    >
+                      {dup.score}/100 Match
+                    </span>
 
                     {/* Match Reasons */}
                     <ul className="text-xs text-gray-600 dark:text-gray-400 list-disc list-inside space-y-1">
@@ -356,9 +473,16 @@ const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
           </div>
         </div>
 
+        {hasStrongDuplicate && (
+          <p className="text-center text-sm text-red-600 dark:text-red-400 font-semibold mt-2">
+            A highly similar active issue exists. Please confirm your action.
+          </p>
+        )}
+
         {/* Footer */}
         <div className="border-t border-gray-200 dark:border-gray-800 p-6 bg-gray-50 dark:bg-gray-900/50 transition-colors">
           <div className="flex gap-4">
+            {/* Edit Button */}
             <button
               onClick={onClose}
               disabled={isSubmitting}
@@ -366,23 +490,170 @@ const PreviewModal = ({ formData, onClose, onSubmit, isSubmitting }) => {
             >
               Edit Report
             </button>
-            <button
-              onClick={onSubmit}
-              disabled={isSubmitting}
-              className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="animate-spin" size={20} />
-                  Submitting...
-                </>
-              ) : (
-                "Submit Issue"
-              )}
-            </button>
+
+            {/* IF Strong Duplicate → Replace Submit */}
+            {hasStrongDuplicate ? (
+              <>
+                <button
+                  onClick={() => setDialogType("cancel")}
+                  disabled={isSubmitting}
+                  className="flex-1 px-6 py-3 rounded-xl border-2 border-red-400 text-red-600 dark:text-red-400 font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel Submission
+                </button>
+
+                <button
+                  onClick={() => setDialogType("submit")}
+                  disabled={isSubmitting}
+                  className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  Submit Anyway
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={onSubmit}
+                disabled={isSubmitting}
+                className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    Submitting...
+                  </>
+                ) : (
+                  "Submit Issue"
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      <AlertDialog open={!!dialogType} onOpenChange={() => setDialogType(null)}>
+        <AlertDialogContent
+          className="
+      p-0 overflow-hidden rounded-2xl
+      border border-emerald-200 dark:border-emerald-800
+      bg-white dark:bg-gray-900
+      shadow-2xl
+    "
+        >
+          {/* Gradient Header */}
+          <div
+            className="
+        bg-gradient-to-r 
+        from-teal-600 
+        via-emerald-600 
+        to-cyan-700 
+        p-6
+      "
+          >
+            <div className="flex items-center gap-3">
+              {dialogType === "cancel" ? (
+                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                  <AlertTriangle className="text-white" size={22} />
+                </div>
+              ) : (
+                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                  <Shield className="text-white" size={22} />
+                </div>
+              )}
+
+              <h2 className="text-xl font-bold text-white">
+                {dialogType === "cancel"
+                  ? "Cancel This Report?"
+                  : "Submit Duplicate Issue?"}
+              </h2>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+              {dialogType === "cancel"
+                ? "This will permanently delete all uploaded media and completely clear your report data. This action cannot be undone."
+                : "A highly similar active issue already exists in the system. Submitting this report may create redundancy. Are you sure you want to proceed?"}
+            </p>
+
+            {dialogType === "submit" && (
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-xl p-4 text-xs text-yellow-700 dark:text-yellow-300">
+                Submitting a duplicate issue may delay resolution and affect
+                system efficiency.
+              </div>
+            )}
+
+            {dialogType === "cancel" && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl p-4 text-xs text-red-600 dark:text-red-300">
+                All uploaded photos and videos will be permanently deleted from
+                storage.
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex gap-4 p-6 pt-0">
+            <AlertDialogCancel
+              className="
+          flex-1
+          px-5 py-3
+          rounded-xl
+          border-2
+          border-gray-300 dark:border-gray-700
+          bg-white dark:bg-gray-800
+          text-gray-700 dark:text-gray-300
+          hover:bg-gray-100 dark:hover:bg-gray-700
+          transition-all
+        "
+            >
+              Go Back
+            </AlertDialogCancel>
+
+            {dialogType === "cancel" ? (
+              <AlertDialogAction
+                onClick={handleCancelSubmission}
+                className="
+            flex-1
+            px-5 py-3
+            rounded-xl
+            font-semibold
+            bg-gradient-to-r 
+            from-red-500 
+            to-red-600
+            text-white
+            shadow-lg
+            hover:shadow-xl
+            hover:scale-[1.02]
+            transition-all
+          "
+              >
+                Yes, Cancel Report
+              </AlertDialogAction>
+            ) : (
+              <AlertDialogAction
+                onClick={onSubmit}
+                className="
+            flex-1
+            px-5 py-3
+            rounded-xl
+            font-semibold
+            bg-gradient-to-r 
+            from-teal-600 
+            via-emerald-600 
+            to-cyan-700
+            text-white
+            shadow-lg
+            hover:shadow-xl
+            hover:scale-[1.02]
+            transition-all
+          "
+              >
+                Yes, Submit Anyway
+              </AlertDialogAction>
+            )}
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

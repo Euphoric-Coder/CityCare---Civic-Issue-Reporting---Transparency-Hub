@@ -2,14 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MapPin, Navigation, Link2, AlertCircle } from "lucide-react";
-import { useTheme } from "next-themes";
 
 export default function Location({ formData, setFormData, errors, setErrors }) {
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const autocompleteContainerRef = useRef(null);
   const [mapInstance, setMapInstance] = useState(null);
-  const { theme } = useTheme();
 
   /* --------------------------------------------------
      Load Google Maps Script (ONLY ONCE)
@@ -52,7 +50,6 @@ export default function Location({ formData, setFormData, errors, setErrors }) {
     };
   }, []);
 
-
   /* --------------------------------------------------
      Initialize Map + Modern Autocomplete
   -------------------------------------------------- */
@@ -73,7 +70,7 @@ export default function Location({ formData, setFormData, errors, setErrors }) {
     const map = new Map(mapRef.current, {
       center,
       zoom: 16,
-      mapId: "DEMO_MAP_ID", // Optional but recommended
+      mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID,
     });
 
     setMapInstance(map);
