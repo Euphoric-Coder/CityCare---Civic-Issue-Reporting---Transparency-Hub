@@ -205,8 +205,8 @@ const PreviewModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden animate-slideUp border border-gray-200 dark:border-gray-800 transition-colors">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-50 animate-fadeIn">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden animate-slideUp border border-gray-200 dark:border-gray-800 transition-colors">
         {/* Header */}
         <div className="bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-700 p-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-white">Review Your Report</h2>
@@ -327,96 +327,350 @@ const PreviewModal = ({
 
           {/* Duplicate Detection */}
           {duplicates.length > 0 && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-700 rounded-2xl p-5 shadow-lg animate-fadeIn">
-              <div className="flex items-center gap-3 mb-4">
-                <AlertTriangle
-                  className="text-yellow-600 dark:text-yellow-400"
-                  size={22}
+            <div className="relative overflow-hidden rounded-3xl border border-yellow-200/80 dark:border-yellow-700/60 bg-white/90 dark:bg-gray-900/70 shadow-2xl">
+              {/* Ambient gradient + subtle pattern */}
+              <div className="pointer-events-none absolute inset-0">
+                <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-yellow-300/25 blur-3xl" />
+                <div className="absolute -bottom-28 -right-28 h-80 w-80 rounded-full bg-amber-400/20 blur-3xl" />
+                <div
+                  className="absolute inset-0 opacity-[0.06] dark:opacity-[0.08]"
+                  style={{
+                    backgroundImage:
+                      "radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)",
+                    backgroundSize: "18px 18px",
+                  }}
                 />
-                <h3 className="font-bold text-yellow-800 dark:text-yellow-300 text-lg">
-                  Similar Active Issues Found
-                </h3>
               </div>
 
-              <p className="text-xs text-yellow-700 dark:text-yellow-400 mb-4">
-                Matching threshold: {70}/100
-              </p>
+              {/* Header */}
+              <div className="relative px-6 pt-6 pb-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 rounded-2xl border border-yellow-200/70 dark:border-yellow-700/60 bg-gradient-to-b from-yellow-50 to-amber-50 dark:from-yellow-900/25 dark:to-amber-900/10 p-3 shadow-sm">
+                      <AlertTriangle
+                        className="text-yellow-700 dark:text-yellow-300"
+                        size={22}
+                      />
+                    </div>
 
-              <div className="space-y-4">
-                {duplicates.map((dup) => (
-                  <div
-                    key={dup.issueId}
-                    className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-yellow-200 dark:border-yellow-600 shadow-sm"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="space-y-2">
-                        <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
-                          {dup.fullIssue?.title || "Untitled Issue"}
-                        </p>
+                    <div className="space-y-1">
+                      <h3 className="text-lg sm:text-xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">
+                        Similar Active Issues Found
+                      </h3>
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        We detected issues that look very similar to your
+                        report. Review them to avoid redundancy.
+                      </p>
 
-                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-                          {dup.fullIssue?.description}
-                        </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-2 rounded-full border border-yellow-200 dark:border-yellow-700/60 bg-yellow-50/70 dark:bg-yellow-900/20 px-3 py-1 text-xs font-semibold text-yellow-800 dark:text-yellow-200">
+                          Threshold:{" "}
+                          <span className="font-extrabold">{70}</span>/100
+                        </span>
 
-                        <div className="flex flex-wrap gap-2 text-xs">
-                          <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md">
-                            Category: {dup.fullIssue?.category}
+                        <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-800/40 px-3 py-1 text-xs font-semibold text-gray-700 dark:text-gray-200">
+                          Matches:{" "}
+                          <span className="font-extrabold">
+                            {duplicates.length}
                           </span>
+                        </span>
 
-                          {dup.fullIssue?.subcategory?.map((sub) => (
-                            <span
-                              key={sub}
-                              className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md"
-                            >
-                              {sub}
-                            </span>
-                          ))}
-
-                          <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md">
-                            Priority: {dup.fullIssue?.priority}
+                        {hasStrongDuplicate && (
+                          <span className="inline-flex items-center gap-2 rounded-full border border-red-200 dark:border-red-700/60 bg-red-50/70 dark:bg-red-900/20 px-3 py-1 text-xs font-semibold text-red-700 dark:text-red-300">
+                            <AlertTriangle size={14} />
+                            Strong duplicate detected
                           </span>
-                        </div>
-
-                        <p className="text-[11px] text-gray-400">
-                          Issue ID: {dup.issueId}
-                        </p>
+                        )}
                       </div>
                     </div>
-                    <span
-                      className={`flex-1 items-end px-3 py-1 rounded-full text-xs font-bold ${
-                        dup.score >= 85
-                          ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-                          : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300"
-                      }`}
-                    >
-                      {dup.score}/100 Match
-                    </span>
-
-                    {/* Match Reasons */}
-                    <ul className="text-xs text-gray-600 dark:text-gray-400 list-disc list-inside space-y-1">
-                      {dup.reasons.map((reason, i) => (
-                        <li key={i}>{reason}</li>
-                      ))}
-                    </ul>
-
-                    {/* Strong Duplicate Warning */}
-                    {dup.strongDuplicate && (
-                      <div className="mt-3 p-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-600">
-                        <p className="text-xs font-bold text-red-600 dark:text-red-400">
-                          <AlertTriangle
-                            className="inline mr-1 text-red-600"
-                            size={14}
-                          />{" "}
-                          Strong Duplicate Detected
-                        </p>
-                        <p className="text-xs text-red-500 dark:text-red-300">
-                          This issue is highly similar to an existing active
-                          report. Consider reviewing it before submitting.
-                        </p>
-                      </div>
-                    )}
                   </div>
-                ))}
+
+                  {/* Optional quick hint chip */}
+                  <div className="hidden sm:flex items-center">
+                    <span className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/60 dark:bg-gray-800/40 px-3 py-2 text-xs text-gray-600 dark:text-gray-300">
+                      Tip: click “Edit Report” to adjust details.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="relative h-px w-full bg-gradient-to-r from-transparent via-yellow-200/70 dark:via-yellow-700/50 to-transparent" />
+
+              {/* List */}
+              <div className="relative px-6 py-5">
+                <div className="space-y-4">
+                  {duplicates.map((dup) => {
+                    const isStrong = dup.strongDuplicate || dup.score >= 85;
+
+                    return (
+                      <div
+                        key={dup.issueId}
+                        className={[
+                          "group relative overflow-hidden rounded-2xl border bg-white dark:bg-gray-900",
+                          "shadow-sm hover:shadow-xl transition-all duration-300",
+                          isStrong
+                            ? "border-red-200/80 dark:border-red-700/60"
+                            : "border-yellow-200/80 dark:border-yellow-700/60",
+                        ].join(" ")}
+                      >
+                        {/* Left accent */}
+                        <div
+                          className={[
+                            "absolute left-0 top-0 h-full w-1.5",
+                            isStrong
+                              ? "bg-gradient-to-b from-red-500/80 via-rose-500/70 to-amber-400/40"
+                              : "bg-gradient-to-b from-yellow-400/90 via-amber-400/70 to-transparent",
+                          ].join(" ")}
+                        />
+
+                        {/* Subtle hover wash */}
+                        <div
+                          className={[
+                            "pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity",
+                            isStrong
+                              ? "bg-gradient-to-r from-red-50/60 via-transparent to-transparent dark:from-red-900/15"
+                              : "bg-gradient-to-r from-yellow-50/60 via-transparent to-transparent dark:from-yellow-900/10",
+                          ].join(" ")}
+                        />
+
+                        <div className="relative p-5">
+                          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            {/* Main content */}
+                            <div className="min-w-0 space-y-2">
+                              <div className="flex items-start gap-3">
+                                <div
+                                  className={[
+                                    "mt-0.5 rounded-xl border p-2 shadow-sm",
+                                    isStrong
+                                      ? "border-red-200/70 dark:border-red-700/60 bg-red-50/70 dark:bg-red-900/15"
+                                      : "border-yellow-200/70 dark:border-yellow-700/60 bg-yellow-50/70 dark:bg-yellow-900/15",
+                                  ].join(" ")}
+                                >
+                                  <AlertTriangle
+                                    size={16}
+                                    className={
+                                      isStrong
+                                        ? "text-red-600 dark:text-red-300"
+                                        : "text-yellow-700 dark:text-yellow-300"
+                                    }
+                                  />
+                                </div>
+
+                                <div className="min-w-0">
+                                  <p className="text-sm sm:text-base font-extrabold text-gray-900 dark:text-gray-100 truncate">
+                                    {dup.fullIssue?.title || "Untitled Issue"}
+                                  </p>
+
+                                  <p className="mt-1 text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                                    {dup.fullIssue?.description}
+                                  </p>
+
+                                  <p className="mt-2 text-[11px] text-gray-400">
+                                    Issue ID:{" "}
+                                    <span className="font-mono">
+                                      {dup.issueId}
+                                    </span>
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Meta chips */}
+                              <div className="flex flex-wrap items-center gap-2 pt-2">
+                                {/* Category Badge */}
+                                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 dark:border-emerald-700 bg-emerald-50/80 dark:bg-emerald-900/20 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 shadow-sm">
+                                  {getCategoryLabel(dup.fullIssue?.category)}
+                                </div>
+
+                                {/* Subcategories */}
+                                {dup.fullIssue?.subcategory
+                                  ?.slice(0, 3)
+                                  ?.map((sub) => (
+                                    <span
+                                      key={sub}
+                                      className="
+        inline-flex items-center 
+        rounded-full 
+        border border-gray-200 dark:border-gray-700 
+        bg-white dark:bg-gray-800 
+        px-3 py-1.5 
+        text-[11px] font-medium 
+        text-gray-700 dark:text-gray-300
+        hover:bg-gray-100 dark:hover:bg-gray-700
+        transition-colors
+      "
+                                    >
+                                      #{sub}
+                                    </span>
+                                  ))}
+
+                                {/* + More Indicator */}
+                                {dup.fullIssue?.subcategory?.length > 3 && (
+                                  <span
+                                    className="
+        inline-flex items-center 
+        rounded-full 
+        border border-gray-200 dark:border-gray-700 
+        bg-gray-50 dark:bg-gray-800/60
+        px-3 py-1.5 
+        text-[11px] font-medium 
+        text-gray-600 dark:text-gray-400
+      "
+                                  >
+                                    +{dup.fullIssue.subcategory.length - 3} more
+                                  </span>
+                                )}
+
+                                {/* Priority Badge */}
+                                <span
+                                  className={`
+      inline-flex items-center gap-1
+      rounded-full px-3 py-1.5 text-[11px] font-semibold border
+      ${
+        dup.fullIssue?.priority === "high"
+          ? "bg-red-50 border-red-300 text-red-700 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300"
+          : dup.fullIssue?.priority === "medium"
+            ? "bg-yellow-50 border-yellow-300 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-700 dark:text-yellow-300"
+            : "bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300"
+      }
+    `}
+                                >
+                                  <AlertTriangle size={12} />
+                                  {dup.fullIssue?.priority?.toUpperCase() ||
+                                    "N/A"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Score */}
+                            <div className="sm:w-52 shrink-0 sm:ml-2">
+                              <div
+                                className={[
+                                  "rounded-2xl border p-4 shadow-sm",
+                                  isStrong
+                                    ? "border-red-200/80 dark:border-red-700/60 bg-gradient-to-b from-red-50 to-white dark:from-red-900/15 dark:to-gray-900"
+                                    : "border-yellow-200/80 dark:border-yellow-700/60 bg-gradient-to-b from-yellow-50 to-white dark:from-yellow-900/15 dark:to-gray-900",
+                                ].join(" ")}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                                    Match Score
+                                  </p>
+                                  <span
+                                    className={[
+                                      "rounded-full px-2.5 py-1 text-[11px] font-extrabold",
+                                      isStrong
+                                        ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-200"
+                                        : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200",
+                                    ].join(" ")}
+                                  >
+                                    {isStrong ? "High" : "Medium"}
+                                  </span>
+                                </div>
+
+                                <p className="mt-2 text-3xl font-black tracking-tight text-gray-900 dark:text-gray-100">
+                                  {dup.score}
+                                  <span className="text-sm font-bold text-gray-500 dark:text-gray-400">
+                                    /100
+                                  </span>
+                                </p>
+
+                                {/* Progress bar */}
+                                <div className="mt-3 h-2.5 w-full rounded-full bg-gray-200/70 dark:bg-gray-800 overflow-hidden">
+                                  <div
+                                    className={[
+                                      "h-full rounded-full transition-all duration-500",
+                                      isStrong
+                                        ? "bg-gradient-to-r from-red-500 via-rose-500 to-amber-400"
+                                        : "bg-gradient-to-r from-yellow-400 via-amber-400 to-emerald-400",
+                                    ].join(" ")}
+                                    style={{
+                                      width: `${Math.min(100, dup.score)}%`,
+                                    }}
+                                  />
+                                </div>
+
+                                <p className="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
+                                  Threshold: {70}/100
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Reasons */}
+                          {dup.reasons?.length > 0 && (
+                            <div className="mt-4 rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-800/40 p-4">
+                              <p className="text-xs font-bold text-gray-700 dark:text-gray-200 mb-2">
+                                Why this was flagged
+                              </p>
+
+                              <ul className="space-y-1.5">
+                                {dup.reasons.map((reason, i) => (
+                                  <li
+                                    key={i}
+                                    className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400"
+                                  >
+                                    <span
+                                      className={[
+                                        "mt-1 h-1.5 w-1.5 rounded-full flex-shrink-0",
+                                        isStrong
+                                          ? "bg-red-500"
+                                          : "bg-amber-500",
+                                      ].join(" ")}
+                                    />
+                                    <span className="leading-relaxed">
+                                      {reason}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Strong Duplicate callout */}
+                          {dup.strongDuplicate && (
+                            <div className="mt-4 rounded-2xl border border-red-200 dark:border-red-700/60 bg-gradient-to-r from-red-50 via-white to-white dark:from-red-900/20 dark:via-gray-900 dark:to-gray-900 p-4">
+                              <div className="flex items-start gap-3">
+                                <div className="rounded-xl bg-red-100 dark:bg-red-900/30 p-2">
+                                  <AlertTriangle
+                                    className="text-red-600 dark:text-red-300"
+                                    size={16}
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-xs font-extrabold text-red-700 dark:text-red-200">
+                                    Strong Duplicate Detected
+                                  </p>
+                                  <p className="text-xs text-red-600/90 dark:text-red-300">
+                                    This report is highly similar to an existing
+                                    active issue. Consider cancelling or editing
+                                    before submitting.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Footer hint */}
+              <div className="relative border-t border-yellow-200/70 dark:border-yellow-700/40 bg-yellow-50/40 dark:bg-yellow-900/10 px-6 py-4">
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  If this looks like the same issue, you can{" "}
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    cancel
+                  </span>{" "}
+                  or{" "}
+                  <span className="font-semibold text-gray-800 dark:text-gray-200">
+                    edit
+                  </span>{" "}
+                  the report. If it’s genuinely different, you may still submit
+                  it.
+                </p>
               </div>
             </div>
           )}

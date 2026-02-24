@@ -49,7 +49,7 @@ export function WardOfficerWorkflow() {
   const [activeView, setActiveView] = useState("overview");
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("road");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("overdue");
   const [sidebarOpen, setSidebarOpen] = useState(false);

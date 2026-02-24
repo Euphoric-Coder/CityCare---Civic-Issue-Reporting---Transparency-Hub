@@ -1,9 +1,12 @@
-import React from 'react'
+import { OfficerMessageCenter } from "@/components/Officer/Field/OfficerMessagingCenter";
+import React from "react";
 
 const page = () => {
   return (
-    <div>page</div>
-  )
-}
+    <div>
+      <OfficerMessageCenter />
+    </div>
+  );
+};
 
-export default page
+export default page;
