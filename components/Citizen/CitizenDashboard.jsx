@@ -50,6 +50,16 @@ export function CitizenDashboard({
       }))
     : [];
 
+  useEffect(() => {
+    if (!selectedIssue || !formattedIssues.length) return;
+
+    const updated = formattedIssues.find((i) => i.id === selectedIssue.id);
+
+    if (updated && JSON.stringify(updated) !== JSON.stringify(selectedIssue)) {
+      setSelectedIssue(updated);
+    }
+  }, [formattedIssues]);
+
   if (issues === undefined) {
     return (
       <div className="flex items-center justify-center min-h-screen">
