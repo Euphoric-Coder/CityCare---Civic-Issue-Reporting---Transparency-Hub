@@ -11,13 +11,14 @@ import {
   MessageSquare,
   UserCheck,
   Mail,
+  Settings,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { getIssues, mockUsers } from "@/lib/mockData";
 import { AdminIssueModal } from "./AdminIssue";
 import { AdminMessageModal } from "./AdminMessageModal";
 import { AdminReassignModal } from "./AdminReassignModal";
-import { IssueCard } from "../IssueCard";
+// import { IssueCard } from "../IssueCard";
 import { MessagesCenter } from "../MessageCenter";
 
 export function AdminDashboard() {
@@ -288,7 +289,8 @@ export function AdminDashboard() {
                 : "text-gray-600 hover:bg-gray-50"
             }`}
           >
-            All Issues
+            <Settings size={18} className="inline mr-2" />
+            Issue Settings
           </button>
           <button
             onClick={() => setActiveView("assignments")}
@@ -378,11 +380,12 @@ export function AdminDashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredIssues.map((issue) => (
-                <IssueCard
-                  key={issue.id}
-                  issue={issue}
-                  onClick={() => setSelectedIssue(issue)}
-                />
+                // <IssueCard
+                //   key={issue.id}
+                //   issue={issue}
+                //   onClick={() => setSelectedIssue(issue)}
+                // />
+                <></>
               ))}
             </div>
           )}

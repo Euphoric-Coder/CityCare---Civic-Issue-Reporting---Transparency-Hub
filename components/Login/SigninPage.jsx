@@ -11,7 +11,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
