@@ -30,12 +30,14 @@ import citycareBg from "@/public/citycare-bg.jpg";
 import citycareBgDark from "@/public/citycare-bg-dark.jpg";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { useTheme } from "next-themes";
+import { signIn } from "next-auth/react";
+import { api } from "@/convex/_generated/api";
+import { fetchQuery } from "convex/nextjs";
+import Link from "next/link";
 
 const ROLES = [
-  { value: "unit_officer", label: "Unit Officer", icon: Building2 },
-  { value: "field_officer", label: "Field Officer", icon: HardHat },
   { value: "city_admin", label: "City Admin", icon: MapPin },
-  { value: "admin", label: "System Administrator", icon: Shield },
+  { value: "admin", label: "System Admin", icon: Shield },
 ];
 
 const STATS = [
@@ -61,14 +63,11 @@ const StaffSignIn = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    role: searchParams.get("role") || "unit_officer",
+    role: searchParams.get("role") || "admin",
   });
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const selectedRole = ROLES.find((r) => r.value === formData.role) || ROLES[0];
-  const SelectedIcon = selectedRole.icon;
 
   useEffect(() => {
     setMounted(true);
@@ -95,10 +94,52 @@ const StaffSignIn = () => {
     setError("");
     setLoading(true);
 
-    console.log("Submitting issue with data:", formData);
+    try {
+      const roleData = await fetchQuery(api.users.getUserByEmail, {
+        email: formData.email,
+      });
 
-    setLoading(false);
+      if (!roleData) {
+        toast.error("Account not found");
+        setError("Account not found");
+        return;
+      }
+
+      // Compare role
+      if (roleData.role !== formData.role) {
+        toast.error("Selected role does not match your account");
+        setError("Selected role does not match your account");
+        return;
+      }
+      const result = await signIn("credentials", {
+        redirect: false,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      });
+
+      if (result?.error) {
+        toast.error("Invalid email or password");
+        setError("Invalid email or password");
+        return;
+      }
+
+      toast.success("Login successful!");
+
+      localStorage.setItem("lastRole", formData.role);
+
+      // Just redirect → layout will validate role
+      router.push(`/${formData.role.replace("_", "-")}/`);
+    } catch (err) {
+      console.error("Error during sign-in:", err);
+      toast.error("Something went wrong. Please try again.");
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const selectedRole = ROLES.find((r) => r.value === formData.role);
 
   return (
     <div className="flex min-h-screen">
@@ -163,7 +204,7 @@ const StaffSignIn = () => {
         <div className="relative z-10 flex h-full w-full flex-col justify-between p-10 xl:p-14">
           {/* Top */}
           <div className="animate-fade-in-up">
-            <div className="flex items-center gap-3">
+            <Link className="flex items-center gap-3" href={"/"}>
               <Image
                 src={citycareLogo}
                 alt="CityCare Logo"
@@ -176,7 +217,8 @@ const StaffSignIn = () => {
               >
                 CityCare
               </span>
-            </div>
+            </Link>
+            {/* <div className="flex items-center gap-3"></div> */}
           </div>
 
           {/* Center text */}
@@ -281,7 +323,7 @@ const StaffSignIn = () => {
         <div className="w-full max-w-[420px] space-y-7">
           {/* Mobile logo + theme toggle */}
           <div className="flex items-center justify-between animate-fade-in-up">
-            <div className="flex items-center gap-3 lg:hidden">
+            <Link className="flex items-center gap-3 lg:hidden" href={"/"}>
               <Image
                 src={citycareLogo}
                 alt="CityCare Logo"
@@ -291,7 +333,7 @@ const StaffSignIn = () => {
               <span className="text-lg font-bold text-foreground">
                 CityCare
               </span>
-            </div>
+            </Link>
             {mounted && (
               <button
                 onClick={() => setTheme(isDark ? "light" : "dark")}
@@ -341,45 +383,65 @@ const StaffSignIn = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Role */}
-            <div
-              className="space-y-1.5 animate-fade-in-up delay-300"
-              ref={dropdownRef}
-            >
-              <label className="text-sm font-medium text-foreground">
+            {/* Role Dropdown */}
+            <div>
+              <label className="shad-input-label block mb-2 text-slate-800 dark:text-white">
                 Role
               </label>
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-                  className="input-field flex items-center justify-between px-4"
+                  onBlur={() =>
+                    setTimeout(() => {
+                      setShowRoleDropdown(false);
+                    }, 150)
+                  }
+                  className="w-full bg-white dark:bg-dark-400 
+               border border-emerald-300 dark:border-emerald-700
+               rounded-lg px-4 py-3 text-left 
+               text-slate-900 dark:text-white 
+               flex items-center justify-between 
+               hover:border-emerald-500 dark:hover:border-emerald-400
+               focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400
+               transition-all duration-200"
                 >
+                  {/* Selected Role with Icon */}
                   <span className="flex items-center gap-2.5">
-                    <SelectedIcon className="h-4 w-4 text-primary" />
-                    <span>{selectedRole.label}</span>
+                    {selectedRole?.icon && (
+                      <selectedRole.icon className="w-4 h-4 text-emerald-500" />
+                    )}
+                    <span>{selectedRole?.label}</span>
                   </span>
+
                   <ChevronDown
-                    className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${showRoleDropdown ? "rotate-180" : ""}`}
+                    className={`w-5 h-5 text-emerald-500 transition-transform ${
+                      showRoleDropdown ? "rotate-180" : ""
+                    }`}
                   />
                 </button>
 
                 {showRoleDropdown && (
                   <div
-                    className="absolute left-0 right-0 bottom-full mb-2 z-50 animate-fade-in overflow-hidden rounded-xl border border-border shadow-xl"
-                    style={{
-                      background: isDark ? "hsl(160 25% 8%)" : "hsl(0 0% 100%)",
-                    }}
+                    className="absolute top-full left-0 right-0 mt-2 
+                 bg-white dark:bg-dark-400 
+                 border border-emerald-200 dark:border-emerald-700 
+                 rounded-xl shadow-xl z-50 overflow-hidden
+                 animate-fade-in"
                   >
-                    <div className="border-b border-border px-4 py-2.5">
-                      <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    {/* Header */}
+                    <div className="p-3 border-b border-emerald-100 dark:border-emerald-800">
+                      <span className="text-xs font-semibold tracking-wide text-emerald-600 dark:text-emerald-400">
                         Select Role
                       </span>
                     </div>
-                    <div className="max-h-72 overflow-y-auto">
+
+                    {/* Options */}
+                    <div className="max-h-60 overflow-y-auto">
                       {ROLES.map((role) => {
                         const Icon = role.icon;
                         const isSelected = formData.role === role.value;
+
                         return (
                           <button
                             key={role.value}
@@ -389,24 +451,33 @@ const StaffSignIn = () => {
                                 ...prev,
                                 role: role.value,
                               }));
+                              setError("");
                               setShowRoleDropdown(false);
                             }}
-                            className={`flex w-full items-center justify-between px-4 py-3 text-left transition-colors duration-150 ${
-                              isSelected
-                                ? "bg-primary/5 text-primary"
-                                : "text-foreground hover:bg-secondary"
-                            }`}
+                            className={`w-full p-4 flex items-center justify-between text-left transition-all
+                ${
+                  isSelected
+                    ? "bg-emerald-50 dark:bg-emerald-900/30"
+                    : "hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                }`}
                           >
+                            {/* Left */}
                             <span className="flex items-center gap-2.5">
                               <Icon
-                                className={`h-4 w-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`}
+                                className={`w-4 h-4 ${
+                                  isSelected
+                                    ? "text-emerald-600 dark:text-emerald-400"
+                                    : "text-emerald-500"
+                                }`}
                               />
-                              <span className="text-sm font-medium">
+                              <span className="text-sm font-medium text-slate-900 dark:text-white">
                                 {role.label}
                               </span>
                             </span>
+
+                            {/* Right */}
                             {isSelected && (
-                              <Check className="h-4 w-4 text-primary" />
+                              <Check className="w-5 h-5 text-emerald-500" />
                             )}
                           </button>
                         );
@@ -418,50 +489,56 @@ const StaffSignIn = () => {
             </div>
 
             {/* Email */}
-            <div className="space-y-1.5 animate-fade-in-up delay-400">
-              <label className="text-sm font-medium text-foreground">
+            <div>
+              <label className="shad-input-label block mb-2 text-slate-800 dark:text-white">
                 Email address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-400 dark:text-dark-600" />
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="officer@city.gov"
+                  placeholder="you@example.com"
+                  className="shad-input pl-10 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-lg"
                   required
-                  className="input-field pl-11 pr-4"
                 />
               </div>
             </div>
 
             {/* Password */}
-            <div className="space-y-1.5 animate-fade-in-up delay-500">
-              <label className="text-sm font-medium text-foreground">
+            <div>
+              <label className="shad-input-label block mb-2 text-slate-800 dark:text-white">
                 Password
               </label>
+
               <div className="relative">
-                <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
+                {/* Lock Icon */}
+                <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400 dark:text-dark-600" />
+
+                {/* Input */}
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  placeholder="••••••••••"
+                  placeholder="Enter your password"
+                  className="shad-input pl-10 pr-10 w-full text-slate-900 dark:text-white bg-white dark:bg-dark-400 border border-slate-300 dark:border-dark-500 rounded-lg"
                   required
-                  className="input-field pl-11 pr-12"
                 />
+
+                {/* Show / Hide Button */}
                 <button
                   type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-3.5 top-3.5 text-muted-foreground transition-colors duration-200 hover:text-primary"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-3 text-slate-400 dark:text-dark-600 hover:text-emerald-500 transition-colors"
                   tabIndex={-1}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
+                    <EyeOff className="w-5 h-5" />
                   ) : (
-                    <Eye className="h-4 w-4" />
+                    <Eye className="w-5 h-5" />
                   )}
                 </button>
               </div>
