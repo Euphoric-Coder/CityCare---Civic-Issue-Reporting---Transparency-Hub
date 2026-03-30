@@ -18,12 +18,11 @@ import { getIssues, mockUsers } from "@/lib/mockData";
 import { AdminIssueModal } from "./AdminIssue";
 import { AdminMessageModal } from "./AdminMessageModal";
 import { AdminReassignModal } from "./AdminReassignModal";
-// import { IssueCard } from "../IssueCard";
 import { MessagesCenter } from "../MessageCenter";
+import { AdminIssueCard } from "./AdminIssueCard";
 
 export function AdminDashboard() {
   const { data: session } = useSession();
-  console.log(session);
   const user = { id: "2" };
   const [issues, setIssues] = useState([]);
   const [filteredIssues, setFilteredIssues] = useState([]);
@@ -380,12 +379,11 @@ export function AdminDashboard() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredIssues.map((issue) => (
-                // <IssueCard
-                //   key={issue.id}
-                //   issue={issue}
-                //   onClick={() => setSelectedIssue(issue)}
-                // />
-                <></>
+                <AdminIssueCard
+                  key={issue.id}
+                  issue={issue}
+                  onClick={() => setSelectedIssue(issue)}
+                />
               ))}
             </div>
           )}
