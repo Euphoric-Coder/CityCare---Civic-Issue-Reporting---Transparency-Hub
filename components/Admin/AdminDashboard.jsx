@@ -32,6 +32,7 @@ import { AdminIssueModal } from "./AdminIssueModal";
 import { AdminMessageModal } from "./AdminMessageModal";
 import { AdminReassignModal } from "./AdminReassignModal";
 import { MessagesCenter } from "../MessageCenter";
+import { ModeToggle } from "../ModeToggle";
 // import SLAMonitoringDashboard from './SLAMonitoringDashboard';
 // import SLAAnalyticsDashboard from './SLAAnalyticsDashboard';
 // import ComprehensiveAuditLog from './ComprehensiveAuditLog';
@@ -408,6 +409,8 @@ export function AdminDashboard() {
                   </span>
                 )}
               </div>
+
+              <ModeToggle />
 
               <div className="flex items-center gap-3 pl-3 border-l border-slate-300 dark:border-slate-700">
                 <div className="hidden sm:block text-right">
