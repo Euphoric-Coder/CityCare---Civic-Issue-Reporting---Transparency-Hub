@@ -26,6 +26,7 @@ import {
   AlertCircle,
   UserCheck,
   Eye,
+  ArrowUp,
 } from "lucide-react";
 import { getIssues, mockUsers } from "@/lib/mockData";
 import { AdminIssueModal } from "./AdminIssueModal";
@@ -51,6 +52,8 @@ export function AdminDashboard() {
   const [messageOfficer, setMessageOfficer] = useState(null);
   const [messageIssues, setMessageIssues] = useState([]);
   const [reassignIssue, setReassignIssue] = useState(null);
+  const [isAssignedExpanded, setIsAssignedExpanded] = useState(true);
+  const [isUnassignedExpanded, setIsUnassignedExpanded] = useState(false);
 
   const [officerFilter, setOfficerFilter] = useState("all");
   const [workloadFilter, setWorkloadFilter] = useState("all");
@@ -437,8 +440,8 @@ export function AdminDashboard() {
         </div>
       </nav>
 
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           <div className="group relative overflow-hidden bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-850 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 transform hover:-translate-y-1">
             <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-slate-400/20 to-transparent rounded-full blur-2xl"></div>
             <div className="relative">
@@ -566,9 +569,227 @@ export function AdminDashboard() {
               </div>
             </div>
           )}
+        </div> */}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          {/* TOTAL OFFICERS */}
+          <div className="group relative rounded-3xl overflow-hidden border border-white/20 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition"></div>
+
+            <div className="relative p-6">
+              <div className="flex justify-between items-center mb-4">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 shadow-xl">
+                  <Users className="text-white" size={26} />
+                </div>
+                <span className="text-xs font-bold text-blue-600 bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full">
+                  +{Math.floor(officers.length * 0.08)} new
+                </span>
+              </div>
+
+              <h3 className="text-4xl font-black text-slate-900 dark:text-white">
+                {officers.length}
+              </h3>
+
+              <p className="text-slate-600 dark:text-slate-400 font-medium">
+                Total Officers
+              </p>
+
+              {/* breakdown */}
+              <div className="flex justify-between mt-3 text-xs text-slate-500">
+                <span>
+                  Unit Officers:{" "}
+                  {officers.filter((o) => o.role === "unit_officer").length}
+                </span>
+                <span>
+                  Field Officers:{" "}
+                  {officers.filter((o) => o.role === "field_officer").length}
+                </span>
+              </div>
+
+              {/* insight */}
+              <p className="flex items-center gap-2 text-xs text-emerald-600 mt-2 font-semibold">
+                <TrendingUp /> Workforce growing steadily
+              </p>
+
+              {/* progress */}
+              <div className="mt-4 h-2 bg-slate-200 dark:bg-slate-700 rounded-full">
+                <div className="h-full w-[78%] bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* UTILIZATION */}
+          <div className="group relative rounded-3xl overflow-hidden border border-white/20 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-purple-500/5 opacity-0 group-hover:opacity-100 transition"></div>
+
+            <div className="relative p-6">
+              <div className="flex justify-between items-center mb-4">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-xl">
+                  <Activity className="text-white" size={26} />
+                </div>
+                <span className="text-xs font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 rounded-full">
+                  Optimal
+                </span>
+              </div>
+
+              {(() => {
+                const utilization = Math.round(
+                  (officers.filter(
+                    (o) =>
+                      officerWorkload.find(
+                        (ow) => ow.officer.id === o.id && ow.total > 0,
+                      )?.total || 0,
+                  ) /
+                    officers.length) *
+                    100,
+                );
+
+                return (
+                  <>
+                    <h3 className="text-4xl font-black text-slate-900 dark:text-white">
+                      {utilization}%
+                    </h3>
+
+                    <p className="text-slate-600 dark:text-slate-400 font-medium">
+                      Utilization Rate
+                    </p>
+
+                    <p className="text-xs text-slate-500 mt-2">
+                      {
+                        officers.filter((o) =>
+                          officerWorkload.find(
+                            (ow) => ow.officer.id === o.id && ow.total > 0,
+                          ),
+                        ).length
+                      }{" "}
+                      active officers
+                    </p>
+
+                    <p className="flex items-center gap-2 text-xs text-emerald-600 mt-2 font-semibold">
+                      <TrendingUp /> Efficient allocation
+                    </p>
+
+                    <div className="mt-4 h-2 bg-slate-200 dark:bg-slate-700 rounded-full">
+                      <div
+                        className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"
+                        style={{ width: `${utilization}%` }}
+                      />
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* WORKLOAD DISTRIBUTION */}
+          <div className="group relative rounded-3xl overflow-hidden border border-white/20 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-amber-500/5 opacity-0 group-hover:opacity-100 transition"></div>
+
+            <div className="relative p-6">
+              <div className="flex justify-between items-center mb-4">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 shadow-xl">
+                  <Target className="text-white" size={26} />
+                </div>
+                <span className="text-xs font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/30 px-3 py-1 rounded-full">
+                  Balanced
+                </span>
+              </div>
+
+              <h3 className="text-4xl font-black text-slate-900 dark:text-white">
+                {Math.round(issues.length / officers.length)}
+              </h3>
+
+              <p className="text-slate-600 dark:text-slate-400 font-medium">
+                Avg Load
+              </p>
+
+              {/* breakdown */}
+              <div className="flex justify-between mt-3 text-xs text-slate-500">
+                <span>
+                  High:{" "}
+                  {
+                    officerWorkload.filter(
+                      (o) => o.workloadStatus === "overloaded",
+                    ).length
+                  }
+                </span>
+                <span>
+                  Low:{" "}
+                  {
+                    officerWorkload.filter(
+                      (o) => o.workloadStatus === "underutilized",
+                    ).length
+                  }
+                </span>
+              </div>
+
+              <p className="flex items-center gap-2 text-xs text-emerald-600 mt-2 font-semibold">
+                <TrendingUp /> Balanced workload maintained
+              </p>
+
+              <div className="mt-4 h-2 bg-slate-200 dark:bg-slate-700 rounded-full">
+                <div className="h-full w-[60%] bg-gradient-to-r from-orange-500 to-amber-500 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* SYSTEM HEALTH */}
+          <div className="group relative rounded-3xl overflow-hidden border border-white/20 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 opacity-0 group-hover:opacity-100 transition"></div>
+
+            <div className="relative p-6">
+              <div className="flex justify-between items-center mb-4">
+                <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-xl">
+                  <Shield className="text-white" size={26} />
+                </div>
+                <span className="text-xs font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 rounded-full">
+                  Stable
+                </span>
+              </div>
+
+              {(() => {
+                const healthy = officers.filter((o) =>
+                  officerWorkload.find(
+                    (ow) =>
+                      ow.officer.id === o.id &&
+                      ow.workloadStatus === "balanced",
+                  ),
+                ).length;
+
+                const health = Math.round((healthy / officers.length) * 100);
+
+                return (
+                  <>
+                    <h3 className="text-4xl font-black text-slate-900 dark:text-white">
+                      {health}%
+                    </h3>
+
+                    <p className="text-slate-600 dark:text-slate-400 font-medium">
+                      System Health
+                    </p>
+
+                    <p className="text-xs text-slate-500 mt-2">
+                      {healthy} balanced officers
+                    </p>
+
+                    <p className="flex items-center gap-2 text-xs text-emerald-600 mt-2 font-semibold">
+                      <TrendingUp /> Stable performance
+                    </p>
+
+                    <div className="mt-4 h-2 bg-slate-200 dark:bg-slate-700 rounded-full">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
+                        style={{ width: `${health}%` }}
+                      />
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
         </div>
 
-        <div className="relative mb-12 z-40 flex justify-center group/nav">
+        <div className="mt-10 relative mb-12 z-40 flex justify-center group/nav">
           <div className="relative bg-white/30 dark:bg-[#0f172a]/50 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_10px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-y border-white/80 dark:border-white/20 p-2 overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
             <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent dark:from-white/5 pointer-events-none rounded-[2.5rem]"></div>
             <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar relative z-10 px-1">
@@ -1216,21 +1437,22 @@ export function AdminDashboard() {
           )}
 
           {activeTab === "assignments" && (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-4">
+            <div className="bg-white/60 dark:bg-[#111827]/60 backdrop-blur-xl rounded-3xl shadow-xl border border-white/50 dark:border-slate-700/50 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500/90 to-cyan-600/90 backdrop-blur-md p-5 border-b border-white/10">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                   <Target size={24} />
                   Assignment Monitoring
                 </h2>
               </div>
               <div className="p-6">
-                <div className="space-y-6">
-                  <div className="flex flex-wrap gap-4 items-center">
+                <div className="relative z-[60] space-y-6">
+                  <div className="relative z-[60] flex flex-wrap gap-5 items-center justify-between bg-slate-100/60 dark:bg-[#0b1121]/80 backdrop-blur-2xl p-5 rounded-3xl border-2 border-slate-200/90 dark:border-slate-700/80 shadow-[inset_0_2px_20px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_2px_20px_rgba(0,0,0,0.4)]">
                     <div className="flex-1 min-w-[300px]">
-                      <div className="relative">
+                      <div className="relative group/search">
+                        <div className="absolute -inset-1.5 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-2xl blur opacity-0 group-focus-within/search:opacity-40 transition-opacity duration-500"></div>
                         <Search
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
-                          size={20}
+                          className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within/search:text-blue-500 transition-colors z-10"
+                          size={22}
                         />
                         <input
                           type="text"
@@ -1238,95 +1460,163 @@ export function AdminDashboard() {
                           onChange={(e) =>
                             setAssignmentSearchTerm(e.target.value)
                           }
-                          placeholder="Search officers by name..."
-                          className="w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                          placeholder="Search for an assigned officer..."
+                          className="relative w-full pl-14 pr-6 py-4 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 focus:border-blue-500 dark:focus:border-cyan-500 rounded-2xl outline-none shadow-sm focus:shadow-md transition-all duration-300 text-slate-900 dark:text-white placeholder:text-slate-400 font-bold text-lg"
                         />
                       </div>
                     </div>
-                    <select
-                      value={assignmentOfficerFilter}
-                      onChange={(e) =>
-                        setAssignmentOfficerFilter(e.target.value)
-                      }
-                      className="px-4 py-3 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 transition-all text-slate-900 dark:text-white font-medium"
-                    >
-                      <option value="all">All Roles</option>
-                      <option value="unit_officer">Unit Officers</option>
-                      <option value="field_officer">Field Officers</option>
-                    </select>
+                    <div className="flex flex-col sm:flex-row gap-4 items-center">
+                      <button
+                        onClick={() => {
+                          if (filteredAssignmentOfficers.length === 0) return;
+                          if (
+                            expandedAssignmentOfficers.size ===
+                            filteredAssignmentOfficers.length
+                          ) {
+                            setExpandedAssignmentOfficers(new Set());
+                          } else {
+                            setExpandedAssignmentOfficers(
+                              new Set(
+                                filteredAssignmentOfficers.map(
+                                  (ow) => ow.officer.id,
+                                ),
+                              ),
+                            );
+                          }
+                        }}
+                        className="px-5 py-3.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-cyan-500 rounded-xl font-bold transition-all shadow-sm flex items-center gap-2 min-w-[140px] justify-center group"
+                      >
+                        {expandedAssignmentOfficers.size ===
+                          filteredAssignmentOfficers.length &&
+                        filteredAssignmentOfficers.length > 0 ? (
+                          <>
+                            <ChevronUp
+                              className="group-hover:-translate-y-0.5 transition-transform"
+                              size={18}
+                            />{" "}
+                            Collapse All
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown
+                              className="group-hover:translate-y-0.5 transition-transform"
+                              size={18}
+                            />{" "}
+                            Expand All
+                          </>
+                        )}
+                      </button>
+                      <div className="relative group/sel z-50">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-xl blur opacity-0 group-hover/sel:opacity-30 transition-opacity duration-500"></div>
+                        <div className="relative px-5 py-3.5 bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border-2 border-transparent group-hover/sel:border-blue-400/50 dark:group-hover/sel:border-cyan-500/50 rounded-xl shadow-inner transition-all duration-300 text-slate-900 dark:text-white font-bold cursor-pointer flex items-center justify-between min-w-[170px]">
+                          <span>
+                            {assignmentOfficerFilter === "all"
+                              ? "All Roles"
+                              : assignmentOfficerFilter === "unit_officer"
+                                ? "Unit Officers"
+                                : "Field Officers"}
+                          </span>
+                          <ChevronDown
+                            className="text-slate-400 group-hover/sel:text-blue-500 transition-all duration-500 group-hover/sel:-rotate-180"
+                            size={18}
+                          />
+                        </div>
+                        <div className="absolute top-full right-0 mt-3 w-[200px] bg-white/90 dark:bg-slate-800/90 backdrop-blur-3xl rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.2)] border border-white/60 dark:border-white/10 opacity-0 invisible group-hover/sel:opacity-100 group-hover/sel:visible transition-all duration-500 transform translate-y-4 group-hover/sel:translate-y-0 p-2 z-[60] origin-top">
+                          {[
+                            { val: "all", label: "All Roles" },
+                            { val: "unit_officer", label: "Unit Officers" },
+                            { val: "field_officer", label: "Field Officers" },
+                          ].map((item) => (
+                            <div
+                              key={item.val}
+                              onClick={() =>
+                                setAssignmentOfficerFilter(item.val)
+                              }
+                              className={`px-4 py-3 rounded-xl cursor-pointer font-bold text-sm transition-all mb-1 last:mb-0 ${assignmentOfficerFilter === item.val ? "bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 shadow-inner" : "hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300 hover:pl-5"}`}
+                            >
+                              {item.label}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-xl p-6 border border-emerald-200 dark:border-emerald-800">
-                      <div className="flex items-center justify-between">
+                    <div className="group relative overflow-hidden bg-white/40 dark:bg-emerald-900/20 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-white/60 dark:border-emerald-700/30 hover:shadow-[0_8px_30px_rgba(16,185,129,0.15)] transition-all duration-300 transform hover:-translate-y-1">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-400/20 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-emerald-800 dark:text-emerald-300 font-semibold mb-1">
+                          <p className="text-sm text-emerald-700/80 dark:text-emerald-300/80 font-bold uppercase tracking-wider mb-1">
                             On Track
                           </p>
-                          <p className="text-4xl font-black text-emerald-900 dark:text-emerald-100">
+                          <p className="text-4xl font-black bg-gradient-to-r from-emerald-900 to-teal-700 dark:from-emerald-100 dark:to-teal-300 bg-clip-text text-transparent transform group-hover:scale-105 origin-left transition-transform duration-500">
                             {assignedIssues.length - overdueIssues.length}
                           </p>
                         </div>
-                        <div className="p-4 bg-emerald-100 dark:bg-emerald-800/40 rounded-xl">
+                        <div className="p-4 bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-800/60 dark:to-teal-800/60 rounded-xl shadow-inner border border-white/50 dark:border-emerald-600/30 group-hover:scale-110 transition-transform duration-500">
                           <CheckCircle
-                            className="text-emerald-600 dark:text-emerald-400"
+                            className="text-emerald-600 dark:text-emerald-400 drop-shadow-sm"
                             size={32}
                           />
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 rounded-xl p-6 border border-amber-200 dark:border-amber-800">
-                      <div className="flex items-center justify-between">
+                    <div className="group relative overflow-hidden bg-white/40 dark:bg-amber-900/20 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-white/60 dark:border-amber-700/30 hover:shadow-[0_8px_30px_rgba(245,158,11,0.15)] transition-all duration-300 transform hover:-translate-y-1">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-400/20 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-amber-800 dark:text-amber-300 font-semibold mb-1">
+                          <p className="text-sm text-amber-700/80 dark:text-amber-300/80 font-bold uppercase tracking-wider mb-1">
                             Near Deadline
                           </p>
-                          <p className="text-4xl font-black text-amber-900 dark:text-amber-100">
+                          <p className="text-4xl font-black bg-gradient-to-r from-amber-900 to-orange-700 dark:from-amber-100 dark:to-orange-300 bg-clip-text text-transparent transform group-hover:scale-105 origin-left transition-transform duration-500">
                             {Math.floor(assignedIssues.length * 0.15)}
                           </p>
                         </div>
-                        <div className="p-4 bg-amber-100 dark:bg-amber-800/40 rounded-xl">
+                        <div className="p-4 bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-800/60 dark:to-orange-800/60 rounded-xl shadow-inner border border-white/50 dark:border-amber-600/30 group-hover:scale-110 transition-transform duration-500">
                           <Clock
-                            className="text-amber-600 dark:text-amber-400"
+                            className="text-amber-600 dark:text-amber-400 drop-shadow-sm"
                             size={32}
                           />
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 rounded-xl p-6 border border-red-200 dark:border-red-800">
-                      <div className="flex items-center justify-between">
+                    <div className="group relative overflow-hidden bg-white/40 dark:bg-red-900/20 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-white/60 dark:border-red-700/30 hover:shadow-[0_8px_30px_rgba(239,68,68,0.15)] transition-all duration-300 transform hover:-translate-y-1">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-red-400/20 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-red-800 dark:text-red-300 font-semibold mb-1">
+                          <p className="text-sm text-red-700/80 dark:text-red-300/80 font-bold uppercase tracking-wider mb-1">
                             SLA Breached
                           </p>
-                          <p className="text-4xl font-black text-red-900 dark:text-red-100">
+                          <p className="text-4xl font-black bg-gradient-to-r from-red-900 to-rose-700 dark:from-red-100 dark:to-rose-300 bg-clip-text text-transparent transform group-hover:scale-105 origin-left transition-transform duration-500">
                             {overdueIssues.length}
                           </p>
                         </div>
-                        <div className="p-4 bg-red-100 dark:bg-red-800/40 rounded-xl">
+                        <div className="p-4 bg-gradient-to-br from-red-100 to-rose-100 dark:from-red-800/60 dark:to-rose-800/60 rounded-xl shadow-inner border border-white/50 dark:border-red-600/30 group-hover:scale-110 transition-transform duration-500">
                           <AlertTriangle
-                            className="text-red-600 dark:text-red-400 animate-pulse"
+                            className="text-red-600 dark:text-red-400 drop-shadow-sm animate-pulse"
                             size={32}
                           />
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-900/20 dark:to-gray-900/20 rounded-xl p-6 border border-slate-200 dark:border-slate-800">
-                      <div className="flex items-center justify-between">
+                    <div className="group relative overflow-hidden bg-white/40 dark:bg-slate-900/20 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-white/60 dark:border-slate-700/30 hover:shadow-[0_8px_30px_rgba(148,163,184,0.15)] transition-all duration-300 transform hover:-translate-y-1">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-slate-400/20 to-transparent rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                      <div className="relative flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-slate-800 dark:text-slate-300 font-semibold mb-1">
+                          <p className="text-sm text-slate-700/80 dark:text-slate-300/80 font-bold uppercase tracking-wider mb-1">
                             Unassigned
                           </p>
-                          <p className="text-4xl font-black text-slate-900 dark:text-slate-100">
+                          <p className="text-4xl font-black bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent transform group-hover:scale-105 origin-left transition-transform duration-500">
                             {issues.filter((i) => !i.assignedTo).length}
                           </p>
                         </div>
-                        <div className="p-4 bg-slate-100 dark:bg-slate-800/40 rounded-xl">
+                        <div className="p-4 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800/60 dark:to-slate-700/60 rounded-xl shadow-inner border border-white/50 dark:border-slate-600/30 group-hover:scale-110 transition-transform duration-500">
                           <AlertCircle
-                            className="text-slate-600 dark:text-slate-400"
+                            className="text-slate-600 dark:text-slate-400 drop-shadow-sm"
                             size={32}
                           />
                         </div>
@@ -1335,312 +1625,348 @@ export function AdminDashboard() {
                   </div>
 
                   <div className="space-y-4">
-                    {filteredAssignmentOfficers.map((ow) => {
-                      const isExpanded = expandedAssignmentOfficers.has(
-                        ow.officer.id,
-                      );
-                      const filteredIssues = getFilteredOfficerIssues(
-                        ow.officer.id,
-                        ow.issues,
-                      );
-                      const displayedIssues = isExpanded
-                        ? filteredIssues
-                        : filteredIssues.slice(0, 3);
+                    <button
+                      onClick={() => setIsAssignedExpanded(!isAssignedExpanded)}
+                      className="w-full flex items-center justify-between p-5 bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-sm hover:shadow-md transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg text-blue-600 dark:text-blue-400">
+                          <Users size={20} />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                          Assigned Target Queue
+                        </h3>
+                        <span className="px-2.5 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 rounded-md text-sm font-bold">
+                          {filteredAssignmentOfficers.length} Officers
+                        </span>
+                      </div>
+                      <ChevronDown
+                        size={24}
+                        className={`text-slate-400 group-hover:text-blue-500 transition-transform duration-300 ${isAssignedExpanded ? "-rotate-180" : ""}`}
+                      />
+                    </button>
 
-                      return (
-                        <div
-                          key={ow.officer.id}
-                          className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-2xl transition-all duration-300"
-                        >
-                          <div className="bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 p-6 border-b border-slate-200 dark:border-slate-700">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4">
-                                <div
-                                  className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-xl ${
-                                    ow.officer.role === "unit_officer"
-                                      ? "bg-gradient-to-br from-cyan-500 to-blue-600"
-                                      : "bg-gradient-to-br from-emerald-500 to-teal-600"
-                                  }`}
-                                >
-                                  {ow.officer.full_name
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")}
-                                </div>
-                                <div>
-                                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                                    {ow.officer.full_name}
-                                  </h3>
-                                  <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2 mt-1">
-                                    {ow.officer.role === "unit_officer" ? (
-                                      <>
-                                        <Shield size={14} /> Unit Officer
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Zap size={14} /> Field Officer
-                                      </>
-                                    )}
-                                    {ow.officer.ward_zone && (
-                                      <>
-                                        <MapPin size={14} />{" "}
-                                        {ow.officer.ward_zone}
-                                      </>
-                                    )}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-4">
-                                <div className="text-right">
-                                  <p className="text-3xl font-black text-slate-900 dark:text-white">
-                                    {ow.total}
-                                  </p>
-                                  <p className="text-sm text-slate-600 dark:text-slate-400 font-semibold">
-                                    Active Issues
-                                  </p>
-                                </div>
-                                {ow.total > 0 && (
-                                  <button
-                                    onClick={() =>
-                                      toggleAssignmentOfficerExpand(
-                                        ow.officer.id,
-                                      )
-                                    }
-                                    className="p-3 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                                  >
-                                    {isExpanded ? (
-                                      <ChevronUp size={24} />
-                                    ) : (
-                                      <ChevronDown size={24} />
-                                    )}
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
+                    {isAssignedExpanded && (
+                      <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                        {filteredAssignmentOfficers.map((ow) => {
+                          const isExpanded = expandedAssignmentOfficers.has(
+                            ow.officer.id,
+                          );
+                          const filteredIssues = getFilteredOfficerIssues(
+                            ow.officer.id,
+                            ow.issues,
+                          );
+                          const displayedIssues = isExpanded
+                            ? filteredIssues
+                            : filteredIssues.slice(0, 3);
 
-                          <div className="p-6">
-                            {ow.total === 0 ? (
-                              <div className="text-center py-8">
-                                <CheckCircle
-                                  size={48}
-                                  className="mx-auto text-emerald-400 dark:text-emerald-500 mb-3"
-                                />
-                                <p className="text-slate-600 dark:text-slate-400 font-medium">
-                                  No active issues assigned
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-                                  Officer is available for new assignments
-                                </p>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="mb-4 space-y-3">
-                                  <div className="relative">
-                                    <Search
-                                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
-                                      size={16}
-                                    />
-                                    <input
-                                      type="text"
-                                      value={
-                                        officerIssueSearchTerms[
-                                          ow.officer.id
-                                        ] || ""
-                                      }
-                                      onChange={(e) =>
-                                        setOfficerIssueSearchTerms({
-                                          ...officerIssueSearchTerms,
-                                          [ow.officer.id]: e.target.value,
-                                        })
-                                      }
-                                      placeholder="Search issues..."
-                                      className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
-                                    />
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <select
-                                      value={
-                                        officerIssueFilters[ow.officer.id]
-                                          ?.status || "all"
-                                      }
-                                      onChange={(e) =>
-                                        setOfficerIssueFilters({
-                                          ...officerIssueFilters,
-                                          [ow.officer.id]: {
-                                            ...officerIssueFilters[
-                                              ow.officer.id
-                                            ],
-                                            status: e.target.value,
-                                          },
-                                        })
-                                      }
-                                      className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-900 dark:text-white"
+                          return (
+                            <div
+                              key={ow.officer.id}
+                              className="group/assign bg-white/40 dark:bg-[#0f172a]/40 backdrop-blur-3xl rounded-3xl shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.3)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] transition-all duration-500 border-y border-white/80 dark:border-white/10 hover:border-slate-300/50 dark:hover:border-slate-500/50 transform hover:-translate-y-1 overflow-hidden relative"
+                            >
+                              <div className="absolute top-0 right-0 w-96 h-96 blur-3xl opacity-20 dark:opacity-10 group-hover/assign:scale-125 transition-transform duration-700 pointer-events-none rounded-full bg-blue-500"></div>
+                              <div className="relative z-10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm p-6 border-b border-white/40 dark:border-slate-700/50">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-4">
+                                    <div
+                                      className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-xl ${
+                                        ow.officer.role === "unit_officer"
+                                          ? "bg-gradient-to-br from-cyan-500 to-blue-600"
+                                          : "bg-gradient-to-br from-emerald-500 to-teal-600"
+                                      }`}
                                     >
-                                      <option value="all">All Status</option>
-                                      <option value="pending">Pending</option>
-                                      <option value="in_progress">
-                                        In Progress
-                                      </option>
-                                      <option value="resolved">Resolved</option>
-                                    </select>
-                                    <select
-                                      value={
-                                        officerIssueFilters[ow.officer.id]
-                                          ?.severity || "all"
-                                      }
-                                      onChange={(e) =>
-                                        setOfficerIssueFilters({
-                                          ...officerIssueFilters,
-                                          [ow.officer.id]: {
-                                            ...officerIssueFilters[
-                                              ow.officer.id
-                                            ],
-                                            severity: e.target.value,
-                                          },
-                                        })
-                                      }
-                                      className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-900 dark:text-white"
-                                    >
-                                      <option value="all">All Severity</option>
-                                      <option value="low">Low</option>
-                                      <option value="medium">Medium</option>
-                                      <option value="high">High</option>
-                                    </select>
-                                  </div>
-                                </div>
-
-                                {filteredIssues.length === 0 ? (
-                                  <div className="text-center py-8">
-                                    <Filter
-                                      size={48}
-                                      className="mx-auto text-slate-300 dark:text-slate-700 mb-3"
-                                    />
-                                    <p className="text-slate-600 dark:text-slate-400 font-medium">
-                                      No issues match your filters
-                                    </p>
-                                  </div>
-                                ) : (
-                                  <>
-                                    <div className="grid grid-cols-1 gap-3">
-                                      {displayedIssues.map((issue) => {
-                                        const daysSince = Math.floor(
-                                          (Date.now() -
-                                            new Date(
-                                              issue.createdAt,
-                                            ).getTime()) /
-                                            (1000 * 60 * 60 * 24),
-                                        );
-                                        const isOverdue =
-                                          daysSince > 7 &&
-                                          issue.status !== "resolved";
-
-                                        return (
-                                          <div
-                                            key={issue.id}
-                                            className={`rounded-xl p-4 border-2 transition-all duration-300 cursor-pointer hover:shadow-lg ${
-                                              isOverdue
-                                                ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-700"
-                                                : issue.status === "resolved"
-                                                  ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 hover:border-emerald-300 dark:hover:border-emerald-700"
-                                                  : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700"
-                                            }`}
-                                            onClick={() =>
-                                              setSelectedIssue(issue)
-                                            }
-                                          >
-                                            <div className="flex items-start justify-between">
-                                              <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                  <code className="text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
-                                                    {issue.ticket_id}
-                                                  </code>
-                                                  {isOverdue && (
-                                                    <span className="flex items-center gap-1 text-xs font-bold text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/40 px-2 py-1 rounded animate-pulse">
-                                                      <AlertTriangle
-                                                        size={12}
-                                                      />
-                                                      OVERDUE
-                                                    </span>
-                                                  )}
-                                                  <span
-                                                    className={`text-xs font-bold px-2 py-1 rounded ${
-                                                      issue.status ===
-                                                      "resolved"
-                                                        ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
-                                                        : issue.status ===
-                                                            "in_progress"
-                                                          ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
-                                                          : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
-                                                    }`}
-                                                  >
-                                                    {issue.status === "pending"
-                                                      ? "Pending"
-                                                      : issue.status ===
-                                                          "in_progress"
-                                                        ? "In Progress"
-                                                        : "Resolved"}
-                                                  </span>
-                                                </div>
-                                                <h4 className="font-bold text-slate-900 dark:text-white mb-1">
-                                                  {issue.title}
-                                                </h4>
-                                                <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                                                  <Calendar size={14} />
-                                                  {daysSince === 0
-                                                    ? "Today"
-                                                    : `${daysSince} days ago`}
-                                                </p>
-                                              </div>
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setReassignIssue(issue);
-                                                }}
-                                                className="px-3 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-sm font-medium flex items-center gap-1"
-                                              >
-                                                <UserCheck size={14} />
-                                                Reassign
-                                              </button>
-                                            </div>
-                                          </div>
-                                        );
-                                      })}
+                                      {ow.officer.full_name
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .join("")}
                                     </div>
-
-                                    {filteredIssues.length > 3 && (
+                                    <div>
+                                      <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                                        {ow.officer.full_name}
+                                      </h3>
+                                      <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2 mt-1">
+                                        {ow.officer.role === "unit_officer" ? (
+                                          <>
+                                            <Shield size={14} /> Unit Officer
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Zap size={14} /> Field Officer
+                                          </>
+                                        )}
+                                        {ow.officer.ward_zone && (
+                                          <>
+                                            <MapPin size={14} />{" "}
+                                            {ow.officer.ward_zone}
+                                          </>
+                                        )}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-4">
+                                    <div className="text-right">
+                                      <p className="text-3xl font-black text-slate-900 dark:text-white">
+                                        {ow.total}
+                                      </p>
+                                      <p className="text-sm text-slate-600 dark:text-slate-400 font-semibold">
+                                        Active Issues
+                                      </p>
+                                    </div>
+                                    {ow.total > 0 && (
                                       <button
                                         onClick={() =>
                                           toggleAssignmentOfficerExpand(
                                             ow.officer.id,
                                           )
                                         }
-                                        className="w-full mt-4 px-4 py-3 bg-blue-100 dark:bg-blue-900/40 text-blue-900 dark:text-blue-100 rounded-xl hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors font-medium flex items-center justify-center gap-2"
+                                        className="p-3 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                                       >
                                         {isExpanded ? (
-                                          <>
-                                            <ChevronUp size={16} />
-                                            Show Less
-                                          </>
+                                          <ChevronUp size={24} />
                                         ) : (
-                                          <>
-                                            <ChevronDown size={16} />
-                                            Show All {
-                                              filteredIssues.length
-                                            }{" "}
-                                            Issues
-                                          </>
+                                          <ChevronDown size={24} />
                                         )}
                                       </button>
                                     )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="p-6">
+                                {ow.total === 0 ? (
+                                  <div className="text-center py-8">
+                                    <CheckCircle
+                                      size={48}
+                                      className="mx-auto text-emerald-400 dark:text-emerald-500 mb-3"
+                                    />
+                                    <p className="text-slate-600 dark:text-slate-400 font-medium">
+                                      No active issues assigned
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                                      Officer is available for new assignments
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="mb-4 space-y-3">
+                                      <div className="relative">
+                                        <Search
+                                          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
+                                          size={16}
+                                        />
+                                        <input
+                                          type="text"
+                                          value={
+                                            officerIssueSearchTerms[
+                                              ow.officer.id
+                                            ] || ""
+                                          }
+                                          onChange={(e) =>
+                                            setOfficerIssueSearchTerms({
+                                              ...officerIssueSearchTerms,
+                                              [ow.officer.id]: e.target.value,
+                                            })
+                                          }
+                                          placeholder="Search issues..."
+                                          className="w-full pl-9 pr-3 py-2 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner focus:border-blue-500 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                        />
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <select
+                                          value={
+                                            officerIssueFilters[ow.officer.id]
+                                              ?.status || "all"
+                                          }
+                                          onChange={(e) =>
+                                            setOfficerIssueFilters({
+                                              ...officerIssueFilters,
+                                              [ow.officer.id]: {
+                                                ...officerIssueFilters[
+                                                  ow.officer.id
+                                                ],
+                                                status: e.target.value,
+                                              },
+                                            })
+                                          }
+                                          className="flex-1 px-3 py-2 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner text-sm text-slate-900 dark:text-white"
+                                        >
+                                          <option value="all">
+                                            All Status
+                                          </option>
+                                          <option value="pending">
+                                            Pending
+                                          </option>
+                                          <option value="in_progress">
+                                            In Progress
+                                          </option>
+                                          <option value="resolved">
+                                            Resolved
+                                          </option>
+                                        </select>
+                                        <select
+                                          value={
+                                            officerIssueFilters[ow.officer.id]
+                                              ?.severity || "all"
+                                          }
+                                          onChange={(e) =>
+                                            setOfficerIssueFilters({
+                                              ...officerIssueFilters,
+                                              [ow.officer.id]: {
+                                                ...officerIssueFilters[
+                                                  ow.officer.id
+                                                ],
+                                                severity: e.target.value,
+                                              },
+                                            })
+                                          }
+                                          className="flex-1 px-3 py-2 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border border-slate-200/60 dark:border-slate-700/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner text-sm text-slate-900 dark:text-white"
+                                        >
+                                          <option value="all">
+                                            All Severity
+                                          </option>
+                                          <option value="low">Low</option>
+                                          <option value="medium">Medium</option>
+                                          <option value="high">High</option>
+                                        </select>
+                                      </div>
+                                    </div>
+
+                                    {filteredIssues.length === 0 ? (
+                                      <div className="text-center py-8">
+                                        <Filter
+                                          size={48}
+                                          className="mx-auto text-slate-300 dark:text-slate-700 mb-3"
+                                        />
+                                        <p className="text-slate-600 dark:text-slate-400 font-medium">
+                                          No issues match your filters
+                                        </p>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <div className="grid grid-cols-1 gap-3">
+                                          {displayedIssues.map((issue) => {
+                                            const daysSince = Math.floor(
+                                              (Date.now() -
+                                                new Date(
+                                                  issue.createdAt,
+                                                ).getTime()) /
+                                                (1000 * 60 * 60 * 24),
+                                            );
+                                            const isOverdue =
+                                              daysSince > 7 &&
+                                              issue.status !== "resolved";
+
+                                            return (
+                                              <div
+                                                key={issue.id}
+                                                className={`rounded-xl p-4 border-2 transition-all duration-300 cursor-pointer hover:shadow-lg ${
+                                                  isOverdue
+                                                    ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 hover:border-red-300 dark:hover:border-red-700"
+                                                    : issue.status ===
+                                                        "resolved"
+                                                      ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 hover:border-emerald-300 dark:hover:border-emerald-700"
+                                                      : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700"
+                                                }`}
+                                                onClick={() =>
+                                                  setSelectedIssue(issue)
+                                                }
+                                              >
+                                                <div className="flex items-start justify-between">
+                                                  <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                      <code className="text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                                                        {issue.ticket_id}
+                                                      </code>
+                                                      {isOverdue && (
+                                                        <span className="flex items-center gap-1 text-xs font-bold text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/40 px-2 py-1 rounded animate-pulse">
+                                                          <AlertTriangle
+                                                            size={12}
+                                                          />
+                                                          OVERDUE
+                                                        </span>
+                                                      )}
+                                                      <span
+                                                        className={`text-xs font-bold px-2 py-1 rounded ${
+                                                          issue.status ===
+                                                          "resolved"
+                                                            ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
+                                                            : issue.status ===
+                                                                "in_progress"
+                                                              ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+                                                              : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
+                                                        }`}
+                                                      >
+                                                        {issue.status ===
+                                                        "pending"
+                                                          ? "Pending"
+                                                          : issue.status ===
+                                                              "in_progress"
+                                                            ? "In Progress"
+                                                            : "Resolved"}
+                                                      </span>
+                                                    </div>
+                                                    <h4 className="font-bold text-slate-900 dark:text-white mb-1">
+                                                      {issue.title}
+                                                    </h4>
+                                                    <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                                                      <Calendar size={14} />
+                                                      {daysSince === 0
+                                                        ? "Today"
+                                                        : `${daysSince} days ago`}
+                                                    </p>
+                                                  </div>
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      setReassignIssue(issue);
+                                                    }}
+                                                    className="px-3 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-sm font-medium flex items-center gap-1"
+                                                  >
+                                                    <UserCheck size={14} />
+                                                    Reassign
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+
+                                        {filteredIssues.length > 3 && (
+                                          <button
+                                            onClick={() =>
+                                              toggleAssignmentOfficerExpand(
+                                                ow.officer.id,
+                                              )
+                                            }
+                                            className="w-full mt-4 px-4 py-3 bg-blue-100 dark:bg-blue-900/40 text-blue-900 dark:text-blue-100 rounded-xl hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors font-medium flex items-center justify-center gap-2"
+                                          >
+                                            {isExpanded ? (
+                                              <>
+                                                <ChevronUp size={16} />
+                                                Show Less
+                                              </>
+                                            ) : (
+                                              <>
+                                                <ChevronDown size={16} />
+                                                Show All {
+                                                  filteredIssues.length
+                                                }{" "}
+                                                Issues
+                                              </>
+                                            )}
+                                          </button>
+                                        )}
+                                      </>
+                                    )}
                                   </>
                                 )}
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   {filteredAssignmentOfficers.length === 0 && (
@@ -1656,110 +1982,124 @@ export function AdminDashboard() {
                   )}
 
                   {issues.filter((i) => !i.assignedTo).length > 0 && (
-                    <div className="bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-850 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                      <div className="bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 p-6 border-b border-slate-200 dark:border-slate-700">
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                          <AlertCircle
-                            className="text-slate-600 dark:text-slate-400"
-                            size={24}
-                          />
-                          Unassigned Issues (
-                          {issues.filter((i) => !i.assignedTo).length})
-                        </h3>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                          These issues need to be assigned to officers
-                        </p>
-                      </div>
-                      <div className="p-6">
-                        <div className="grid grid-cols-1 gap-3">
-                          {issues
-                            .filter((i) => !i.assignedTo)
-                            .slice(0, 5)
-                            .map((issue) => {
-                              const daysSince = Math.floor(
-                                (Date.now() -
-                                  new Date(issue.createdAt).getTime()) /
-                                  (1000 * 60 * 60 * 24),
-                              );
-                              const isUrgent = daysSince > 2;
-
-                              return (
-                                <div
-                                  key={issue.id}
-                                  className={`rounded-xl p-4 border-2 transition-all duration-300 cursor-pointer hover:shadow-lg ${
-                                    isUrgent
-                                      ? "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 hover:border-orange-300 dark:hover:border-orange-700"
-                                      : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
-                                  }`}
-                                  onClick={() => setSelectedIssue(issue)}
-                                >
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <code className="text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
-                                          {issue.ticket_id}
-                                        </code>
-                                        {isUrgent && (
-                                          <span className="flex items-center gap-1 text-xs font-bold text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-900/40 px-2 py-1 rounded">
-                                            <Clock size={12} />
-                                            NEEDS ATTENTION
-                                          </span>
-                                        )}
-                                        <span className="text-xs font-bold px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                                          {issue.category}
-                                        </span>
-                                        <span
-                                          className={`text-xs font-bold px-2 py-1 rounded ${
-                                            issue.severity === "high"
-                                              ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
-                                              : issue.severity === "medium"
-                                                ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
-                                                : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
-                                          }`}
-                                        >
-                                          {issue.severity} priority
-                                        </span>
-                                      </div>
-                                      <h4 className="font-bold text-slate-900 dark:text-white mb-1">
-                                        {issue.title}
-                                      </h4>
-                                      <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
-                                        <Calendar size={14} />
-                                        {daysSince === 0
-                                          ? "Reported today"
-                                          : `Reported ${daysSince} days ago`}
-                                      </p>
-                                    </div>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setReassignIssue(issue);
-                                      }}
-                                      className="px-4 py-2 bg-emerald-600 dark:bg-emerald-500 text-white rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-600 transition-colors text-sm font-medium flex items-center gap-2"
-                                    >
-                                      <UserCheck size={14} />
-                                      Assign
-                                    </button>
-                                  </div>
-                                </div>
-                              );
-                            })}
+                    <div className="bg-white/60 dark:bg-[#1e293b]/50 backdrop-blur-xl rounded-2xl shadow-xl border border-white/50 dark:border-slate-700/50 overflow-hidden">
+                      <button
+                        onClick={() =>
+                          setIsUnassignedExpanded(!isUnassignedExpanded)
+                        }
+                        className="w-full flex items-center justify-between p-6 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border-b border-white/40 dark:border-slate-700/50 hover:bg-white/60 dark:hover:bg-slate-800/60 transition-colors group"
+                      >
+                        <div className="text-left">
+                          <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <AlertCircle
+                              className="text-slate-600 dark:text-slate-400"
+                              size={24}
+                            />
+                            Unassigned Issues (
+                            {issues.filter((i) => !i.assignedTo).length})
+                          </h3>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                            These issues need to be assigned to officers
+                          </p>
                         </div>
-                        {issues.filter((i) => !i.assignedTo).length > 5 && (
-                          <button
-                            onClick={() => {
-                              setStatusFilter("all");
-                              setActiveTab("issues");
-                            }}
-                            className="w-full mt-4 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors font-medium flex items-center justify-center gap-2"
-                          >
-                            View All{" "}
-                            {issues.filter((i) => !i.assignedTo).length}{" "}
-                            Unassigned Issues
-                            <ArrowUpRight size={16} />
-                          </button>
-                        )}
-                      </div>
+                        <ChevronDown
+                          size={24}
+                          className={`text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-transform duration-300 ${isUnassignedExpanded ? "-rotate-180" : ""}`}
+                        />
+                      </button>
+
+                      {isUnassignedExpanded && (
+                        <div className="p-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                          <div className="grid grid-cols-1 gap-3">
+                            {issues
+                              .filter((i) => !i.assignedTo)
+                              .slice(0, 5)
+                              .map((issue) => {
+                                const daysSince = Math.floor(
+                                  (Date.now() -
+                                    new Date(issue.createdAt).getTime()) /
+                                    (1000 * 60 * 60 * 24),
+                                );
+                                const isUrgent = daysSince > 2;
+
+                                return (
+                                  <div
+                                    key={issue.id}
+                                    className={`rounded-xl p-4 border-2 transition-all duration-300 cursor-pointer hover:shadow-lg ${
+                                      isUrgent
+                                        ? "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 hover:border-orange-300 dark:hover:border-orange-700"
+                                        : "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                                    }`}
+                                    onClick={() => setSelectedIssue(issue)}
+                                  >
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <code className="text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                                            {issue.ticket_id}
+                                          </code>
+                                          {isUrgent && (
+                                            <span className="flex items-center gap-1 text-xs font-bold text-orange-700 dark:text-orange-300 bg-orange-100 dark:bg-orange-900/40 px-2 py-1 rounded">
+                                              <Clock size={12} />
+                                              NEEDS ATTENTION
+                                            </span>
+                                          )}
+                                          <span className="text-xs font-bold px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                            {issue.category}
+                                          </span>
+                                          <span
+                                            className={`text-xs font-bold px-2 py-1 rounded ${
+                                              issue.severity === "high"
+                                                ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                                                : issue.severity === "medium"
+                                                  ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
+                                                  : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+                                            }`}
+                                          >
+                                            {issue.severity} priority
+                                          </span>
+                                        </div>
+                                        <h4 className="font-bold text-slate-900 dark:text-white mb-1">
+                                          {issue.title}
+                                        </h4>
+                                        <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                                          <Calendar size={14} />
+                                          {daysSince === 0
+                                            ? "Reported today"
+                                            : `Reported ${daysSince} days ago`}
+                                        </p>
+                                      </div>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setReassignIssue(issue);
+                                        }}
+                                        className="px-4 py-2 bg-emerald-600 dark:bg-emerald-500 text-white rounded-lg hover:bg-emerald-700 dark:hover:bg-emerald-600 transition-colors text-sm font-medium flex items-center gap-2"
+                                      >
+                                        <UserCheck size={14} />
+                                        Assign
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                          {issues.filter((i) => !i.assignedTo).length > 5 && (
+                            <button
+                              onClick={() => {
+                                setStatusFilter("all");
+                                setActiveTab("issues");
+                              }}
+                              className="w-full mt-4 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors font-medium flex items-center justify-center gap-2"
+                            >
+                              View All{" "}
+                              {issues.filter((i) => !i.assignedTo).length}{" "}
+                              Unassigned Issues
+                              <ArrowUpRight size={16} />
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
