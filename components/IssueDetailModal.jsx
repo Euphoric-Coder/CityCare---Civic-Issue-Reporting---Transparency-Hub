@@ -754,7 +754,13 @@ export function IssueDetailModal({ issue, onClose }) {
       </div>
 
       {isPreviewOpen && previewFile && (
-        <div className="fixed inset-0 z-[999] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 animate-fadeIn">
+        <div
+          className="fixed inset-0 z-[999] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 animate-fadeIn"
+          onClick={() => {
+            setIsPreviewOpen(false);
+            setPreviewFile(null);
+          }}
+        >
           <div className="relative max-w-6xl w-full max-h-[90vh] flex items-center justify-center">
             {/* CLOSE BUTTON */}
             <button
