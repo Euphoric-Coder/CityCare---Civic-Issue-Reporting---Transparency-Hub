@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import {
   X,
@@ -20,6 +22,8 @@ import {
 import { IssueDiscussion } from "./IssueDiscussion";
 import { getUpdatesByIssueId } from "../lib/mockData";
 import { IssueMessaging } from "./Citizen/IssueMessaging";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 const statusSteps = [
   {
@@ -46,14 +50,21 @@ export function IssueDetailModal({ issue, onClose }) {
   const [activeTab, setActiveTab] = useState("progress");
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [issueUpdates, setIssueUpdates] = useState([]);
+
+  console.log("Rendering IssueDetailModal for issue:", issue);
+
+  const issueUpdates = useQuery(
+    api.issueUpdates.getByIssueId,
+    issue ? { issueId: issue._id } : "skip",
+  );
+
+  console.log("Fetched issue updates from query:", issueUpdates);
 
   useEffect(() => {
     if (issue) {
       console.log("Fetching issue updates for issue:", issue.id);
       const updates = getUpdatesByIssueId(issue.id);
       console.log("Fetched issue updates:", updates);
-      setIssueUpdates(updates);
     }
   }, [issue]);
 
@@ -150,6 +161,10 @@ export function IssueDetailModal({ issue, onClose }) {
   };
 
   const currentColors = statusColors[issue.status] || statusColors.pending;
+
+  if (!issueUpdates) {
+    return <div className="p-6 text-center">Loading updates...</div>;
+  }
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
@@ -320,6 +335,39 @@ export function IssueDetailModal({ issue, onClose }) {
                               <p className="text-sm font-medium text-gray-900 mb-1">
                                 {update.comment}
                               </p>
+                              {update.attachmentUrls?.length > 0 && (
+                                <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3">
+                                  {update.attachmentUrls.map((url, i) => {
+                                    const isVideo =
+                                      url.includes(".mp4") ||
+                                      url.includes(".webm");
+
+                                    return (
+                                      <div
+                                        key={i}
+                                        className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 hover:shadow-lg transition"
+                                      >
+                                        {isVideo ? (
+                                          <video
+                                            src={url}
+                                            controls
+                                            className="w-full h-32 object-cover"
+                                          />
+                                        ) : (
+                                          <img
+                                            src={url}
+                                            alt="attachment"
+                                            className="w-full h-32 object-cover group-hover:scale-105 transition"
+                                          />
+                                        )}
+
+                                        {/* overlay */}
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition"></div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
                               {update.updater && (
                                 <div className="flex items-center gap-2 mt-2">
                                   <div
@@ -334,18 +382,18 @@ export function IssueDetailModal({ issue, onClose }) {
                                             : "bg-gray-600"
                                     }`}
                                   >
-                                    {update.updater.full_name
+                                    {update.updater.fullName
                                       .split(" ")
                                       .map((n) => n[0])
                                       .join("")}
                                   </div>
                                   <div className="text-xs">
                                     <span className="text-gray-700 font-medium">
-                                      {update.updater.full_name}
+                                      {update.updater.fullName}
                                     </span>
                                     <span className="text-gray-500"> • </span>
                                     <span className="text-gray-500 capitalize">
-                                      {update.updater.role.replace("_", " ")}
+                                      {update.role.replace("_", " ")}
                                     </span>
                                   </div>
                                 </div>
@@ -549,7 +597,7 @@ export function IssueDetailModal({ issue, onClose }) {
                         Assigned Officer
                       </h4>
                       <p className="text-sm text-gray-600">
-                        {issue.assignee.full_name}
+                        {issue.assignee.fullName}
                       </p>
                       <p className="text-xs text-gray-500 capitalize">
                         {issue.assignee.role.replace("_", " ")}
