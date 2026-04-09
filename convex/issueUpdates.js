@@ -12,19 +12,29 @@ export const getByIssueId = query({
       .order("asc")
       .collect();
 
-    // attach user info + media urls
     const enriched = await Promise.all(
       updates.map(async (u) => {
         const user = await ctx.db.get(u.updatedBy);
 
-        const attachmentUrls = await Promise.all(
-          (u.attachments || []).map((fileId) => ctx.storage.getUrl(fileId)),
+        const attachments = await Promise.all(
+          (u.attachments || []).map(async (fileId) => {
+            const url = await ctx.storage.getUrl(fileId);
+
+            // 🔥 KEY PART
+            const meta = await ctx.db.system.get(fileId);
+
+            return {
+              url,
+              contentType: meta?.contentType || "",
+              storageId: fileId,
+            };
+          }),
         );
 
         return {
           ...u,
           updater: user,
-          attachmentUrls,
+          attachments,
         };
       }),
     );

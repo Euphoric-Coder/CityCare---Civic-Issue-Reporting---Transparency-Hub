@@ -50,6 +50,8 @@ export function IssueDetailModal({ issue, onClose }) {
   const [activeTab, setActiveTab] = useState("progress");
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [previewFile, setPreviewFile] = useState(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   console.log("Rendering IssueDetailModal for issue:", issue);
 
@@ -67,6 +69,23 @@ export function IssueDetailModal({ issue, onClose }) {
       console.log("Fetched issue updates:", updates);
     }
   }, [issue]);
+
+  useEffect(() => {
+    if (!isPreviewOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setIsPreviewOpen(false);
+        setPreviewFile(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPreviewOpen]);
 
   if (!issue) return null;
 
@@ -111,7 +130,7 @@ export function IssueDetailModal({ issue, onClose }) {
     return Math.floor(diffMs / 86400000);
   }
 
-  const daysSinceReported = getDaysSince(issue.created_at);
+  const daysSinceReported = getDaysSince(issue.createdAt);
 
   const statusColors = {
     pending: {
@@ -320,7 +339,7 @@ export function IssueDetailModal({ issue, onClose }) {
                                         : "Pending"}
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  {new Date(update.created_at).toLocaleString(
+                                  {new Date(update.createdAt).toLocaleString(
                                     "en-US",
                                     {
                                       month: "short",
@@ -335,34 +354,75 @@ export function IssueDetailModal({ issue, onClose }) {
                               <p className="text-sm font-medium text-gray-900 mb-1">
                                 {update.comment}
                               </p>
-                              {update.attachmentUrls?.length > 0 && (
-                                <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3">
-                                  {update.attachmentUrls.map((url, i) => {
+                              {update.attachments?.length > 0 && (
+                                <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-5">
+                                  {update.attachments.map((file, i) => {
+                                    const { url, contentType } = file;
+
+                                    const isImage =
+                                      contentType?.startsWith("image");
                                     const isVideo =
-                                      url.includes(".mp4") ||
-                                      url.includes(".webm");
+                                      contentType?.startsWith("video");
+                                    const isPDF = contentType?.includes("pdf");
 
                                     return (
                                       <div
                                         key={i}
-                                        className="relative group rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 hover:shadow-lg transition"
+                                        className="relative group rounded-2xl overflow-hidden
+          border border-slate-200/60 dark:border-white/10
+          bg-white/60 dark:bg-white/5 backdrop-blur-xl
+          shadow-md hover:shadow-2xl transition-all duration-500"
                                       >
-                                        {isVideo ? (
-                                          <video
-                                            src={url}
-                                            controls
-                                            className="w-full h-32 object-cover"
-                                          />
-                                        ) : (
+                                        {/* IMAGE */}
+                                        {isImage && (
                                           <img
                                             src={url}
-                                            alt="attachment"
-                                            className="w-full h-32 object-cover group-hover:scale-105 transition"
+                                            className="w-full h-40 object-cover group-hover:scale-110 transition duration-500"
                                           />
                                         )}
 
-                                        {/* overlay */}
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition"></div>
+                                        {/* VIDEO */}
+                                        {isVideo && (
+                                          <div className="relative w-full h-40 bg-black">
+                                            <video
+                                              src={url}
+                                              className="w-full h-full object-cover"
+                                              muted
+                                            />
+                                            <div className="absolute inset-0 flex items-center justify-center text-white text-3xl">
+                                              ▶
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {/* PDF */}
+                                        {isPDF && (
+                                          <div className="h-40 flex flex-col items-center justify-center bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/30 dark:to-red-800/20">
+                                            <span className="text-4xl">📄</span>
+                                            <span className="text-xs mt-2 font-semibold text-red-600 dark:text-red-400">
+                                              PDF Document
+                                            </span>
+                                          </div>
+                                        )}
+
+                                        {/* HOVER OVERLAY */}
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center">
+                                          <button
+                                            onClick={() => {
+                                              setPreviewFile(file);
+                                              setIsPreviewOpen(true);
+                                            }}
+                                            className="opacity-0 group-hover:opacity-100
+              scale-90 group-hover:scale-100
+              transition-all duration-300
+              bg-white/90 dark:bg-black/70
+              backdrop-blur-lg
+              text-black dark:text-white
+              px-4 py-2 rounded-xl shadow-lg"
+                                          >
+                                            🔍 View
+                                          </button>
+                                        </div>
                                       </div>
                                     );
                                   })}
@@ -503,7 +563,7 @@ export function IssueDetailModal({ issue, onClose }) {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Reported:</span>
                       <span className="font-medium text-gray-900">
-                        {formatDate(issue.created_at)}
+                        {formatDate(issue.createdAt)}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -513,7 +573,7 @@ export function IssueDetailModal({ issue, onClose }) {
                       </span>
                     </div>
                     {issue.updated_at &&
-                      issue.updated_at !== issue.created_at && (
+                      issue.updated_at !== issue.createdAt && (
                         <div className="flex justify-between">
                           <span className="text-gray-600">Last Update:</span>
                           <span className="font-medium text-gray-900">
@@ -692,6 +752,49 @@ export function IssueDetailModal({ issue, onClose }) {
           </button>
         </div>
       </div>
+
+      {isPreviewOpen && previewFile && (
+        <div className="fixed inset-0 z-[999] bg-black/90 backdrop-blur-md flex items-center justify-center p-6 animate-fadeIn">
+          <div className="relative max-w-6xl w-full max-h-[90vh] flex items-center justify-center">
+            {/* CLOSE BUTTON */}
+            <button
+              onClick={() => {
+                setIsPreviewOpen(false);
+                setPreviewFile(null);
+              }}
+              className="absolute top-4 right-4 z-20 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full transition"
+            >
+              <X size={20} />
+            </button>
+
+            {/* IMAGE */}
+            {previewFile.contentType?.startsWith("image") && (
+              <img
+                src={previewFile.url}
+                className="max-h-[85vh] max-w-full object-contain rounded-xl shadow-2xl"
+              />
+            )}
+
+            {/* VIDEO */}
+            {previewFile.contentType?.startsWith("video") && (
+              <video
+                src={previewFile.url}
+                controls
+                autoPlay
+                className="max-h-[85vh] max-w-full object-contain rounded-xl shadow-2xl"
+              />
+            )}
+
+            {/* PDF */}
+            {previewFile.contentType?.includes("pdf") && (
+              <iframe
+                src={previewFile.url}
+                className="w-full h-[85vh] bg-white rounded-xl shadow-2xl"
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
