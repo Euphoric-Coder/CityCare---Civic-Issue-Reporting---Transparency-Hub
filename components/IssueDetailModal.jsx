@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import {
   X,
   MapPin,
@@ -48,7 +48,7 @@ const statusSteps = [
   },
 ];
 
-export function IssueDetailModal({ issue, onClose }) {
+const IssueDetailModalComponent = ({ issue, onClose }) => {
   console.log("Rendering IssueDetailModal with issue:", issue);
   const [activeTab, setActiveTab] = useState("progress");
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
@@ -214,18 +214,10 @@ export function IssueDetailModal({ issue, onClose }) {
 
   const currentColors = statusColors[issue.status] || statusColors.pending;
 
-  if (!issueUpdates) {
-    return (
-      <div className="p-6 text-center text-gray-500 dark:text-gray-400">
-        Loading updates...
-      </div>
-    );
-  }
-
   return (
     <div className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fadeIn">
       <div
-        className={`bg-white dark:bg-gray-900 border dark:border-white/10 rounded-2xl ${isFullscreen ? "w-full h-full max-w-none max-h-none rounded-none" : "max-w-4xl w-full max-h-[90vh]"} flex flex-col shadow-2xl animate-slideUp overflow-hidden transition-all duration-300`}
+        className={`bg-white dark:bg-gray-900 border dark:border-white/10 rounded-2xl ${isFullscreen ? "w-full h-full max-w-none max-h-none rounded-none" : "max-w-4xl w-full max-h-[90vh]"} flex flex-col shadow-2xl animate-slideUp overflow-hidden transition-all duration-300 contain-content transform-gpu will-change-transform`}
       >
         <div
           className={`relative shrink-0 bg-gradient-to-r ${currentColors.gradient} p-6 text-white`}
@@ -354,7 +346,27 @@ export function IssueDetailModal({ issue, onClose }) {
                     Progress Tracker
                   </h3>
 
-                  {issueUpdates.length > 0 ? (
+                  {issueUpdates === undefined ? (
+                    <div className="relative ml-2 sm:ml-4">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="group relative flex gap-6 sm:gap-8 pb-14 last:pb-0 w-full animate-pulse">
+                          {i !== 2 && <div className="absolute left-[26px] top-[60px] w-[3px] h-[calc(100%-24px)] rounded-full bg-gray-200/60 dark:bg-gray-800/60" />}
+                          <div className="relative z-10 flex-shrink-0 w-14 h-14 rounded-2xl bg-gray-200/80 dark:bg-gray-800/80 border border-white/20 dark:border-white/10" />
+                          <div className="flex-1 pt-0.5">
+                            <div className="bg-gray-100/50 dark:bg-gray-900/50 rounded-[2rem] p-6 sm:p-8 h-44 border border-gray-200/50 dark:border-white/5 backdrop-blur-xl">
+                              <div className="flex justify-between mb-5">
+                                <div className="h-7 w-28 bg-gray-200/80 dark:bg-gray-800/80 rounded-xl" />
+                                <div className="h-7 w-32 bg-gray-200/80 dark:bg-gray-800/80 rounded-xl" />
+                              </div>
+                              <div className="h-4 w-full bg-gray-200/60 dark:bg-gray-800/60 rounded-md mb-3" />
+                              <div className="h-4 w-[90%] bg-gray-200/60 dark:bg-gray-800/60 rounded-md mb-3" />
+                              <div className="h-4 w-2/3 bg-gray-200/60 dark:bg-gray-800/60 rounded-md" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : issueUpdates.length > 0 ? (
                     <div className="relative ml-2 sm:ml-4">
                       {issueUpdates.map((update, index) => {
                         const isLastUpdate = index === issueUpdates.length - 1;
@@ -389,8 +401,8 @@ export function IssueDetailModal({ issue, onClose }) {
                               />
                             </div>
 
-                            <div className="flex-1 pt-0.5 transform transition-all duration-500 group-hover:-translate-y-1">
-                              <div className="bg-white/70 dark:bg-gray-900/50 backdrop-blur-3xl border border-gray-200/60 dark:border-white/5 rounded-[2rem] p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] group-hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] dark:group-hover:shadow-[0_20px_40px_rgba(255,255,255,0.03)] transition-all">
+                            <div className="flex-1 pt-0.5 transform transition-all duration-500 group-hover:-translate-y-1 contain-content transform-gpu will-change-transform">
+                              <div className="bg-white/70 dark:bg-gray-900/50 backdrop-blur-3xl border border-gray-200/60 dark:border-white/5 rounded-[2rem] p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] group-hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] dark:hover:shadow-[0_20px_40px_rgba(255,255,255,0.03)] transition-all">
                                 <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
                                   <span
                                     className={`text-xs font-black tracking-widest ${stepColors.text} ${stepColors.badgeBg} px-3 py-1.5 rounded-xl uppercase shadow-sm`}
@@ -440,6 +452,7 @@ export function IssueDetailModal({ issue, onClose }) {
                                           {isImage && (
                                             <img
                                               src={url}
+                                              loading="lazy"
                                               className="w-full h-full object-cover group-hover/attachment:scale-110 transition duration-700"
                                             />
                                           )}
@@ -800,8 +813,15 @@ export function IssueDetailModal({ issue, onClose }) {
                 </div>
               )}
 
+              {issue.photos?.length > 0 && safePhotos.length === 0 && (
+                <div className="relative mb-8 h-[550px] w-full rounded-3xl bg-gray-100/50 dark:bg-white/5 animate-pulse border border-gray-200 dark:border-white/10 backdrop-blur-md flex items-center justify-center shadow-xl overflow-hidden contain-content">
+                  <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-gray-200/50 dark:from-white/10 to-transparent"></div>
+                  <ImageIcon className="w-16 h-16 text-gray-300 dark:text-gray-700 animate-[pulse_3s_ease-in-out_infinite]" />
+                </div>
+              )}
+
               {safePhotos.length > 0 && (
-                <div className="relative mb-8">
+                <div className="relative mb-8 contain-content transform-gpu will-change-transform">
                   {/* OUTER GLOW FRAME */}
                   <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-emerald-400/30 via-teal-400/20 to-blue-500/30 blur-2xl opacity-40" />
 
@@ -827,6 +847,7 @@ export function IssueDetailModal({ issue, onClose }) {
                       {/* IMAGE */}
                       <img
                         src={safePhotos[currentIndex]?.url}
+                        loading="lazy"
                         className="w-full h-[420px] object-cover transition duration-700 ease-out group-hover:scale-110"
                       />
 
@@ -993,6 +1014,7 @@ export function IssueDetailModal({ issue, onClose }) {
             {previewFile.contentType?.startsWith("image") && (
               <img
                 src={previewFile.url}
+                loading="lazy"
                 className="max-h-[85vh] max-w-full object-contain rounded-xl shadow-2xl"
               />
             )}
@@ -1019,4 +1041,11 @@ export function IssueDetailModal({ issue, onClose }) {
       )}
     </div>
   );
-}
+};
+
+// Deep equality constraint targeting the unique issue ID to strictly block devtools and
+// layout cascade re-renders originating from the parent's inline arrow function pointer updates.
+export const IssueDetailModal = memo(
+  IssueDetailModalComponent,
+  (prevProps, nextProps) => prevProps.issue?._id === nextProps.issue?._id
+);
