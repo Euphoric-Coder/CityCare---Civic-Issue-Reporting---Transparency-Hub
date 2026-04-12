@@ -263,10 +263,10 @@ export function AdminIssueModal({
   const categoryInfo = categoryData[issue.category] || categoryData.other;
 
   return (
-    <div className={`fixed inset-0 bg-slate-900/40 dark:bg-[#030712]/60 backdrop-blur-lg flex items-center justify-center z-50 animate-in fade-in duration-300 ${isFullscreen ? 'p-0' : 'p-4'}`}>
-      <div className={`bg-white/90 dark:bg-[#0f172a]/95 backdrop-blur-2xl shadow-2xl flex flex-col border border-white/50 dark:border-slate-700/30 transition-all duration-300 ease-in-out ${isFullscreen ? 'w-screen h-screen max-w-none rounded-none' : 'max-w-5xl w-full max-h-[92vh] rounded-[2.5rem] overflow-hidden'}`}>
+    <div className={`fixed inset-0 bg-slate-900/40 dark:bg-[#030712]/60 flex items-center justify-center z-50 animate-in fade-in duration-300 ${isFullscreen ? 'p-0' : 'p-4'}`}>
+      <div className={`bg-white/90 dark:bg-[#0f172a]/95 shadow-2xl flex flex-col border border-white/50 dark:border-slate-700/30 transition-all duration-300 ease-in-out ${isFullscreen ? 'w-screen h-screen max-w-none rounded-none' : 'max-w-5xl w-full max-h-[92vh] rounded-[2.5rem] overflow-hidden'}`}>
         <div
-          className={`sticky top-0 ${currentStatusStyle.bg} border-b ${currentStatusStyle.border} backdrop-blur-2xl z-20`}
+          className={`sticky top-0 ${currentStatusStyle.bg} border-b ${currentStatusStyle.border} z-20`}
         >
           <div className="p-8 flex justify-between items-start gap-5">
             <div className="flex-1 min-w-0">
@@ -284,7 +284,7 @@ export function AdminIssueModal({
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-wrap">
-                <code className="px-4 py-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-xl text-xs font-black tracking-widest text-slate-700 dark:text-slate-300 border border-white/50 dark:border-slate-700/50 shadow-inner">
+                <code className="px-4 py-1.5 bg-white/80 dark:bg-slate-900/80 rounded-xl text-xs font-black tracking-widest text-slate-700 dark:text-slate-300 border border-white/50 dark:border-slate-700/50 shadow-inner">
                   {issue.ticket_id}
                 </code>
                 <div
@@ -304,14 +304,14 @@ export function AdminIssueModal({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
-                className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-white/40 dark:bg-slate-800/40 backdrop-blur-sm text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-all duration-200 shadow-sm hover:shadow-md border border-slate-200/50 dark:border-slate-700/50"
+                className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-white/40 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-all duration-200 shadow-sm hover:shadow-md border border-slate-200/50 dark:border-slate-700/50"
                 aria-label={isFullscreen ? "Collapse modal" : "Expand modal"}
               >
                 {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
               </button>
               <button
                 onClick={onClose}
-                className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-white/40 dark:bg-slate-800/40 backdrop-blur-sm text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-all duration-200 shadow-sm hover:shadow-md border border-slate-200/50 dark:border-slate-700/50"
+                className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-white/40 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-all duration-200 shadow-sm hover:shadow-md border border-slate-200/50 dark:border-slate-700/50"
                 aria-label="Close modal"
               >
                 <X size={20} />
@@ -327,7 +327,7 @@ export function AdminIssueModal({
                 fromAssignmentView
                   ? "bg-gradient-to-br from-blue-50/50 to-cyan-50/50 dark:from-blue-900/10 dark:to-cyan-900/10 border-blue-200/30 dark:border-blue-700/30 shadow-blue-100/50 dark:shadow-[inset_0_2px_20px_rgba(0,0,0,0.2)]"
                   : "bg-gradient-to-br from-slate-50/50 to-slate-100/50 dark:from-slate-800/20 dark:to-slate-900/10 border-slate-200/30 dark:border-slate-700/30 shadow-slate-100/50 dark:shadow-[inset_0_2px_20px_rgba(0,0,0,0.2)]"
-              } backdrop-blur-xl shadow-md z-20`}
+              } shadow-md z-20`}
             >
               <div className="absolute inset-0 overflow-hidden rounded-[2rem] pointer-events-none">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-white/20 dark:from-white/5 to-transparent rounded-full blur-3xl mix-blend-overlay"></div>
@@ -353,7 +353,7 @@ export function AdminIssueModal({
                       className={`group relative overflow-hidden px-5 py-4 rounded-xl font-bold transition-all duration-300 border-2 ${
                         action === "reassign"
                           ? "bg-gradient-to-r from-blue-600 to-cyan-600 border-transparent text-white shadow-[0_8px_20px_rgba(59,130,246,0.3)] scale-[1.02]"
-                          : "bg-white/90 dark:bg-slate-800/60 backdrop-blur-md text-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700/50 hover:border-blue-400 dark:hover:border-cyan-500 hover:shadow-lg hover:bg-white dark:hover:bg-slate-800"
+                          : "bg-white/90 dark:bg-slate-800/60 text-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700/50 hover:border-blue-400 dark:hover:border-cyan-500 hover:shadow-lg hover:bg-white dark:hover:bg-slate-800"
                       }`}
                     >
                       <div className="flex items-center justify-center gap-2">
@@ -371,7 +371,7 @@ export function AdminIssueModal({
                       className={`group relative overflow-hidden px-5 py-4 rounded-xl font-bold transition-all duration-300 border-2 ${
                         action === "revoke"
                           ? "bg-gradient-to-r from-red-600 to-rose-600 border-transparent text-white shadow-[0_8px_20px_rgba(239,68,68,0.3)] scale-[1.02]"
-                          : "bg-white/90 dark:bg-slate-800/60 backdrop-blur-md text-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700/50 hover:border-red-400 dark:hover:border-rose-500 hover:shadow-lg hover:bg-white dark:hover:bg-slate-800"
+                          : "bg-white/90 dark:bg-slate-800/60 text-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700/50 hover:border-red-400 dark:hover:border-rose-500 hover:shadow-lg hover:bg-white dark:hover:bg-slate-800"
                       }`}
                     >
                       <div className="flex items-center justify-center gap-2">
@@ -390,7 +390,7 @@ export function AdminIssueModal({
                       className={`group relative overflow-hidden px-4 py-4 rounded-xl font-bold transition-all duration-300 border-2 ${
                         action === "status"
                           ? "bg-gradient-to-r from-emerald-600 to-teal-600 border-transparent text-white shadow-[0_8px_20px_rgba(16,185,129,0.3)] scale-[1.02]"
-                          : "bg-white/90 dark:bg-slate-800/60 backdrop-blur-md text-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700/50 hover:border-emerald-400 dark:hover:border-teal-500 hover:shadow-lg hover:bg-white dark:hover:bg-slate-800"
+                          : "bg-white/90 dark:bg-slate-800/60 text-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700/50 hover:border-emerald-400 dark:hover:border-teal-500 hover:shadow-lg hover:bg-white dark:hover:bg-slate-800"
                       }`}
                     >
                       <div className="flex items-center justify-center gap-2">
@@ -406,7 +406,7 @@ export function AdminIssueModal({
                       className={`group relative overflow-hidden px-4 py-4 rounded-xl font-bold transition-all duration-300 border-2 ${
                         action === "assign"
                           ? "bg-gradient-to-r from-blue-600 to-cyan-600 border-transparent text-white shadow-[0_8px_20px_rgba(59,130,246,0.3)] scale-[1.02]"
-                          : "bg-white/90 dark:bg-slate-800/60 backdrop-blur-md text-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700/50 hover:border-blue-400 dark:hover:border-cyan-500 hover:shadow-lg hover:bg-white dark:hover:bg-slate-800"
+                          : "bg-white/90 dark:bg-slate-800/60 text-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700/50 hover:border-blue-400 dark:hover:border-cyan-500 hover:shadow-lg hover:bg-white dark:hover:bg-slate-800"
                       }`}
                     >
                       <div className="flex items-center justify-center gap-2">
@@ -422,7 +422,7 @@ export function AdminIssueModal({
                       className={`group relative overflow-hidden px-4 py-4 rounded-xl font-bold transition-all duration-300 border-2 ${
                         action === "reject"
                           ? "bg-gradient-to-r from-red-600 to-rose-600 border-transparent text-white shadow-[0_8px_20px_rgba(239,68,68,0.3)] scale-[1.02]"
-                          : "bg-white/90 dark:bg-slate-800/60 backdrop-blur-md text-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700/50 hover:border-red-400 dark:hover:border-rose-500 hover:shadow-lg hover:bg-white dark:hover:bg-slate-800"
+                          : "bg-white/90 dark:bg-slate-800/60 text-slate-800 dark:text-slate-300 border-slate-300 dark:border-slate-700/50 hover:border-red-400 dark:hover:border-rose-500 hover:shadow-lg hover:bg-white dark:hover:bg-slate-800"
                       }`}
                     >
                       <div className="flex items-center justify-center gap-2">
@@ -438,7 +438,7 @@ export function AdminIssueModal({
 
                 <div className="space-y-4">
                   {action === "status" && (
-                    <div className="relative z-50 space-y-6 bg-slate-50/90 dark:bg-slate-800/40 backdrop-blur-xl p-6 rounded-3xl border border-slate-200 dark:border-slate-700/50 shadow-inner">
+                    <div className="relative z-50 space-y-6 bg-slate-50/90 dark:bg-slate-800/40 p-6 rounded-3xl border border-slate-200 dark:border-slate-700/50 shadow-inner">
                       <div>
                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                           <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg">
@@ -455,7 +455,7 @@ export function AdminIssueModal({
                             onClick={() =>
                               setStatusDropdownOpen(!statusDropdownOpen)
                             }
-                            className="w-full px-5 py-4 bg-white dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-400 dark:hover:border-teal-500 transition-all font-medium text-slate-800 dark:text-slate-200 shadow-sm flex items-center justify-between group"
+                            className="w-full px-5 py-4 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-400 dark:hover:border-teal-500 transition-all font-medium text-slate-800 dark:text-slate-200 shadow-sm flex items-center justify-between group"
                           >
                             <div className="flex items-center gap-3">
                               {React.createElement(
@@ -475,7 +475,7 @@ export function AdminIssueModal({
                             />
                           </button>
                           {statusDropdownOpen && (
-                            <div className="absolute z-[70] w-full mt-2 bg-white dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700/50 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] max-h-64 overflow-y-auto">
+                            <div className="absolute z-[70] w-full mt-2 bg-white dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700/50 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] max-h-64 overflow-y-auto">
                               {Object.entries(statusLabels).map(
                                 ([value, label]) => {
                                   const style = statusStyles[value];
@@ -532,7 +532,7 @@ export function AdminIssueModal({
                         <textarea
                           value={comment}
                           onChange={(e) => setComment(e.target.value)}
-                          className="w-full px-5 py-4 bg-white dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:focus:ring-emerald-400 transition-all duration-300 resize-none shadow-sm hover:shadow-md text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium"
+                          className="w-full px-5 py-4 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 dark:focus:ring-emerald-400 transition-all duration-300 resize-none shadow-sm hover:shadow-md text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium"
                           rows={3}
                           placeholder="Add a comment about this update..."
                         />
@@ -541,8 +541,8 @@ export function AdminIssueModal({
                   )}
 
                   {action === "assign" && (
-                    <div className="space-y-5 bg-slate-50/90 dark:bg-slate-800/40 backdrop-blur-xl p-8 rounded-3xl border border-slate-200 dark:border-slate-700/50 shadow-inner">
-                      <div className="bg-gradient-to-r from-blue-50/80 to-cyan-50/80 dark:from-slate-800/60 dark:to-slate-900/40 backdrop-blur-md border border-blue-200/50 dark:border-slate-600/50 rounded-2xl p-5 mb-6 shadow-sm">
+                    <div className="space-y-5 bg-slate-50/90 dark:bg-slate-800/40 p-8 rounded-3xl border border-slate-200 dark:border-slate-700/50 shadow-inner">
+                      <div className="bg-gradient-to-r from-blue-50/80 to-cyan-50/80 dark:from-slate-800/60 dark:to-slate-900/40 border border-blue-200/50 dark:border-slate-600/50 rounded-2xl p-5 mb-6 shadow-sm">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center shadow-md">
                             <Sparkles size={20} className="text-white" />
@@ -559,7 +559,7 @@ export function AdminIssueModal({
                         </div>
                       </div>
 
-                      <div className="bg-gradient-to-br from-cyan-50/80 to-blue-50/80 dark:from-cyan-900/20 dark:to-blue-900/20 backdrop-blur-md rounded-3xl p-6 border border-cyan-200/50 dark:border-cyan-700/50">
+                      <div className="bg-gradient-to-br from-cyan-50/80 to-blue-50/80 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-3xl p-6 border border-cyan-200/50 dark:border-cyan-700/50">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-[0_4px_10px_rgba(6,182,212,0.3)]">
@@ -679,7 +679,7 @@ export function AdminIssueModal({
                         )}
                       </div>
 
-                      <div className="bg-gradient-to-br from-emerald-50/80 to-teal-50/80 dark:from-emerald-900/20 dark:to-teal-900/20 backdrop-blur-md rounded-3xl p-6 border border-emerald-200/50 dark:border-emerald-700/50">
+                      <div className="bg-gradient-to-br from-emerald-50/80 to-teal-50/80 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-3xl p-6 border border-emerald-200/50 dark:border-emerald-700/50">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-[0_4px_10px_rgba(16,185,129,0.3)]">
@@ -728,7 +728,7 @@ export function AdminIssueModal({
                                   setFieldOfficerSearch(e.target.value)
                                 }
                                 placeholder="Search by name or email..."
-                                className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-500 transition-all text-sm font-medium text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
+                                className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-500 transition-all text-sm font-medium text-slate-800 dark:text-slate-200 placeholder:text-slate-400"
                               />
                             </div>
                             {fieldOfficerId && (
@@ -752,7 +752,7 @@ export function AdminIssueModal({
                                     className={`group relative overflow-hidden p-5 rounded-2xl transition-all duration-300 text-left border ${
                                       fieldOfficerId === officer.id
                                         ? "bg-gradient-to-r from-emerald-600 to-teal-600 border-transparent text-white shadow-[0_8px_20px_rgba(16,185,129,0.3)] scale-[1.02]"
-                                        : "bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-white/50 dark:border-slate-700/50 hover:border-emerald-400 dark:hover:border-teal-500 shadow-sm"
+                                        : "bg-white/80 dark:bg-slate-800/80 border-white/50 dark:border-slate-700/50 hover:border-emerald-400 dark:hover:border-teal-500 shadow-sm"
                                     }`}
                                   >
                                     <div className="flex items-center gap-4">
@@ -790,7 +790,7 @@ export function AdminIssueModal({
                                   </button>
                                 ))
                               ) : (
-                                <div className="text-center py-6 text-emerald-700 dark:text-emerald-400 font-bold text-sm bg-white/50 dark:bg-slate-800/50 rounded-2xl backdrop-blur-sm border border-emerald-100 dark:border-emerald-800/30">
+                                <div className="text-center py-6 text-emerald-700 dark:text-emerald-400 font-bold text-sm bg-white/50 dark:bg-slate-800/50 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
                                   {fieldOfficerSearch
                                     ? "No officers match your search"
                                     : "No field officers available"}
@@ -802,7 +802,7 @@ export function AdminIssueModal({
                       </div>
 
                       {(wardOfficerId || fieldOfficerId) && (
-                        <div className="bg-gradient-to-r from-blue-50/90 to-cyan-50/90 dark:from-blue-900/40 dark:to-cyan-900/30 backdrop-blur-xl border border-blue-200/50 dark:border-blue-700/50 rounded-2xl p-5 shadow-lg animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="bg-gradient-to-r from-blue-50/90 to-cyan-50/90 dark:from-blue-900/40 dark:to-cyan-900/30 border border-blue-200/50 dark:border-blue-700/50 rounded-2xl p-5 shadow-lg animate-in fade-in slide-in-from-top-2 duration-300">
                           <div className="flex items-start gap-4">
                             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
                               <AlertTriangle size={20} className="text-white" />
@@ -888,7 +888,7 @@ export function AdminIssueModal({
                   )}
 
                   {action === "reject" && (
-                    <div className="space-y-6 bg-red-50/50 dark:bg-red-950/20 backdrop-blur-xl p-6 rounded-3xl border border-red-200/50 dark:border-red-900/30 shadow-[inset_0_2px_20px_rgba(239,68,68,0.05)] text-left">
+                    <div className="space-y-6 bg-red-50/50 dark:bg-red-950/20 p-6 rounded-3xl border border-red-200/50 dark:border-red-900/30 shadow-[inset_0_2px_20px_rgba(239,68,68,0.05)] text-left">
                       <div>
                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
                           <div className="p-1.5 bg-red-100 dark:bg-red-900/50 rounded-lg">
@@ -1196,7 +1196,7 @@ export function AdminIssueModal({
                         <textarea
                           value={reassignReason}
                           onChange={(e) => setReassignReason(e.target.value)}
-                          className="w-full px-5 py-4 bg-white dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-cyan-500 transition-all resize-none shadow-sm hover:shadow-md text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium"
+                          className="w-full px-5 py-4 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-cyan-500 transition-all resize-none shadow-sm hover:shadow-md text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium"
                           rows={4}
                           placeholder="e.g., Workload balancing, Area expertise, Officer availability..."
                           required
@@ -1204,7 +1204,7 @@ export function AdminIssueModal({
                       </div>
 
                       {assignTo && assignTo !== issue.assigned_to && (
-                        <div className="bg-gradient-to-r from-blue-50/90 to-cyan-50/90 dark:from-blue-900/40 dark:to-cyan-900/30 backdrop-blur-xl border border-blue-200/50 dark:border-blue-700/50 rounded-2xl p-5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="bg-gradient-to-r from-blue-50/90 to-cyan-50/90 dark:from-blue-900/40 dark:to-cyan-900/30 border border-blue-200/50 dark:border-blue-700/50 rounded-2xl p-5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
                           <div className="flex items-start gap-4">
                             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
                               <AlertTriangle size={20} className="text-white" />
@@ -1242,8 +1242,8 @@ export function AdminIssueModal({
                   )}
 
                   {action === "revoke" && (
-                    <div className="space-y-6 bg-red-50/50 dark:bg-red-950/20 backdrop-blur-xl p-6 rounded-3xl border border-red-200/50 dark:border-red-900/30 shadow-[inset_0_2px_20px_rgba(239,68,68,0.05)] text-left">
-                      <div className="bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/40 dark:to-orange-900/30 border border-amber-200/50 dark:border-amber-700/50 rounded-2xl p-5 shadow-sm backdrop-blur-md">
+                    <div className="space-y-6 bg-red-50/50 dark:bg-red-950/20 p-6 rounded-3xl border border-red-200/50 dark:border-red-900/30 shadow-[inset_0_2px_20px_rgba(239,68,68,0.05)] text-left">
+                      <div className="bg-gradient-to-r from-amber-50/80 to-orange-50/80 dark:from-amber-900/40 dark:to-orange-900/30 border border-amber-200/50 dark:border-amber-700/50 rounded-2xl p-5 shadow-sm">
                         <p className="text-sm font-medium text-amber-900 dark:text-amber-200 flex items-start gap-3">
                           <AlertTriangle
                             size={20}
@@ -1278,12 +1278,12 @@ export function AdminIssueModal({
                         <textarea
                           value={revokeReason}
                           onChange={(e) => setRevokeReason(e.target.value)}
-                          className="w-full px-5 py-4 bg-white dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-700/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all resize-none shadow-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium"
+                          className="w-full px-5 py-4 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all resize-none shadow-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium"
                           rows={4}
                           placeholder="Provide a clear reason for revoking this assignment..."
                           required
                         />
-                        <div className="mt-4 p-4 bg-red-50/80 dark:bg-red-900/30 border border-red-100/50 dark:border-red-800/50 rounded-xl backdrop-blur-sm">
+                        <div className="mt-4 p-4 bg-red-50/80 dark:bg-red-900/30 border border-red-100/50 dark:border-red-800/50 rounded-xl">
                           <p className="text-sm font-medium text-red-800 dark:text-red-300 flex items-start gap-3">
                             <AlertTriangle
                               size={16}
@@ -1300,7 +1300,7 @@ export function AdminIssueModal({
                   )}
 
                   {success && (
-                    <div className="bg-gradient-to-r from-emerald-50/80 to-teal-50/80 dark:from-emerald-900/40 dark:to-teal-900/30 backdrop-blur-md border border-emerald-200/50 dark:border-emerald-700/50 rounded-2xl p-5 shadow-lg animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="bg-gradient-to-r from-emerald-50/80 to-teal-50/80 dark:from-emerald-900/40 dark:to-teal-900/30 border border-emerald-200/50 dark:border-emerald-700/50 rounded-2xl p-5 shadow-lg animate-in fade-in slide-in-from-top-2 duration-300">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
                           <CheckCircle2 className="text-white" size={24} />
@@ -1332,7 +1332,7 @@ export function AdminIssueModal({
                       (action === 'assign' && !wardOfficerId && !fieldOfficerId) ||
                       (action === 'reassign' && (!assignTo || assignTo === issue.assigned_to)) ||
                       (action === 'revoke' && !revokeReason.trim())
-                        ? 'bg-slate-100/50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 cursor-not-allowed border-2 border-slate-300/50 dark:border-slate-700/50 backdrop-blur-md'
+                        ? 'bg-slate-100/50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 cursor-not-allowed border-2 border-slate-300/50 dark:border-slate-700/50'
                         : action === 'reject' || action === 'revoke'
                         ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 shadow-[0_15px_40px_-5px_rgba(239,68,68,0.4)] text-white hover:scale-[1.02] active:scale-[0.98]'
                         : action === 'reassign' || action === 'assign'
@@ -1364,7 +1364,7 @@ export function AdminIssueModal({
               </div>
             )}
 
-            <div className="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-3xl border border-slate-200 shadow-md dark:border-slate-700/50 p-8 shadow-lg">
+            <div className="bg-white dark:bg-slate-800/60 rounded-3xl border border-slate-200 shadow-md dark:border-slate-700/50 p-8 shadow-lg">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-3">
                 <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
                   <MessageSquare
@@ -1380,7 +1380,7 @@ export function AdminIssueModal({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-2xl border border-white/50 dark:border-slate-700/50 p-5 shadow-md hover:shadow-lg transition-shadow group">
+              <div className="bg-white/60 dark:bg-slate-800/60 rounded-2xl border border-white/50 dark:border-slate-700/50 p-5 shadow-md hover:shadow-lg transition-shadow group">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                     <Calendar size={20} className="text-white" />
@@ -1395,7 +1395,7 @@ export function AdminIssueModal({
                   </div>
                 </div>
               </div>
-              <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-2xl border border-white/50 dark:border-slate-700/50 p-5 shadow-md hover:shadow-lg transition-shadow group">
+              <div className="bg-white/60 dark:bg-slate-800/60 rounded-2xl border border-white/50 dark:border-slate-700/50 p-5 shadow-md hover:shadow-lg transition-shadow group">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                     <Clock size={20} className="text-white" />
@@ -1413,7 +1413,7 @@ export function AdminIssueModal({
             </div>
 
             {issue.address && (
-              <div className="bg-gradient-to-br from-blue-50/80 to-cyan-50/80 dark:from-blue-900/40 dark:to-cyan-900/20 backdrop-blur-md rounded-3xl border border-blue-200/50 dark:border-blue-700/50 p-6 shadow-lg">
+              <div className="bg-gradient-to-br from-blue-50/80 to-cyan-50/80 dark:from-blue-900/40 dark:to-cyan-900/20 rounded-3xl border border-blue-200/50 dark:border-blue-700/50 p-6 shadow-lg">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
                     <MapPinned size={20} className="text-white" />
@@ -1431,7 +1431,7 @@ export function AdminIssueModal({
             )}
 
             {issue.reporter && (
-              <div className="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-3xl border border-slate-200 shadow-md dark:border-slate-700/50 p-6 shadow-md">
+              <div className="bg-white dark:bg-slate-800/60 rounded-3xl border border-slate-200 shadow-md dark:border-slate-700/50 p-6 shadow-md">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-gradient-to-br from-slate-600 to-slate-700 dark:from-slate-600 dark:to-slate-700 rounded-2xl flex items-center justify-center shadow-md">
                     <User size={24} className="text-white" />
@@ -1452,7 +1452,7 @@ export function AdminIssueModal({
             )}
 
             {issue.assigned_to && issue.assignee && (
-              <div className="bg-gradient-to-br from-emerald-50/80 to-teal-50/80 dark:from-emerald-900/40 dark:to-teal-900/20 backdrop-blur-md rounded-3xl border border-emerald-200/50 dark:border-emerald-700/50 p-6 shadow-lg">
+              <div className="bg-gradient-to-br from-emerald-50/80 to-teal-50/80 dark:from-emerald-900/40 dark:to-teal-900/20 rounded-3xl border border-emerald-200/50 dark:border-emerald-700/50 p-6 shadow-lg">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-gradient-to-br from-emerald-600 to-teal-600 rounded-2xl flex items-center justify-center shadow-md">
                     <UserPlus size={24} className="text-white" />
@@ -1473,7 +1473,7 @@ export function AdminIssueModal({
             )}
 
             {issue.rejection_reason && (
-              <div className="bg-gradient-to-br from-red-50/80 to-rose-50/80 dark:from-red-900/40 dark:to-rose-900/20 backdrop-blur-md rounded-3xl border border-red-200/50 dark:border-red-700/50 p-6 shadow-lg">
+              <div className="bg-gradient-to-br from-red-50/80 to-rose-50/80 dark:from-red-900/40 dark:to-rose-900/20 rounded-3xl border border-red-200/50 dark:border-red-700/50 p-6 shadow-lg">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
                     <XCircle size={20} className="text-white" />
@@ -1492,7 +1492,7 @@ export function AdminIssueModal({
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-white/70 dark:bg-[#0f172a]/70 border-t border-slate-200/50 dark:border-slate-800/50 p-6 backdrop-blur-3xl z-40 shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.4)] relative">
+        <div className="sticky bottom-0 bg-white/70 dark:bg-[#0f172a]/70 border-t border-slate-200/50 dark:border-slate-800/50 p-6 z-40 shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.1)] dark:shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.4)] relative">
           <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent"></div>
           <button
             onClick={onClose}
