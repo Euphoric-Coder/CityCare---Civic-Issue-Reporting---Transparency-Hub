@@ -360,6 +360,7 @@ export default function Location({ formData, setFormData, errors, setErrors }) {
           */}
           <div
             ref={autocompleteContainerRef}
+            data-tutorial="location-search"
             style={{
               position: "relative",
               zIndex: 9999,
@@ -383,6 +384,7 @@ export default function Location({ formData, setFormData, errors, setErrors }) {
               hover:shadow-md hover:shadow-emerald-500/10
               hover:-translate-y-0.5 active:scale-95
               transition-all duration-200"
+            data-tutorial="location-current"
           >
             <Navigation
               size={16}
@@ -402,7 +404,7 @@ export default function Location({ formData, setFormData, errors, setErrors }) {
         </div>
 
         {/* ── Google Map ── */}
-        <div className="relative rounded-2xl overflow-hidden ring-2 ring-emerald-200/60 dark:ring-emerald-700/30 shadow-inner shadow-slate-200 dark:shadow-black/30">
+        <div className="relative rounded-2xl overflow-hidden ring-2 ring-emerald-200/60 dark:ring-emerald-700/30 shadow-inner shadow-slate-200 dark:shadow-black/30" data-tutorial="location-map">
           <div ref={mapRef} className="w-full h-80" />
         </div>
 
