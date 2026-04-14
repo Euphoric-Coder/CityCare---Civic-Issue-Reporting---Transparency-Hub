@@ -9,7 +9,6 @@ import AnonymityToggle from "./AnonymityToggle";
 import Navbar from "./Navbar";
 import SuccessModal from "./Success";
 import PreviewModal from "./Preview";
-// import AnimatedTutorialDialog from "./AnimatedTutorialDialog";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useSession } from "next-auth/react";
@@ -234,7 +233,6 @@ const IssueForm = () => {
 
       {/* ── Full-page glassmorphism shell ── */}
       <div className="relative min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/40 to-cyan-50/50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 overflow-x-hidden">
-
         {/* ── Fixed ambient blobs ── */}
         <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
           <div
@@ -252,10 +250,8 @@ const IssueForm = () => {
         </div>
 
         <div className="relative z-10 pt-28 pb-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
           {/* ── Hero header ── */}
           <div className="text-center mb-12">
-
             {/* Glowing icon */}
             <div className="relative inline-flex mb-6">
               {/* Soft glow halo */}
@@ -414,7 +410,6 @@ const IssueForm = () => {
               </p>
             </div>
           </div>
-
         </div>
       </div>
 
@@ -430,11 +425,6 @@ const IssueForm = () => {
       )}
 
       {showSuccess && <SuccessModal onClose={() => setShowSuccess(false)} />}
-
-      {/* <AnimatedTutorialDialog 
-        isOpen={showTutorial} 
-        onClose={() => setShowTutorial(false)} 
-      /> */}
     </>
   );
 };
