@@ -1,15 +1,31 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { CitizenDashboard } from "@/components/Citizen/CitizenDashboard";
-import { Button } from "@/components/ui/button";
-import React from "react";
+import { getNotifications } from "@/lib/mockData";
+import { NotificationsPanel } from "@/components/NotificationPanel";
 
-const page = () => {
+export default function Page() {
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const data = getNotifications();
+    console.log("Unread notifications:", data);
+    setUnreadCount(data.length);
+  }, []);
+
   return (
-    <div>
-      <CitizenDashboard />
-    </div>
-  );
-};
+    <>
+      <CitizenDashboard
+        onNotificationsClick={() => setIsNotificationsOpen(true)}
+        unreadCount={unreadCount}
+      />
 
-export default page;
+      <NotificationsPanel
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+      />
+    </>
+  );
+}
