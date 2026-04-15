@@ -375,7 +375,12 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
               } text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500`}
               placeholder="e.g., Broken streetlight on Main Street"
             />
-            {errors.title && <p className="mt-2 text-xs text-red-600 dark:text-red-400 flex items-center gap-1 font-medium"><AlertCircle size={13} />{errors.title}</p>}
+            {errors.title && (
+              <div className="mt-2 text-[11px] text-red-600 dark:text-red-400 flex items-center gap-1.5 font-bold tracking-wide animate-in fade-in slide-in-from-top-1 duration-200 bg-red-50 dark:bg-red-900/10 px-3 py-1.5 rounded-lg border border-red-100 dark:border-red-900/20">
+                <AlertCircle size={14} className="flex-shrink-0" />
+                {errors.title}
+              </div>
+            )}
           </div>
 
           {/* Description */}
@@ -398,7 +403,12 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
               } text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500`}
               placeholder="Describe the issue in detail..."
             />
-            {errors.description && <p className="mt-2 text-xs text-red-600 dark:text-red-400 flex items-center gap-1 font-medium"><AlertCircle size={13} />{errors.description}</p>}
+            {errors.description && (
+              <div className="mt-2 text-[11px] text-red-600 dark:text-red-400 flex items-center gap-1.5 font-bold tracking-wide animate-in fade-in slide-in-from-top-1 duration-200 bg-red-50 dark:bg-red-900/10 px-3 py-1.5 rounded-lg border border-red-100 dark:border-red-900/20">
+                <AlertCircle size={14} className="flex-shrink-0" />
+                {errors.description}
+              </div>
+            )}
           </div>
 
           {/* Classification Divider */}
@@ -419,7 +429,9 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
                 onClick={() => setShowDropdown((prev) => !prev)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all outline-none focus:ring-4 font-medium ${
-                  errors.category ? "border-red-300 dark:border-red-500" : "border-slate-200 dark:border-slate-700 focus:border-emerald-500 bg-white/90 dark:bg-slate-800/80"
+                  errors.category
+                    ? "border-red-300 dark:border-red-500 focus:border-red-500 focus:ring-red-200/40"
+                    : "border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-emerald-200/50 bg-white/90 dark:bg-slate-800/80"
                 } text-slate-900 dark:text-slate-100`}
               >
                 <span className="flex items-center gap-2">
@@ -445,7 +457,7 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
                         key={cat.value}
                         type="button"
                         onClick={() => { handleInput("category", cat.value); setShowDropdown(false); }}
-                        className={`w-full flex items-center justify-between px-4 py-3 text-left text-sm transition-all ${isSelected ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700" : "text-slate-700 dark:text-slate-200 hover:bg-slate-50"}`}
+                        className={`w-full flex items-center justify-between px-4 py-3 text-left text-sm transition-all ${isSelected ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700" : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
                       >
                         <span className="flex items-center gap-3">
                           <span className={`p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 ${isSelected ? "bg-emerald-100" : ""}`}><Icon className={`w-4 h-4 ${cat.color}`} /></span>
@@ -457,7 +469,12 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
                   })}
                 </div>
               )}
-              {errors.category && <p className="mt-2 text-xs text-red-600 dark:text-red-400 flex items-center gap-1 font-medium"><AlertCircle size={13} />{errors.category}</p>}
+              {errors.category && (
+                <div className="mt-2 text-[11px] text-red-600 dark:text-red-400 flex items-center gap-1.5 font-bold tracking-wide animate-in fade-in slide-in-from-top-1 duration-200 bg-red-50 dark:bg-red-900/10 px-3 py-1.5 rounded-lg border border-red-100 dark:border-red-900/20">
+                  <AlertCircle size={14} className="flex-shrink-0" />
+                  {errors.category}
+                </div>
+              )}
             </div>
 
             {/* Severity */}
@@ -477,7 +494,12 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
                   </button>
                 ))}
               </div>
-              {errors.priority && <p className="mt-2 text-xs text-red-600 dark:text-red-400 flex items-center gap-1 font-medium"><AlertCircle size={13} />{errors.priority}</p>}
+              {errors.priority && (
+                <div className="mt-2 text-[11px] text-red-600 dark:text-red-400 flex items-center gap-1.5 font-bold tracking-wide animate-in fade-in slide-in-from-top-1 duration-200 bg-red-50 dark:bg-red-900/10 px-3 py-1.5 rounded-lg border border-red-100 dark:border-red-900/20">
+                  <AlertCircle size={14} className="flex-shrink-0" />
+                  {errors.priority}
+                </div>
+              )}
             </div>
 
             {formData.category === "other" && (
@@ -505,9 +527,11 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
                 {formData.subcategory?.map((s, i) => (
-                  <div key={i} className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-300 rounded-full px-3 py-1.5">
+                  <div key={i} className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700/50 rounded-full px-3 py-1.5 shadow-sm">
                     <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">{s}</span>
-                    <button type="button" onClick={() => removeSpec(s)} className="p-0.5 hover:text-red-500"><X size={12} /></button>
+                    <button type="button" onClick={() => removeSpec(s)} className="p-1 rounded-full bg-emerald-100 dark:bg-emerald-800/40 hover:bg-red-100 dark:hover:bg-red-900/60 text-emerald-600 dark:text-emerald-400 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ml-1 shadow-sm">
+                      <X size={10} strokeWidth={3} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -518,17 +542,34 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
                 onKeyPress={handleSpecKeyPress}
                 onFocus={() => setShowSpecDropdown(true)}
                 onBlur={() => setTimeout(() => setShowSpecDropdown(false), 150)}
-                className="w-full px-4 py-3 rounded-xl border-2 bg-white/90 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100"
+                className={`w-full px-4 py-3 rounded-xl border-2 transition-all outline-none focus:ring-4 font-medium ${
+                  errors.subcategory
+                    ? "border-red-300 dark:border-red-500 focus:border-red-500 focus:ring-red-200/40"
+                    : "border-slate-200 dark:border-slate-700 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-emerald-200/50 bg-white/90 dark:bg-slate-800/80"
+                } text-slate-900 dark:text-slate-100`}
                 placeholder="Search or add sub-category..."
               />
               {showSpecDropdown && (subcategorySearch || availableSpecs.length > 0) && (
                 <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl max-h-48 overflow-y-auto">
-                  {subcategorySearch && !currentSpecs.includes(subcategorySearch) && <button type="button" onMouseDown={() => handleSpecSelect(subcategorySearch)} className="w-full px-4 py-2 hover:bg-emerald-50 text-left text-sm font-medium text-emerald-600">Add "{subcategorySearch}"</button>}
-                  {availableSpecs.map((s) => <button key={s} type="button" onMouseDown={() => handleSpecSelect(s)} className="w-full px-4 py-2 hover:bg-slate-100 text-left text-sm text-slate-700 dark:text-slate-200">{s}</button>)}
+                  {subcategorySearch && !currentSpecs.includes(subcategorySearch) && (
+                    <button type="button" onMouseDown={() => handleSpecSelect(subcategorySearch)} className="w-full px-4 py-3 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-left text-sm font-bold text-emerald-600 border-b border-slate-100 dark:border-slate-700">
+                      Add "{subcategorySearch}"
+                    </button>
+                  )}
+                  {availableSpecs.map((s) => (
+                    <button key={s} type="button" onMouseDown={() => handleSpecSelect(s)} className="w-full px-4 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700/50 text-left text-sm text-slate-700 dark:text-slate-200 transition-colors font-medium">
+                      {s}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
-            {errors.subcategory && <p className="mt-2 text-xs text-red-600 dark:text-red-400 flex items-center gap-1 font-medium"><AlertCircle size={13} />{errors.subcategory}</p>}
+            {errors.subcategory && (
+              <div className="mt-2 text-[11px] text-red-600 dark:text-red-400 flex items-center gap-1.5 font-bold tracking-wide animate-in fade-in slide-in-from-top-1 duration-200 bg-red-50 dark:bg-red-900/10 px-3 py-1.5 rounded-lg border border-red-100 dark:border-red-900/20">
+                <AlertCircle size={14} className="flex-shrink-0" />
+                {errors.subcategory}
+              </div>
+            )}
           </div>
 
           {/* Tags */}
@@ -537,9 +578,11 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
                 {formData.tags?.map((t, i) => (
-                  <div key={i} className="flex items-center gap-1.5 bg-cyan-50 dark:bg-cyan-900/30 border border-cyan-300 rounded-full px-3 py-1.5">
+                  <div key={i} className="flex items-center gap-1.5 bg-cyan-50 dark:bg-cyan-900/30 border border-cyan-300 dark:border-cyan-700/50 rounded-full px-3 py-1.5 shadow-sm">
                     <span className="text-xs font-semibold text-cyan-700 dark:text-cyan-300">#{t}</span>
-                    <button type="button" onClick={() => handleRemoveTag(t)} className="p-0.5 hover:text-red-500"><X size={12} /></button>
+                    <button type="button" onClick={() => handleRemoveTag(t)} className="p-1 rounded-full bg-cyan-100 dark:bg-cyan-800/40 hover:bg-red-100 dark:hover:bg-red-900/60 text-cyan-600 dark:text-cyan-400 hover:text-red-600 dark:hover:text-red-400 transition-all duration-200 ml-1 shadow-sm">
+                      <X size={10} strokeWidth={3} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -548,7 +591,7 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={handleTagKeyDown}
-                className="w-full px-4 py-3 rounded-xl border-2 bg-white/90 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100"
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 focus:border-emerald-500 dark:focus:border-emerald-400 focus:ring-4 focus:ring-emerald-200/50 transition-all outline-none bg-white/90 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
                 placeholder="Type tag and press Enter..."
               />
             </div>
@@ -564,14 +607,23 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
 
             <div>
               <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 tracking-wide">Photo Evidence <span className="text-red-500">*</span></label>
-              <label className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-xl transition-all cursor-pointer ${uploading ? "opacity-60 bg-gray-100" : "bg-gray-50 dark:bg-gray-800 hover:border-emerald-500"}`}>
+              <label className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-xl transition-all cursor-pointer ${
+                uploading ? "opacity-60 bg-gray-100/50 dark:bg-slate-800/50" : 
+                errors.photos ? "border-red-300 bg-red-50/30 dark:border-red-500/50 dark:bg-red-900/10 hover:border-red-400 dark:hover:border-red-400 hover:bg-red-50/50 dark:hover:bg-red-900/20" : 
+                "bg-gray-50/50 dark:bg-gray-800/50 border-slate-200 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50/30 dark:hover:bg-emerald-950/20 shadow-sm"
+              }`}>
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   {uploading ? <Loader2 className="w-8 h-8 animate-spin text-emerald-500" /> : <><Camera className="w-10 h-10 text-gray-400 mb-2" /><p className="text-sm font-medium text-gray-600 dark:text-gray-300">Click or drag and drop</p></>}
                 </div>
                 <input ref={imageInputRef} type="file" multiple hidden accept="image/*" disabled={uploading} onChange={handleImageUpload} />
               </label>
               {images.length > 0 && <div className="mt-4"><ImageCarousel images={images} removeMedia={removeMedia} /></div>}
-              {errors.photos && <p className="mt-2 text-xs text-red-600 flex items-center gap-1 font-medium"><AlertCircle size={13} />{errors.photos}</p>}
+              {errors.photos && (
+                <div className="mt-2 text-[11px] text-red-600 dark:text-red-400 flex items-center gap-1.5 font-bold tracking-wide animate-in fade-in slide-in-from-top-1 duration-200 bg-red-50 dark:bg-red-900/10 px-3 py-1.5 rounded-lg border border-red-100 dark:border-red-900/20">
+                  <AlertCircle size={14} className="flex-shrink-0" />
+                  {errors.photos}
+                </div>
+              )}
             </div>
 
             <div>

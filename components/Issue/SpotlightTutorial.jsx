@@ -17,7 +17,7 @@ const SpotlightTutorial = ({
   const [targetRect, setTargetRect] = useState(null);
   const [isMounted, setIsMounted] = useState(false);
   const retryCount = useRef(0);
-  
+
   const currentTutorialStep = tutorialSteps[stepIndex];
 
   // Sync form step with tutorial step
@@ -32,7 +32,15 @@ const SpotlightTutorial = ({
         }
       }
     }
-  }, [stepIndex, showTutorial, currentTutorialStep, currentStep, setCurrentStep, showPreview, setShowPreview]);
+  }, [
+    stepIndex,
+    showTutorial,
+    currentTutorialStep,
+    currentStep,
+    setCurrentStep,
+    showPreview,
+    setShowPreview,
+  ]);
 
   const updateTargetRect = useCallback(() => {
     if (!showTutorial || !currentTutorialStep) return;
@@ -41,7 +49,7 @@ const SpotlightTutorial = ({
     if (element) {
       // Ensure element is in view
       element.scrollIntoView({ behavior: "smooth", block: "center" });
-      
+
       // Delay rect calculation slightly for scroll to settle
       const timeoutId = setTimeout(() => {
         const rect = element.getBoundingClientRect();
@@ -101,7 +109,7 @@ const SpotlightTutorial = ({
   const handleComplete = () => {
     // Removed persistence as requested - runs on every refresh or trigger
     setShowTutorial(false);
-    
+
     // Immediate reset to Step 1 and Close Preview to prevent dimming issues
     setStepIndex(0);
     setCurrentStep(1);
@@ -135,27 +143,40 @@ const SpotlightTutorial = ({
           layoutId="spotlight"
           initial={false}
           animate={{
-            top: targetRect.top - 8,
-            left: targetRect.left - 8,
-            width: targetRect.width + 16,
-            height: targetRect.height + 16,
+            top: targetRect.top - 12,
+            left: targetRect.left - 12,
+            width: targetRect.width + 24,
+            height: targetRect.height + 24,
             opacity: 1,
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="absolute rounded-2xl border-2 border-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)] z-[101]"
+          className="absolute rounded-2xl border-2 border-emerald-500/80 z-[101] pointer-events-none"
         >
-          {/* Pulsing Ring */}
+          {/* Internal Pulse Ring */}
           <motion.div
             animate={{
-              scale: [1, 1.1, 1],
-              opacity: [0.5, 0, 0.5],
+              opacity: [0.1, 0.3, 0.1],
             }}
             transition={{
               duration: 2,
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            className="absolute -inset-4 border-2 border-emerald-400 rounded-3xl"
+            className="absolute inset-0 rounded-2xl bg-emerald-500/10"
+          />
+          
+          {/* External Ping Ring */}
+          <motion.div
+            animate={{
+              scale: [1, 1.2],
+              opacity: [0.5, 0],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeOut",
+            }}
+            className="absolute -inset-4 rounded-3xl border border-emerald-500/30"
           />
         </motion.div>
       )}
@@ -171,9 +192,21 @@ const SpotlightTutorial = ({
             transition={{ duration: 0.3 }}
             style={{
               position: "absolute",
-              top: currentTutorialStep.position === "bottom" ? targetRect.top + targetRect.height + 24 : "auto",
-              bottom: currentTutorialStep.position === "top" ? window.innerHeight - targetRect.top + 24 : "auto",
-              left: Math.max(20, Math.min(window.innerWidth - 340, targetRect.left + (targetRect.width / 2) - 160)),
+              top:
+                currentTutorialStep.position === "bottom"
+                  ? targetRect.top + targetRect.height + 24
+                  : "auto",
+              bottom:
+                currentTutorialStep.position === "top"
+                  ? window.innerHeight - targetRect.top + 24
+                  : "auto",
+              left: Math.max(
+                20,
+                Math.min(
+                  window.innerWidth - 340,
+                  targetRect.left + targetRect.width / 2 - 160,
+                ),
+              ),
               width: "320px",
             }}
             className="z-[102] pointer-events-auto"
@@ -181,7 +214,7 @@ const SpotlightTutorial = ({
             <div className="relative group/tooltip">
               {/* Background Glow */}
               <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-2xl blur opacity-25 group-hover/tooltip:opacity-40 transition duration-500"></div>
-              
+
               <div className="relative bg-white/80 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 dark:border-slate-800 p-6">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-4">
@@ -227,19 +260,12 @@ const SpotlightTutorial = ({
                       onClick={handleNext}
                       className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-sm shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all"
                     >
-                      {stepIndex === tutorialSteps.length - 1 ? "Finish" : "Next"}
+                      {stepIndex === tutorialSteps.length - 1
+                        ? "Finish"
+                        : "Next"}
                       <ChevronRight size={18} />
                     </button>
                   </div>
-                </div>
-
-                {/* Progress Mini Bar */}
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-100 dark:bg-slate-800 rounded-b-2xl overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${((stepIndex + 1) / tutorialSteps.length) * 100}%` }}
-                    className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500"
-                  />
                 </div>
               </div>
             </div>
