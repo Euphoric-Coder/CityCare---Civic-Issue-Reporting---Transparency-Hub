@@ -13,9 +13,9 @@ import {
 } from "@react-email/components";
 
 export default function UnitOfficerOnboardingEmail({
-  officerName = "Sagnik Dey",
-  officerEmail = "sagnik@example.com",
-  temporaryPassword = "SD@Sagnik02052005",
+  officerName = "Kevin Dcosta",
+  officerEmail = "testuo@example.com",
+  temporaryPassword = "KD@Kevin02082005",
   city = "Mumbai",
   department = "Road & Infrastructure",
   supportEmail = "support@citycare.gov.in",

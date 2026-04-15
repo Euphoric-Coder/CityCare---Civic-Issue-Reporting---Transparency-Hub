@@ -14,15 +14,15 @@ import {
 
 export default function FieldOfficerOnboardingEmail({
   officerName = "Sagnik Dey",
-  officerEmail = "sagnik@example.com",
-  temporaryPassword = "SD@Sagnik02052005",
-  city = "Mumbai",
+  officerEmail = "testfo@example.com",
+  temporaryPassword = "SD@Sagnik02082005",
+  city = "Varanasi",
   department = "Road & Infrastructure",
   specialization = ["Pothole Repair", "Asphalt Laying"],
   supportEmail = "support@citycare.gov.in",
 }) {
   const logoUrl = "https://ik.imagekit.io/5zzchrjn8/logo.png";
-  
+
   const specializationText = Array.isArray(specialization)
     ? specialization.join(", ")
     : specialization;
