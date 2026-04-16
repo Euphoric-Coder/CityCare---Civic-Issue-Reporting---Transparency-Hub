@@ -1,19 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+
 import { CitizenDashboard } from "@/components/Citizen/CitizenDashboard";
-import { getNotifications } from "@/lib/mockData";
 import { NotificationsPanel } from "@/components/NotificationPanel";
+import { useSession } from "next-auth/react";
 
 export default function Page() {
+  const { data: session } = useSession();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
 
-  useEffect(() => {
-    const data = getNotifications();
-    console.log("Unread notifications:", data);
-    setUnreadCount(data.length);
-  }, []);
+  const userId = session?.user?.id; // replace with session later
+
+  const notifications = useQuery(
+    api.notifications.getByUser,
+    userId ? { userId } : "skip",
+  );
+
+  const unreadCount = notifications?.filter((n) => !n.read).length || 0;
 
   return (
     <>
@@ -25,6 +31,7 @@ export default function Page() {
       <NotificationsPanel
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
+        notifications={notifications || []}
       />
     </>
   );

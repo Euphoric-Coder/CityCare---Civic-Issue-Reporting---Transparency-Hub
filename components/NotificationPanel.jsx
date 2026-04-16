@@ -11,12 +11,9 @@ import {
   Trash2,
   Sparkles,
 } from "lucide-react";
-import {
-  getNotifications,
-  markNotificationAsRead,
-  markAllNotificationsAsRead,
-  deleteNotification,
-} from "../lib/mockData";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useSession } from "next-auth/react";
 
 const notificationMeta = {
   status: {
@@ -69,71 +66,40 @@ function getNotificationType(message) {
   return "status";
 }
 
-export function NotificationsPanel({ isOpen, onClose }) {
-  const [user] = useState({ id: "1", name: "John Doe" });
-  const [notifications, setNotifications] = useState([]);
+export function NotificationsPanel({ isOpen, onClose, notifications }) {
+  const { data: session } = useSession();
+
+  const user = session?.user;
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("all");
 
-  useEffect(() => {
-    if (isOpen && user) {
-      loadNotifications();
-    }
-  }, [isOpen, user]);
+  const markAsRead = useMutation(api.notifications.markAsRead);
+  const markAll = useMutation(api.notifications.markAllAsRead);
+  const deleteNotif = useMutation(api.notifications.deleteNotification);
+  const deleteAll = useMutation(api.notifications.deleteAllNotifications);
 
-  async function loadNotifications() {
-    if (!user) return;
-    setLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      const data = getNotifications()
-        .filter((n) => n.user_id === user.id)
-        .sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        );
-      console.log("Loaded notifications:", data);
-      setNotifications(data);
-    } catch (error) {
-      console.error("Error loading notifications:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleMarkAsRead(notificationId) {
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      markNotificationAsRead(notificationId);
-      setNotifications(
-        notifications.map((n) =>
-          n.id === notificationId ? { ...n, read: true } : n,
-        ),
-      );
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-    }
+  async function handleMarkAsRead(id) {
+    await markAsRead({ id: id });
   }
 
   async function handleMarkAllAsRead() {
-    if (!user) return;
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      markAllNotificationsAsRead(user.id);
-      setNotifications(notifications.map((n) => ({ ...n, read: true })));
-    } catch (error) {
-      console.error("Error marking all as read:", error);
-    }
+    await markAll({ userId: user.id });
   }
 
   async function handleDelete(notificationId) {
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      deleteNotification(notificationId);
-      setNotifications(notifications.filter((n) => n.id !== notificationId));
-    } catch (error) {
-      console.error("Error deleting notification:", error);
-    }
+    await deleteNotif({ id: notificationId });
+  }
+
+  async function handleDeleteAll() {
+    if (!user?.id) return;
+
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete all notifications?",
+    );
+
+    if (!confirmDelete) return;
+
+    await deleteAll({ userId: user.id });
   }
 
   function getTimeAgo(date) {
@@ -166,7 +132,6 @@ export function NotificationsPanel({ isOpen, onClose }) {
 
       {/* ── Modal Shell ─────────────────────────────────────────── */}
       <div className="relative w-full sm:max-w-lg md:max-w-xl flex flex-col max-h-[92vh] sm:max-h-[85vh] rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/10 dark:border-white/5 animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-300">
-
         {/* ── Header ──────────────────────────────────────────────── */}
         <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-indigo-600 via-blue-600 to-cyan-600">
           {/* Ambient glow orbs */}
@@ -175,8 +140,12 @@ export function NotificationsPanel({ isOpen, onClose }) {
           <div className="absolute top-2 right-24 w-20 h-20 bg-indigo-300/20 rounded-full blur-xl pointer-events-none" />
 
           {/* Noise texture overlay */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-            style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='512' height='512' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")" }}
+          <div
+            className="absolute inset-0 opacity-[0.03] pointer-events-none"
+            style={{
+              backgroundImage:
+                "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='512' height='512' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E\")",
+            }}
           />
 
           <div className="relative px-5 pt-6 pb-5">
@@ -217,16 +186,28 @@ export function NotificationsPanel({ isOpen, onClose }) {
             {/* Stats row */}
             <div className="flex items-center gap-2">
               <div className="flex-1 bg-white/10 rounded-xl px-3 py-2 border border-white/15 text-center">
-                <p className="text-white text-lg font-black leading-none">{notifications.length}</p>
-                <p className="text-blue-200/70 text-[10px] font-semibold uppercase tracking-wider mt-0.5">Total</p>
+                <p className="text-white text-lg font-black leading-none">
+                  {notifications.length}
+                </p>
+                <p className="text-blue-200/70 text-[10px] font-semibold uppercase tracking-wider mt-0.5">
+                  Total
+                </p>
               </div>
               <div className="flex-1 bg-white/10 rounded-xl px-3 py-2 border border-white/15 text-center">
-                <p className="text-white text-lg font-black leading-none">{unreadCount}</p>
-                <p className="text-blue-200/70 text-[10px] font-semibold uppercase tracking-wider mt-0.5">Unread</p>
+                <p className="text-white text-lg font-black leading-none">
+                  {unreadCount}
+                </p>
+                <p className="text-blue-200/70 text-[10px] font-semibold uppercase tracking-wider mt-0.5">
+                  Unread
+                </p>
               </div>
               <div className="flex-1 bg-white/10 rounded-xl px-3 py-2 border border-white/15 text-center">
-                <p className="text-white text-lg font-black leading-none">{notifications.length - unreadCount}</p>
-                <p className="text-blue-200/70 text-[10px] font-semibold uppercase tracking-wider mt-0.5">Read</p>
+                <p className="text-white text-lg font-black leading-none">
+                  {notifications.length - unreadCount}
+                </p>
+                <p className="text-blue-200/70 text-[10px] font-semibold uppercase tracking-wider mt-0.5">
+                  Read
+                </p>
               </div>
             </div>
           </div>
@@ -246,7 +227,9 @@ export function NotificationsPanel({ isOpen, onClose }) {
                     : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
                 }`}
               >
-                {f === "all" ? "All" : (
+                {f === "all" ? (
+                  "All"
+                ) : (
                   <span className="flex items-center gap-1.5">
                     Unread
                     {unreadCount > 0 && (
@@ -260,16 +243,28 @@ export function NotificationsPanel({ isOpen, onClose }) {
             ))}
           </div>
 
-          {unreadCount > 0 && (
-            <button
-              onClick={handleMarkAllAsRead}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 border border-blue-100 dark:border-blue-500/20 transition-all duration-200 hover:scale-105 active:scale-95"
-            >
-              <CheckCheck size={12} />
-              <span className="hidden xs:inline">Mark all read</span>
-              <span className="xs:hidden">All read</span>
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllAsRead}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 border border-blue-100 dark:border-blue-500/20 transition-all duration-200 hover:scale-105 active:scale-95"
+              >
+                <CheckCheck size={12} />
+                <span className="hidden xs:inline">Mark all read</span>
+                <span className="xs:hidden">All read</span>
+              </button>
+            )}
+            {notifications.length > 0 && (
+              <button
+                onClick={handleDeleteAll}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 border border-red-100 dark:border-red-500/20 transition-all duration-200 hover:scale-105 active:scale-95"
+              >
+                <Trash2 size={12} />
+                <span className="hidden xs:inline">Delete all</span>
+                <span className="xs:hidden">Clear</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* ── Notification list ────────────────────────────────────── */}
@@ -298,11 +293,16 @@ export function NotificationsPanel({ isOpen, onClose }) {
               <div className="relative mb-5">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-indigo-400/20 rounded-3xl blur-xl" />
                 <div className="relative w-16 h-16 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-sm">
-                  <Bell size={24} className="text-slate-300 dark:text-slate-600" />
+                  <Bell
+                    size={24}
+                    className="text-slate-300 dark:text-slate-600"
+                  />
                 </div>
               </div>
               <p className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
-                {filter === "unread" ? "All caught up! 🎉" : "No notifications yet"}
+                {filter === "unread"
+                  ? "All caught up! 🎉"
+                  : "No notifications yet"}
               </p>
               <p className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed max-w-[200px]">
                 {filter === "unread"
@@ -319,7 +319,7 @@ export function NotificationsPanel({ isOpen, onClose }) {
 
                 return (
                   <div
-                    key={notification.id}
+                    key={notification._id}
                     className={`group relative rounded-2xl border overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg ${
                       notification.read
                         ? "bg-white dark:bg-slate-800/80 border-slate-100 dark:border-slate-700/60 hover:shadow-slate-200/50 dark:hover:shadow-black/20"
@@ -329,31 +329,47 @@ export function NotificationsPanel({ isOpen, onClose }) {
                   >
                     {/* Unread gradient accent strip */}
                     {!notification.read && (
-                      <div className={`absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b ${meta.gradient}`} />
+                      <div
+                        className={`absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b ${meta.gradient}`}
+                      />
                     )}
 
                     {/* Unread bg glow */}
                     {!notification.read && (
-                      <div className={`absolute inset-0 bg-gradient-to-r ${meta.accent} opacity-40 pointer-events-none`} />
+                      <div
+                        className={`absolute inset-0 bg-gradient-to-r ${meta.accent} opacity-40 pointer-events-none`}
+                      />
                     )}
 
                     <div className="relative flex gap-3 px-4 pt-4 pb-3">
                       {/* Icon pill */}
-                      <div className={`shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br ${meta.gradient} flex items-center justify-center shadow-md ${meta.glow}`}>
-                        <Icon className="text-white" size={16} strokeWidth={2.5} />
+                      <div
+                        className={`shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br ${meta.gradient} flex items-center justify-center shadow-md ${meta.glow}`}
+                      >
+                        <Icon
+                          className="text-white"
+                          size={16}
+                          strokeWidth={2.5}
+                        />
                       </div>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         {/* Type label + dot + time */}
                         <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                            notification.read ? "text-slate-400 dark:text-slate-500" : `text-${type === "upvote" ? "emerald" : type === "comment" ? "amber" : type === "assignment" ? "violet" : "blue"}-600 dark:text-${type === "upvote" ? "emerald" : type === "comment" ? "amber" : type === "assignment" ? "violet" : "blue"}-400`
-                          }`}>
+                          <span
+                            className={`text-[10px] font-bold uppercase tracking-wider ${
+                              notification.read
+                                ? "text-slate-400 dark:text-slate-500"
+                                : `text-${type === "upvote" ? "emerald" : type === "comment" ? "amber" : type === "assignment" ? "violet" : "blue"}-600 dark:text-${type === "upvote" ? "emerald" : type === "comment" ? "amber" : type === "assignment" ? "violet" : "blue"}-400`
+                            }`}
+                          >
                             {meta.label}
                           </span>
                           {!notification.read && (
-                            <span className={`w-1.5 h-1.5 rounded-full ${meta.dot} animate-pulse`} />
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${meta.dot} animate-pulse`}
+                            />
                           )}
                           <span className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 ml-auto">
                             <Clock size={9} />
@@ -378,7 +394,7 @@ export function NotificationsPanel({ isOpen, onClose }) {
                         <div className="flex items-center gap-2 mt-2.5 md:opacity-0 md:group-hover:opacity-100 md:transition-opacity md:duration-200">
                           {!notification.read && (
                             <button
-                              onClick={() => handleMarkAsRead(notification.id)}
+                              onClick={() => handleMarkAsRead(notification._id)}
                               className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-bold rounded-lg ${meta.pill} border border-current/10 transition-all duration-150 hover:scale-105 active:scale-95`}
                             >
                               <Check size={11} strokeWidth={3} />
@@ -386,7 +402,7 @@ export function NotificationsPanel({ isOpen, onClose }) {
                             </button>
                           )}
                           <button
-                            onClick={() => handleDelete(notification.id)}
+                            onClick={() => handleDelete(notification._id)}
                             className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-bold rounded-lg bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 border border-red-100/50 dark:border-red-500/20 transition-all duration-150 hover:scale-105 active:scale-95"
                           >
                             <Trash2 size={11} strokeWidth={2.5} />
