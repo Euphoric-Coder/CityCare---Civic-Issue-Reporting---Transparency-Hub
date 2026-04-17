@@ -24,7 +24,6 @@ import {
   Clock,
   XCircle,
 } from "lucide-react";
-import { IssueDetailModal } from "@/components/IssueDetailModal";
 import { IssueCard, IssueCardSkeleton } from "@/components/IssueCard";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -34,6 +33,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { TutorialOverlay } from "./TutorialOverlay";
 import { TUTORIAL_STEPS } from "./TutorialSteps";
+import IssueDetailModal from "../IssueDetailModal";
 
 export const categories = [
   {
