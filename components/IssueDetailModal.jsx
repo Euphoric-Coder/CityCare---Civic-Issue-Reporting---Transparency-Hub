@@ -497,7 +497,7 @@ const IssueDetailModal = ({ issue, onClose }) => {
                                   />
                                 </div>
 
-                                <div className="flex-1 pt-0.5 transform transition-all duration-500 group-hover:-translate-y-1 contain-content transform-gpu will-change-transform">
+                                <div className="flex-1 pt-0.5 transform transition-all duration-500 group-hover:-translate-y-1 transform-gpu will-change-transform">
                                   <div className="bg-white/70 dark:bg-gray-900/50 border border-gray-200/60 dark:border-white/5 rounded-[2rem] p-6 sm:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] group-hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] dark:hover:shadow-[0_20px_40px_rgba(255,255,255,0.03)] transition-all">
                                     <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
                                       <span
@@ -1078,7 +1078,7 @@ const IssueDetailModal = ({ issue, onClose }) => {
         </div>
 
         <div className="p-4 sm:p-6 border-t border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80 space-y-3">
-          {(issue.status === "pending") && (
+          {issue.status === "pending" && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <button className="w-full px-6 py-3.5 bg-gradient-to-r from-rose-500 to-red-600 text-white rounded-xl font-bold tracking-wide hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-red-500/20">

@@ -212,7 +212,7 @@ export default defineSchema({
     ),
 
     // Attachments (photos/videos/documents)
-    attachments: v.array(v.id("_storage")),
+    attachments: v.optional(v.array(v.id("_storage"))),
 
     // Visibility scope
     scope: v.union(
