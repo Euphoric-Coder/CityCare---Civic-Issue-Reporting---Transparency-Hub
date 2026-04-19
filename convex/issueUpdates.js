@@ -20,7 +20,7 @@ export const getByIssueId = query({
           (u.attachments || []).map(async (fileId) => {
             const url = await ctx.storage.getUrl(fileId);
 
-            // 🔥 KEY PART
+            // KEY PART
             const meta = await ctx.db.system.get(fileId);
 
             return {
