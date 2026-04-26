@@ -25,6 +25,7 @@ export default defineSchema({
 
     fullName: v.string(),
     email: v.string(),
+    phone: v.optional(v.string()),
 
     city: v.string(),
     state: v.string(),
@@ -188,7 +189,7 @@ export default defineSchema({
     rejection: v.optional(
       v.object({
         reason: v.string(),
-        comment: v.optional(v.string()),
+        comment: v.string(),
         rejectedBy: v.id("users"),
         rejectedAt: v.number(),
       }),
