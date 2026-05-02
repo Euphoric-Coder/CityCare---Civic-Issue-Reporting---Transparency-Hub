@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
 
 export const getUnitOfficerByUserId = query({
   args: { userId: v.id("users") },
@@ -73,6 +74,35 @@ export const getIssueById = query({
       .withIndex("by_user", (q) => q.eq("userId", issue.reportedBy))
       .unique();
 
+    // Fetch Field Officer using userId stored in issue
+    let fieldOfficerDetails = null;
+
+    if (issue.assignedFieldOfficer) {
+      const fo = await ctx.db
+        .query("fieldOfficers")
+        .withIndex("by_user", (q) => q.eq("userId", issue.assignedFieldOfficer))
+        .unique();
+
+      if (fo) {
+        const foUser = await ctx.db.get(fo.userId);
+
+        fieldOfficerDetails = {
+          _id: fo._id,
+          userId: fo.userId,
+          fullName: foUser?.fullName || fo.fullName,
+          email: fo.email,
+          phone: fo.phone,
+          rating: fo.rating,
+          efficiencyScore: fo.efficiencyScore,
+          currentActiveIssues: fo.currentActiveIssues,
+          maxIssueCapacity: fo.maxIssueCapacity,
+          workloadPercentage:
+            (fo.currentActiveIssues / fo.maxIssueCapacity) * 100,
+          specialisations: fo.specialisations,
+        };
+      }
+    }
+
     // Main preview (first photo)
     const photoUrl = await Promise.all(
       (issue.photos || []).map(async (fileId) => {
@@ -97,7 +127,7 @@ export const getIssueById = query({
       }),
     );
 
-    // Resolve videos (if exists)
+    // Citizen Video Evidence (if exists)
     let videoUrl = null;
     if (issue.videos) {
       videoUrl = await ctx.storage.getUrl(issue.videos);
@@ -114,6 +144,7 @@ export const getIssueById = query({
       beforePhotos,
       afterPhotos,
       videoUrl,
+      fieldOfficerDetails,
     };
   },
 });
@@ -340,5 +371,160 @@ export const rejectIssue = mutation({
     }
 
     return { success: true };
+  },
+});
+
+export const getAssignedFieldOfficers = query({
+  args: {
+    userId: v.id("users"),
+  },
+
+  handler: async (ctx, args) => {
+    // Find Unit Officer using userId
+    const unitOfficer = await ctx.db
+      .query("unitOfficers")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .unique();
+
+    if (!unitOfficer) return [];
+
+    // Fetch Field Officers using stored _id
+    const fieldOfficers = await Promise.all(
+      unitOfficer.assignedFieldOfficers.map((foId) => ctx.db.get(foId)),
+    );
+
+    // Clean nulls (if any)
+    return fieldOfficers.filter(Boolean);
+  },
+});
+
+export const assignIssueToFieldOfficer = mutation({
+  args: {
+    issueId: v.id("issues"),
+    fieldOfficerId: v.id("fieldOfficers"), // fieldOfficers table _id
+    assignedBy: v.id("users"), // Unit Officer userId
+
+    issueTitle: v.string(),
+    issueCode: v.string(),
+
+    isReassign: v.optional(v.boolean()),
+    previousFieldOfficerName: v.optional(v.string()),
+    reassignmentReason: v.optional(v.string()),
+    reassignmentComment: v.optional(v.string()),
+  },
+
+  handler: async (ctx, args) => {
+    const issue = await ctx.db.get(args.issueId);
+    if (!issue) throw new Error("Issue not found");
+
+    const fieldOfficer = await ctx.db.get(args.fieldOfficerId);
+    if (!fieldOfficer) throw new Error("Field officer not found");
+
+    const unitOfficer = await ctx.db
+      .query("unitOfficers")
+      .withIndex("by_user", (q) => q.eq("userId", args.assignedBy))
+      .unique();
+
+    if (!unitOfficer) throw new Error("Unit officer not found");
+
+    const now = Date.now();
+
+    // Handle reassignmet
+    if (args.isReassign && issue.assignedFieldOfficer) {
+      const prevFO = await ctx.db
+        .query("fieldOfficers")
+        .withIndex("by_user", (q) => q.eq("userId", issue.assignedFieldOfficer))
+        .unique();
+
+      if (prevFO) {
+        const updatedPrevIssues = prevFO.assignedIssueIds.filter(
+          (id) => id !== args.issueId,
+        );
+
+        await ctx.db.patch(prevFO._id, {
+          assignedIssueIds: updatedPrevIssues,
+          currentActiveIssues: updatedPrevIssues.length,
+        });
+      }
+    }
+
+    // Updates the assigned status of the issue
+    await ctx.db.patch(args.issueId, {
+      status: "assigned",
+
+      // store FO userId
+      assignedFieldOfficer: fieldOfficer.userId,
+    });
+
+    // Store the assigned issues id in the field officer
+    let updatedAssignedIssues = fieldOfficer.assignedIssueIds;
+
+    // Update the list of assigned issues
+    if (!fieldOfficer.assignedIssueIds.includes(args.issueId)) {
+      updatedAssignedIssues = [...fieldOfficer.assignedIssueIds, args.issueId];
+    }
+
+    // Update the field officer
+    await ctx.db.patch(args.fieldOfficerId, {
+      assignedIssueIds: updatedAssignedIssues,
+      currentActiveIssues: updatedAssignedIssues.length,
+    });
+
+    // Custom Issue Update Comment for assigned issue
+    const comment = args.isReassign
+      ? `Issue reassigned from ${
+          args.previousFieldOfficerName ?? "previous field officer"
+        } to ${fieldOfficer.fullName}.${
+          args.reassignmentReason ? `\nReason: ${args.reassignmentReason}.` : ""
+        }${args.reassignmentComment ? `\n${args.reassignmentComment}` : ""}`
+      : `Issue assigned to Field Officer ${fieldOfficer.fullName}.`;
+
+    // Add the Issue Timeline Update for assigned issue
+    await ctx.db.insert("issueUpdates", {
+      issueId: args.issueId,
+      status: "assigned",
+      comment,
+      role: "unit_officer",
+      attachments: [],
+      updatedBy: args.assignedBy,
+      scope: "field_and_citizen",
+      createdAt: now,
+    });
+
+    // Notification to Field Officer
+    await ctx.db.insert("notifications", {
+      userId: fieldOfficer.userId,
+      issueId: args.issueId,
+      message: `You have been assigned issue "${args.issueTitle}" with Issue Code "${args.issueCode}" by Unit Officer ${unitOfficer.fullName}.`,
+      type: "assigned",
+      read: false,
+      createdAt: now,
+    });
+
+    // Notification to Unit Officer
+    await ctx.db.insert("notifications", {
+      userId: args.assignedBy,
+      issueId: args.issueId,
+      message: `You assigned issue "${args.issueTitle}" with Issue Code "${args.issueCode}" to ${fieldOfficer.fullName}.`,
+      type: "assigned",
+      read: false,
+      createdAt: now,
+    });
+
+    // Notification to Citizen
+    await ctx.db.insert("notifications", {
+      userId: issue.reportedBy,
+      issueId: args.issueId,
+      message: `Your issue "${args.issueTitle}" with Issue Code "${args.issueCode}" has been assigned to a Field Officer ${fieldOfficer.fullName} for further actions.`,
+      type: "assigned",
+      read: false,
+      createdAt: now,
+    });
+
+    return {
+      success: true,
+      assignedFieldOfficerUserId: fieldOfficer.userId,
+      assignedFieldOfficerName: fieldOfficer.fullName,
+    };
   },
 });
