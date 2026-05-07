@@ -260,6 +260,7 @@ export default defineSchema({
     // Visibility scope
     scope: v.union(
       v.literal("officer_and_citizen"), // visible to citizen and officers
+      v.literal("field_and_citizen"), // visible to citizen and officers
       v.literal("citizen"), // citizens only
       v.literal("admin_only"), // admin only
     ),
