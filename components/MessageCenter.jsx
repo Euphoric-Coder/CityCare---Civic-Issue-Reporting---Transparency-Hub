@@ -57,7 +57,7 @@ export function MessagesCenter({ user, profile }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }
 
-  function loadMessages() {
+function loadMessages() {
     if (!user) return;
     const allMessages = getStoredMessages();
     const userMessages = allMessages.filter(
