@@ -385,23 +385,40 @@ export default defineSchema({
           v.literal("cross_department_dependency"),
           v.literal("budget_approval_required"),
           v.literal("emergency_response"),
-          v.literal("other")
+          v.literal("officer_non_responsiveness"),
+          v.literal("technical_dependency"),
+          v.literal("third_party_dependency"),
+          v.literal("environmental_risk"),
+          v.literal("administrative_approval_pending"),
+          v.literal("other"),
         ),
         priority: v.union(
           v.literal("medium"),
           v.literal("high"),
-          v.literal("critical")
+          v.literal("critical"),
         ),
         reason: v.string(),
         comments: v.optional(v.string()),
         escalatedBy: v.id("users"),
+        prevIssueStatus: v.string(),
         escalatedAt: v.number(),
         resolved: v.optional(v.boolean()),
         resolvedAt: v.optional(v.number()),
-        resolutionNote: v.optional(v.string())
-      })
+        resolutionNote: v.optional(v.string()),
+        adminReviewStatus: v.optional(
+          v.union(
+            v.literal("pending"),
+            v.literal("reviewed"),
+            v.literal("resolved"),
+          ),
+        ),
+        escalationCount: v.optional(v.number()),
+      }),
     ),
 
+    slaExtendedCount: v.optional(v.number()),
+
+    lastSlaExtensionAt: v.optional(v.number()),
 
     slaCategory: v.string(),
     slaDeadline: v.union(v.number(), v.null()),
@@ -648,4 +665,23 @@ export default defineSchema({
       }),
     ),
   }).index("by_participants", ["participantIds"]),
+
+  escalationResolutionActions: defineTable({
+    issueId: v.id("issues"),
+    actionType: v.union(
+      v.literal("extend_sla"),
+      v.literal("reassign_officer"),
+      v.literal("approve_escalation"),
+      v.literal("reject_escalation"),
+      v.literal("change_category"),
+      v.literal("close_escalation"),
+      v.literal("review_escalation"),
+      v.literal("escalate"),
+    ),
+    performedBy: v.id("users"),
+    performedAt: v.number(),
+    oldValue: v.optional(v.string()),
+    newValue: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  }).index("by_issue", ["issueId"]),
 });
