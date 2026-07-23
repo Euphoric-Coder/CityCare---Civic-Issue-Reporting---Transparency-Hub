@@ -892,6 +892,14 @@ function IssueCard({ issue, onAction, onViewIssue, onOpenEscalation }) {
   const isBreached = sla.status === "breached";
   const isAtRisk = sla.status === "at_risk";
 
+  const escalationResolved = !!issue.escalation_resolved;
+  const resolvedEscalationBreachedAgain = escalationResolved && isBreached;
+  const resolvedEscalationAtRiskAgain = escalationResolved && isAtRisk;
+  const needsFreshSlaActionAfterResolvedEscalation =
+    escalationResolved && (isBreached || isAtRisk);
+  const canTakeSlaAction =
+    isBreached || isAtRisk || needsFreshSlaActionAfterResolvedEscalation;
+
   const cardBorder =
     isEscalated && isBreached
       ? "border-2 border-red-500 ring-2 ring-purple-500 ring-offset-2"
@@ -1235,7 +1243,7 @@ function IssueCard({ issue, onAction, onViewIssue, onOpenEscalation }) {
               </ActionBtn>
             </>
           )}
-          {hasBeenEscalated && !issue.escalation_resolved && (
+          {hasBeenEscalated && !escalationResolved && (
             <>
               <ActionBtn
                 onClick={() => onOpenEscalation(issue)}
@@ -1244,6 +1252,7 @@ function IssueCard({ issue, onAction, onViewIssue, onOpenEscalation }) {
               >
                 Review
               </ActionBtn>
+
               <ActionBtn
                 onClick={() => onAction(issue, "resolve_escalation")}
                 variant="emerald"
@@ -1251,7 +1260,8 @@ function IssueCard({ issue, onAction, onViewIssue, onOpenEscalation }) {
               >
                 Resolve
               </ActionBtn>
-              {!hasResolutionAction && (
+
+              {canTakeSlaAction && (
                 <ActionBtn
                   onClick={() => onAction(issue, "reassign")}
                   variant="cyan"
@@ -1260,7 +1270,8 @@ function IssueCard({ issue, onAction, onViewIssue, onOpenEscalation }) {
                   Reassign
                 </ActionBtn>
               )}
-              {!hasResolutionAction && (
+
+              {canTakeSlaAction && (
                 <ActionBtn
                   onClick={() => onAction(issue, "extend_sla")}
                   variant="amber"
@@ -1269,6 +1280,7 @@ function IssueCard({ issue, onAction, onViewIssue, onOpenEscalation }) {
                   Extend SLA
                 </ActionBtn>
               )}
+
               <ActionBtn
                 onClick={() => onViewIssue(issue)}
                 variant="default"
@@ -1278,7 +1290,7 @@ function IssueCard({ issue, onAction, onViewIssue, onOpenEscalation }) {
               </ActionBtn>
             </>
           )}
-          {hasBeenEscalated && issue.escalation_resolved && (
+          {hasBeenEscalated && escalationResolved && !needsFreshSlaActionAfterResolvedEscalation && (
             <>
               <ActionBtn
                 onClick={() => onAction(issue, "view_resolution")}
@@ -1287,6 +1299,57 @@ function IssueCard({ issue, onAction, onViewIssue, onOpenEscalation }) {
               >
                 View Resolution
               </ActionBtn>
+              <ActionBtn
+                onClick={() => onViewIssue(issue)}
+                variant="default"
+                icon={<Eye size={12} />}
+              >
+                View Issue
+              </ActionBtn>
+            </>
+          )}
+          {hasBeenEscalated && escalationResolved && needsFreshSlaActionAfterResolvedEscalation && (
+            <>
+              <ActionBtn
+                onClick={() => onAction(issue, "extend_sla")}
+                variant="amber"
+                icon={<Timer size={12} />}
+              >
+                Extend SLA
+              </ActionBtn>
+
+              <ActionBtn
+                onClick={() => onAction(issue, "reassign")}
+                variant="cyan"
+                icon={<Users size={12} />}
+              >
+                Reassign
+              </ActionBtn>
+
+              <ActionBtn
+                onClick={() => onOpenEscalation(issue)}
+                variant="purple"
+                icon={<Eye size={12} />}
+              >
+                Review Again
+              </ActionBtn>
+
+              <ActionBtn
+                onClick={() => onAction(issue, "escalate")}
+                variant="purple"
+                icon={<ArrowUpCircle size={12} />}
+              >
+                Re-escalate
+              </ActionBtn>
+
+              <ActionBtn
+                onClick={() => onAction(issue, "view_resolution")}
+                variant="teal"
+                icon={<Flag size={12} />}
+              >
+                Previous Resolution
+              </ActionBtn>
+
               <ActionBtn
                 onClick={() => onViewIssue(issue)}
                 variant="default"

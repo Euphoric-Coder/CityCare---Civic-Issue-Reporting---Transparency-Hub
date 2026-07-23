@@ -31,7 +31,29 @@ export function AdminEscalationResolutionModal({ issue, onClose, onResolved }) {
   );
   const hasResolutionAction = resolutionActions.length > 0;
 
-  const [actionType, setActionType] = useState(hasResolutionAction ? "approve" : "extend_sla");
+  const isSlaBreached =
+    issue.sla_status === "breached" ||
+    (issue.sla_deadline && new Date(issue.sla_deadline).getTime() < Date.now());
+
+  const isSlaAtRisk = issue.sla_status === "at_risk";
+  const escalationResolved = !!issue.escalation_resolved;
+
+  const shouldAllowFreshSlaActions =
+    isSlaBreached || isSlaAtRisk || (escalationResolved && isSlaBreached);
+
+  const [actionType, setActionType] = useState(
+    shouldAllowFreshSlaActions ? "extend_sla" : hasResolutionAction ? "approve" : "extend_sla"
+  );
+
+  useEffect(() => {
+    if (shouldAllowFreshSlaActions) {
+      setActionType("extend_sla");
+    } else if (hasResolutionAction) {
+      setActionType("approve");
+    } else {
+      setActionType("extend_sla");
+    }
+  }, [issue.id, issue._id, shouldAllowFreshSlaActions, hasResolutionAction]);
   const [newSlaDeadline, setNewSlaDeadline] = useState("");
   const [wardOfficers, setWardOfficers] = useState([]);
   const [fieldOfficers, setFieldOfficers] = useState([]);
@@ -287,6 +309,20 @@ export function AdminEscalationResolutionModal({ issue, onClose, onResolved }) {
         </div>
 
         <div className="p-8 space-y-8 max-h-[calc(95vh-200px)] overflow-y-auto">
+          {escalationResolved && isSlaBreached && (
+            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 flex items-start gap-3">
+              <AlertTriangle className="text-red-650 flex-shrink-0" size={20} />
+              <div>
+                <p className="text-sm font-black text-red-800">
+                  SLA breached again after previous escalation resolution
+                </p>
+                <p className="text-xs text-red-700 mt-1">
+                  The earlier escalation was resolved, but the current SLA deadline has been breached again. Admin corrective actions are available again for this new breach.
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200 rounded-2xl p-6 shadow-inner">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
@@ -422,7 +458,15 @@ export function AdminEscalationResolutionModal({ issue, onClose, onResolved }) {
                 "change_category",
                 "approve",
                 "reject",
-              ].filter(type => !hasResolutionAction || type === "approve").map((type) => {
+              ].filter((type) => {
+                if (shouldAllowFreshSlaActions) {
+                  return true;
+                }
+                if (hasResolutionAction) {
+                  return type === "approve";
+                }
+                return true;
+              }).map((type) => {
                 const typeConfig = {
                   extend_sla: {
                     icon: Clock,
