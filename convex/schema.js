@@ -293,7 +293,8 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_department", ["department"])
-    .index("by_unit_officer", ["reportingUnitOfficerId"]),
+    .index("by_unit_officer", ["reportingUnitOfficerId"])
+    .index("by_city", ["city"]),
 
   issues: defineTable({
     // Core
