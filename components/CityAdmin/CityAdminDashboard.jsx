@@ -71,10 +71,19 @@ export default function CityAdminDashboard() {
   const dbUser = useQuery(api.users.getUserByEmail, session?.user?.email ? { email: session.user.email } : "skip");
 
   const [activeTab, setActiveTab] = useState("overview");
-  const [dateRange, setDateRange] = useState("custom");
+  const [dateRange, setDateRange] = useState("all");
   const [selectedIssue, setSelectedIssue] = useState(null);
 
-  const rangeDays = dateRange === "today" ? 1 : dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : dateRange === "90d" ? 90 : 0;
+  const rangeDays =
+    dateRange === "today"
+      ? 1
+      : dateRange === "7d"
+        ? 7
+        : dateRange === "30d"
+          ? 30
+          : dateRange === "all"
+            ? 0
+            : 0;
 
   const overviewData = useQuery(
     api.cityAdmin.getCityAdminOverview,
@@ -638,7 +647,7 @@ export default function CityAdminDashboard() {
           <option value="today">Today</option>
           <option value="7d">Last 7 Days</option>
           <option value="30d">Last 30 Days</option>
-          <option value="custom">All</option>
+          <option value="all">All</option>
         </select>
 
         <div className="relative">
