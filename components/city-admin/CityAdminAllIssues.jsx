@@ -1619,7 +1619,11 @@ export default function CityAdminAllIssues({ cityAdminUserId, onSelectIssue }) {
                         return (
                           <div
                             key={cand.profileId}
-                            onClick={() => setSelectedOfficerId(cand.profileId)}
+                            onClick={() => {
+                              if (cand.compatibilityWarnings?.length > 0) return;
+                              setSelectedOfficerId(cand.profileId);
+                            }}
+                            disabled={cand.compatibilityWarnings?.length > 0}
                             className={`flex flex-col gap-2 p-3.5 bg-slate-55 dark:bg-slate-900 hover:bg-slate-100/50 dark:hover:bg-slate-900/50 border rounded-2xl cursor-pointer text-xs transition-all duration-150 ${
                               isSelected
                                 ? "border-cyan-500 ring-2 ring-cyan-500/20 shadow-sm"
@@ -1647,7 +1651,8 @@ export default function CityAdminAllIssues({ cityAdminUserId, onSelectIssue }) {
                               <div className="flex justify-between">
                                 <span>Active Workload:</span>
                                 <span>
-                                  {cand.currentWorkload} / {cand.maximumCapacity} active issues
+                                  {cand.currentWorkload} /{" "}
+                                  {cand.maximumCapacity} active issues
                                 </span>
                               </div>
                               <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
