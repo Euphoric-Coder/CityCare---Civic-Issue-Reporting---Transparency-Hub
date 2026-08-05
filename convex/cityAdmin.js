@@ -3,6 +3,16 @@ import { query, mutation } from "./_generated/server";
 
 const normalizeKey = (val) => (val || "").toLowerCase().trim();
 
+export function normalizeDepartment(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(/_+/g, "_");
+}
+
 // Helper to resolve the admin's database user ID (v.id("users"))
 async function resolveCityAdminUserId(ctx, cityAdminUserIdStr) {
   if (cityAdminUserIdStr) {
@@ -1031,9 +1041,9 @@ export const getAssignmentCandidates = query({
             activeIssueCount: activeCount,
             overdueIssueCount: 0,
             performanceScore: o.efficiencyScore || 80,
-            isRecommended: o.department === issue.category && workload < limit,
-            recommendationReason: o.department === issue.category ? "Compatible department and available capacity" : "Available capacity",
-            compatibilityWarnings: o.department !== issue.category ? ["Department mismatch"] : [],
+            isRecommended: normalizeDepartment(o.department) === normalizeDepartment(issue.category) && workload < limit,
+            recommendationReason: normalizeDepartment(o.department) === normalizeDepartment(issue.category) ? "Compatible department and available capacity" : "Available capacity",
+            compatibilityWarnings: normalizeDepartment(o.department) !== normalizeDepartment(issue.category) ? ["Department mismatch"] : [],
           };
         })
         .sort((a, b) => (b.isRecommended ? 1 : 0) - (a.isRecommended ? 1 : 0) || a.currentWorkload - b.currentWorkload);
@@ -1065,9 +1075,9 @@ export const getAssignmentCandidates = query({
             activeIssueCount: activeCount,
             overdueIssueCount: 0,
             performanceScore: o.efficiencyScore || 80,
-            isRecommended: o.department === issue.category && activeCount < limit,
-            recommendationReason: o.department === issue.category ? "Compatible department and available capacity" : "Available capacity",
-            compatibilityWarnings: o.department !== issue.category ? ["Department mismatch"] : [],
+            isRecommended: normalizeDepartment(o.department) === normalizeDepartment(issue.category) && activeCount < limit,
+            recommendationReason: normalizeDepartment(o.department) === normalizeDepartment(issue.category) ? "Compatible department and available capacity" : "Available capacity",
+            compatibilityWarnings: normalizeDepartment(o.department) !== normalizeDepartment(issue.category) ? ["Department mismatch"] : [],
           };
         })
         .sort((a, b) => (b.isRecommended ? 1 : 0) - (a.isRecommended ? 1 : 0) || a.currentWorkload - b.currentWorkload);
@@ -1339,13 +1349,23 @@ export const assignOrReassignFieldOfficer = mutation({
   }
 });
 
+const CATEGORY_TO_DEPARTMENT = {
+  road: "road",
+  electricity: "electricity",
+  water: "water",
+  sanitation: "sanitation",
+  drainage: "drainage",
+  solid_waste: "solid_waste",
+  public_health: "public_health",
+  other: "other",
+};
+
 export const changeIssueClassification = mutation({
   args: {
     cityAdminUserId: v.id("users"),
     issueId: v.id("issues"),
     category: v.string(),
     subcategory: v.array(v.string()),
-    department: v.string(),
     reason: v.string(),
     clearIncompatibleOfficers: v.optional(v.boolean()),
   },
@@ -1354,6 +1374,12 @@ export const changeIssueClassification = mutation({
     const issue = await ctx.db.get(args.issueId);
     if (!issue || issue.city !== city) {
       throw new Error("Issue not found or unauthorized");
+    }
+
+    const normalizedCategory = normalizeDepartment(args.category);
+    const expectedDepartment = CATEGORY_TO_DEPARTMENT[normalizedCategory];
+    if (!expectedDepartment) {
+      throw new Error("Invalid issue category.");
     }
 
     const now = Date.now();
@@ -1367,7 +1393,7 @@ export const changeIssueClassification = mutation({
         .withIndex("by_user", (q) => q.eq("userId", issue.assignedUnitOfficer))
         .unique();
 
-      if (uoProfile && uoProfile.department !== args.category) {
+      if (uoProfile && normalizeDepartment(uoProfile.department) !== expectedDepartment) {
         if (!args.clearIncompatibleOfficers) {
           return {
             success: false,
@@ -1392,7 +1418,7 @@ export const changeIssueClassification = mutation({
         .withIndex("by_user", (q) => q.eq("userId", issue.assignedFieldOfficer))
         .unique();
 
-      if (foProfile && foProfile.department !== args.category) {
+      if (foProfile && normalizeDepartment(foProfile.department) !== expectedDepartment) {
         if (!args.clearIncompatibleOfficers) {
           return {
             success: false,
@@ -1415,9 +1441,9 @@ export const changeIssueClassification = mutation({
 
     // Perform reclassification patch
     const updatePayload = {
-      category: args.category,
+      category: normalizedCategory,
       subcategory: args.subcategory,
-      department: args.department,
+      department: expectedDepartment,
     };
     if (uoCleared) updatePayload.assignedUnitOfficer = null;
     if (foCleared) updatePayload.assignedFieldOfficer = null;
@@ -1425,7 +1451,7 @@ export const changeIssueClassification = mutation({
     await ctx.db.patch(issue._id, updatePayload);
 
     // Timeline comment
-    let comment = `Issue classification updated by City Admin.\nNew Category: ${args.category}\nNew Department: ${args.department}\nReason: ${args.reason}`;
+    let comment = `Issue classification updated by City Admin.\nNew Category: ${normalizedCategory}\nNew Department: ${expectedDepartment}\nReason: ${args.reason}`;
     if (uoCleared || foCleared) {
       comment += `\nCleared incompatible assignments: ${uoCleared ? "Unit Officer" : ""} ${foCleared ? "Field Officer" : ""}`;
     }
@@ -1451,7 +1477,7 @@ export const changeIssueClassification = mutation({
       affectedEntityId: issue._id,
       issueCode: issue.issueCode,
       oldValue: `${issue.category} | ${issue.department}`,
-      newValue: `${args.category} | ${args.department}`,
+      newValue: `${normalizedCategory} | ${expectedDepartment}`,
       reason: args.reason,
       timestamp: now,
     });
@@ -2029,6 +2055,60 @@ export const bulkUpdateIssues = mutation({
     return {
       successfulIssueIds,
       skippedIssues,
+    };
+  }
+});
+
+export const migrateLegacyDepartments = mutation({
+  args: {},
+  handler: async (ctx) => {
+    // 1. Migrate issues
+    const issues = await ctx.db.query("issues").collect();
+    let issuesMigrated = 0;
+    for (const issue of issues) {
+      const normalizedCategory = normalizeDepartment(issue.category);
+      const expectedDepartment = CATEGORY_TO_DEPARTMENT[normalizedCategory] || normalizedCategory;
+
+      if (issue.category !== normalizedCategory || issue.department !== expectedDepartment) {
+        await ctx.db.patch(issue._id, {
+          category: normalizedCategory,
+          department: expectedDepartment,
+        });
+        issuesMigrated++;
+      }
+    }
+
+    // 2. Migrate unitOfficers
+    const unitOfficers = await ctx.db.query("unitOfficers").collect();
+    let unitOfficersMigrated = 0;
+    for (const officer of unitOfficers) {
+      const normalizedDept = normalizeDepartment(officer.department);
+      if (officer.department !== normalizedDept) {
+        await ctx.db.patch(officer._id, {
+          department: normalizedDept,
+        });
+        unitOfficersMigrated++;
+      }
+    }
+
+    // 3. Migrate fieldOfficers
+    const fieldOfficers = await ctx.db.query("fieldOfficers").collect();
+    let fieldOfficersMigrated = 0;
+    for (const officer of fieldOfficers) {
+      const normalizedDept = normalizeDepartment(officer.department);
+      if (officer.department !== normalizedDept) {
+        await ctx.db.patch(officer._id, {
+          department: normalizedDept,
+        });
+        fieldOfficersMigrated++;
+      }
+    }
+
+    return {
+      success: true,
+      issuesMigrated,
+      unitOfficersMigrated,
+      fieldOfficersMigrated,
     };
   }
 });

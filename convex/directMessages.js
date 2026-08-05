@@ -1,6 +1,16 @@
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 
+const normalizeDepartment = (value) => {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(/_+/g, "_");
+};
+
 export const startConversation = mutation({
   args: {
     participantIds: v.array(v.id('users')),
@@ -242,7 +252,7 @@ export const getAllOfficials = query({
     // Fetch Unit Officers
     let unitOfficers = await ctx.db.query('unitOfficers').collect();
     if (currentUserDept) {
-      unitOfficers = unitOfficers.filter((uo) => uo.department === currentUserDept);
+      unitOfficers = unitOfficers.filter((uo) => normalizeDepartment(uo.department) === normalizeDepartment(currentUserDept));
     }
 
     for (const uo of unitOfficers) {
@@ -269,7 +279,7 @@ export const getAllOfficials = query({
     // Fetch Field Officers
     let fieldOfficers = await ctx.db.query('fieldOfficers').collect();
     if (currentUserDept) {
-      fieldOfficers = fieldOfficers.filter((fo) => fo.department === currentUserDept);
+      fieldOfficers = fieldOfficers.filter((fo) => normalizeDepartment(fo.department) === normalizeDepartment(currentUserDept));
     }
 
     for (const fo of fieldOfficers) {
