@@ -1022,7 +1022,7 @@ export const getAssignmentCandidates = query({
       const users = await Promise.all(userIds.map((id) => ctx.db.get(id)));
       const userMap = new Map(users.filter(Boolean).map((u) => [String(u._id), u]));
 
-      return officers
+      const candidates = officers
         .map((o) => {
           const u = userMap.get(String(o.userId));
           const activeCount = (o.activeIssueIds || []).length;
@@ -1047,6 +1047,11 @@ export const getAssignmentCandidates = query({
           };
         })
         .sort((a, b) => (b.isRecommended ? 1 : 0) - (a.isRecommended ? 1 : 0) || a.currentWorkload - b.currentWorkload);
+
+      return {
+        officerType: args.officerType,
+        candidates,
+      };
     } else {
       const officers = await ctx.db
         .query("fieldOfficers")
@@ -1057,7 +1062,7 @@ export const getAssignmentCandidates = query({
       const users = await Promise.all(userIds.map((id) => ctx.db.get(id)));
       const userMap = new Map(users.filter(Boolean).map((u) => [String(u._id), u]));
 
-      return officers
+      const candidates = officers
         .map((o) => {
           const u = userMap.get(String(o.userId));
           const activeCount = o.currentActiveIssues || 0;
@@ -1081,6 +1086,11 @@ export const getAssignmentCandidates = query({
           };
         })
         .sort((a, b) => (b.isRecommended ? 1 : 0) - (a.isRecommended ? 1 : 0) || a.currentWorkload - b.currentWorkload);
+
+      return {
+        officerType: args.officerType,
+        candidates,
+      };
     }
   },
 });
@@ -1724,6 +1734,7 @@ export const updateSlaDeadline = mutation({
   args: {
     cityAdminUserId: v.id("users"),
     issueId: v.id("issues"),
+    oldDeadline: v.number(),
     newDeadline: v.number(),
     reason: v.string(),
   },
@@ -1735,7 +1746,8 @@ export const updateSlaDeadline = mutation({
     }
 
     const now = Date.now();
-    const oldDeadline = issue.slaDeadline;
+    const oldDeadlineStr = args.oldDeadline ? new Date(args.oldDeadline).toISOString() : "None";
+    const newDeadlineStr = new Date(args.newDeadline).toISOString();
 
     await ctx.db.patch(issue._id, {
       slaDeadline: args.newDeadline,
@@ -1749,6 +1761,17 @@ export const updateSlaDeadline = mutation({
         extendedAt: now,
         newSlaDeadline: args.newDeadline,
       },
+    });
+
+    // Resolution action record
+    await ctx.db.insert("escalationResolutionActions", {
+      issueId: issue._id,
+      actionType: "extend_sla",
+      performedBy: args.cityAdminUserId,
+      performedAt: now,
+      oldValue: oldDeadlineStr,
+      newValue: newDeadlineStr,
+      notes: args.reason,
     });
 
     // Timeline entry
@@ -1772,7 +1795,7 @@ export const updateSlaDeadline = mutation({
       affectedEntityType: "issue",
       affectedEntityId: issue._id,
       issueCode: issue.issueCode,
-      oldValue: oldDeadline ? String(oldDeadline) : "None",
+      oldValue: args.oldDeadline ? String(args.oldDeadline) : "None",
       newValue: String(args.newDeadline),
       reason: args.reason,
       timestamp: now,
