@@ -464,7 +464,9 @@ export const extendIssueSla = mutation({
 export const reassignIssueOfficer = mutation({
   args: {
     issueId: v.id("issues"),
-    officerType: v.optional(v.union(v.literal("unit_officer"), v.literal("field_officer"))),
+    officerType: v.optional(
+      v.union(v.literal("unit_officer"), v.literal("field_officer")),
+    ),
     newOfficerProfileId: v.optional(v.string()),
     newUnitOfficerId: v.optional(v.string()),
     newFieldOfficerId: v.optional(v.string()),
@@ -491,7 +493,13 @@ export const reassignIssueOfficer = mutation({
       });
     }
 
-    const effectiveType = args.officerType || (args.newUnitOfficerId ? "unit_officer" : args.newFieldOfficerId ? "field_officer" : null);
+    const effectiveType =
+      args.officerType ||
+      (args.newUnitOfficerId
+        ? "unit_officer"
+        : args.newFieldOfficerId
+          ? "field_officer"
+          : null);
 
     if (effectiveType === "unit_officer") {
       const candidateIdStr = args.newOfficerProfileId || args.newUnitOfficerId;
@@ -511,7 +519,12 @@ export const reassignIssueOfficer = mutation({
         throw new Error("Selected Unit Officer account is not approved.");
       }
 
-      if (profile.city && issue.city && profile.city !== issue.city && !args.confirmCrossCity) {
+      if (
+        profile.city &&
+        issue.city &&
+        profile.city !== issue.city &&
+        !args.confirmCrossCity
+      ) {
         return {
           code: "CROSS_CITY_CONFIRMATION_REQUIRED",
           message: `The selected officer belongs to ${profile.city}, while this issue belongs to ${issue.city}. Cross-city assignment confirmation is required.`,
@@ -521,7 +534,12 @@ export const reassignIssueOfficer = mutation({
       }
 
       const issueDept = issue.department || issue.category;
-      if (profile.department && issueDept && profile.department !== issueDept && !args.confirmDepartmentMismatch) {
+      if (
+        profile.department &&
+        issueDept &&
+        profile.department !== issueDept &&
+        !args.confirmDepartmentMismatch
+      ) {
         return {
           code: "DEPARTMENT_MISMATCH_CONFIRMATION_REQUIRED",
           message: `Issue Department: ${issueDept}. Selected Officer Department: ${profile.department}. Department mismatch confirmation is required.`,
@@ -539,13 +557,17 @@ export const reassignIssueOfficer = mutation({
           .unique();
         if (oldUoProfile) {
           await ctx.db.patch(oldUoProfile._id, {
-            activeIssueIds: (oldUoProfile.activeIssueIds || []).filter((id) => id !== args.issueId),
+            activeIssueIds: (oldUoProfile.activeIssueIds || []).filter(
+              (id) => id !== args.issueId,
+            ),
           });
         }
       }
 
       await ctx.db.patch(profile._id, {
-        activeIssueIds: Array.from(new Set([...(profile.activeIssueIds || []), args.issueId])),
+        activeIssueIds: Array.from(
+          new Set([...(profile.activeIssueIds || []), args.issueId]),
+        ),
       });
 
       await ctx.db.patch(args.issueId, {
@@ -553,7 +575,11 @@ export const reassignIssueOfficer = mutation({
         escalation: issue.escalation
           ? {
               ...issue.escalation,
-              adminReviewStatus: issue.escalation.adminReviewStatus === "pending" || !issue.escalation.adminReviewStatus ? "reviewed" : issue.escalation.adminReviewStatus,
+              adminReviewStatus:
+                issue.escalation.adminReviewStatus === "pending" ||
+                !issue.escalation.adminReviewStatus
+                  ? "reviewed"
+                  : issue.escalation.adminReviewStatus,
             }
           : undefined,
       });
@@ -591,14 +617,20 @@ export const reassignIssueOfficer = mutation({
           .withIndex("by_user", (q) => q.eq("userId", candidateIdStr))
           .unique();
       }
-      if (!profile) throw new Error("Selected Field Officer profile not found.");
+      if (!profile)
+        throw new Error("Selected Field Officer profile not found.");
 
       const officerUser = await ctx.db.get(profile.userId);
       if (officerUser && officerUser.accountApproved === false) {
         throw new Error("Selected Field Officer account is not approved.");
       }
 
-      if (profile.city && issue.city && profile.city !== issue.city && !args.confirmCrossCity) {
+      if (
+        profile.city &&
+        issue.city &&
+        profile.city !== issue.city &&
+        !args.confirmCrossCity
+      ) {
         return {
           code: "CROSS_CITY_CONFIRMATION_REQUIRED",
           message: `The selected officer belongs to ${profile.city}, while this issue belongs to ${issue.city}. Cross-city assignment confirmation is required.`,
@@ -608,7 +640,12 @@ export const reassignIssueOfficer = mutation({
       }
 
       const issueDept = issue.department || issue.category;
-      if (profile.department && issueDept && profile.department !== issueDept && !args.confirmDepartmentMismatch) {
+      if (
+        profile.department &&
+        issueDept &&
+        profile.department !== issueDept &&
+        !args.confirmDepartmentMismatch
+      ) {
         return {
           code: "DEPARTMENT_MISMATCH_CONFIRMATION_REQUIRED",
           message: `Issue Department: ${issueDept}. Selected Officer Department: ${profile.department}. Department mismatch confirmation is required.`,
@@ -625,7 +662,9 @@ export const reassignIssueOfficer = mutation({
           .withIndex("by_user", (q) => q.eq("userId", oldFo))
           .unique();
         if (oldFoProfile) {
-          const assigned = (oldFoProfile.assignedIssueIds || []).filter((id) => id !== args.issueId);
+          const assigned = (oldFoProfile.assignedIssueIds || []).filter(
+            (id) => id !== args.issueId,
+          );
           await ctx.db.patch(oldFoProfile._id, {
             assignedIssueIds: assigned,
             currentActiveIssues: assigned.length,
@@ -633,7 +672,9 @@ export const reassignIssueOfficer = mutation({
         }
       }
 
-      const assigned = Array.from(new Set([...(profile.assignedIssueIds || []), args.issueId]));
+      const assigned = Array.from(
+        new Set([...(profile.assignedIssueIds || []), args.issueId]),
+      );
       await ctx.db.patch(profile._id, {
         assignedIssueIds: assigned,
         currentActiveIssues: assigned.length,
@@ -644,7 +685,11 @@ export const reassignIssueOfficer = mutation({
         escalation: issue.escalation
           ? {
               ...issue.escalation,
-              adminReviewStatus: issue.escalation.adminReviewStatus === "pending" || !issue.escalation.adminReviewStatus ? "reviewed" : issue.escalation.adminReviewStatus,
+              adminReviewStatus:
+                issue.escalation.adminReviewStatus === "pending" ||
+                !issue.escalation.adminReviewStatus
+                  ? "reviewed"
+                  : issue.escalation.adminReviewStatus,
             }
           : undefined,
       });
@@ -784,7 +829,10 @@ export const approveEscalation = mutation({
       createdAt: now,
     });
 
-    const notifyUsers = [issue.assignedUnitOfficer, issue.assignedFieldOfficer].filter(Boolean);
+    const notifyUsers = [
+      issue.assignedUnitOfficer,
+      issue.assignedFieldOfficer,
+    ].filter(Boolean);
     for (const p of notifyUsers) {
       await ctx.db.insert("notifications", {
         userId: p,
@@ -816,33 +864,32 @@ export const rejectEscalation = mutation({
 
     const reason = args.reason.trim();
     if (!reason) {
-      throw new Error("A reason for rejecting the escalation response is required.");
+      throw new Error(
+        "A reason for rejecting the escalation response is required.",
+      );
     }
 
     const now = Date.now();
     const adminDbId = await resolveAdminUserId(ctx, args.adminId);
 
     await ctx.db.patch(args.issueId, {
-      escalatedToAdmin: true,
+      escalatedToAdmin: false,
       escalation: {
         ...issue.escalation,
-        resolved: false,
-        resolvedAt: undefined,
-        resolutionNote: undefined,
-        adminReviewStatus: "reviewed",
-        responseRejectedAt: now,
-        responseRejectedBy: adminDbId,
-        responseRejectionReason: reason,
+        resolved: true,
+        resolvedAt: now,
+        resolutionNote: `The escalation has been rejected due to "${args.reason}".`,
+        adminReviewStatus: "resolved",
       },
     });
 
     await ctx.db.insert("escalationResolutionActions", {
       issueId: args.issueId,
-      actionType: "reject_escalation_response",
+      actionType: "reject_escalation",
       performedBy: adminDbId,
       performedAt: now,
       oldValue: issue.escalation.adminReviewStatus || "pending",
-      newValue: "reviewed",
+      newValue: "rejected",
       notes: reason,
     });
 
@@ -857,7 +904,10 @@ export const rejectEscalation = mutation({
       createdAt: now,
     });
 
-    const notifyUsers = [issue.assignedUnitOfficer, issue.assignedFieldOfficer].filter(Boolean);
+    const notifyUsers = [
+      issue.assignedUnitOfficer,
+      issue.assignedFieldOfficer,
+    ].filter(Boolean);
     for (const p of notifyUsers) {
       await ctx.db.insert("notifications", {
         userId: p,

@@ -25,6 +25,7 @@ import type * as issueDiscussions from "../issueDiscussions.js";
 import type * as issueUpdates from "../issueUpdates.js";
 import type * as issues from "../issues.js";
 import type * as issuesMedia from "../issuesMedia.js";
+import type * as lib_cityIssueAnalytics from "../lib/cityIssueAnalytics.js";
 import type * as messages from "../messages.js";
 import type * as notifications from "../notifications.js";
 import type * as officerAssign from "../officerAssign.js";
@@ -66,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   issueUpdates: typeof issueUpdates;
   issues: typeof issues;
   issuesMedia: typeof issuesMedia;
+  "lib/cityIssueAnalytics": typeof lib_cityIssueAnalytics;
   messages: typeof messages;
   notifications: typeof notifications;
   officerAssign: typeof officerAssign;
