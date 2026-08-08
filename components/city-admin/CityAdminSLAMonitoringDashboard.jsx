@@ -678,7 +678,7 @@ export function CityAdminSLAMonitoringDashboard({ cityAdminUserId }) {
                             className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-600 text-white font-extrabold rounded-xl text-xs transition-all shadow-sm flex items-center gap-1.5 ml-auto cursor-pointer"
                           >
                             <Shield size={14} />
-                            <span>{hasActiveEscalation ? "Resolve Escalation" : "Open SLA Controls"}</span>
+                            <span>{hasActiveEscalation ? "Handle Escalation" : "Open SLA Controls"}</span>
                           </button>
                         </td>
                       </tr>
@@ -729,7 +729,7 @@ export function CityAdminSLAMonitoringDashboard({ cityAdminUserId }) {
                       className="w-full py-2.5 bg-cyan-500 hover:bg-cyan-600 text-white font-extrabold text-xs rounded-xl transition-all text-center flex items-center justify-center gap-1.5 shadow cursor-pointer"
                     >
                       <Shield size={14} />
-                      <span>{hasActiveEscalation ? "Resolve Escalation" : "Open SLA Controls"}</span>
+                      <span>{hasActiveEscalation ? "Handle Escalation" : "Open SLA Controls"}</span>
                     </button>
                   </div>
                 );

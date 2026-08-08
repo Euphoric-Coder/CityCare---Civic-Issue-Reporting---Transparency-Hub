@@ -10,7 +10,9 @@ const TERMINAL_ISSUE_STATUSES = new Set([
 ]);
 
 function normalizeStatus(status) {
-  return String(status || "").trim().toLowerCase();
+  return String(status || "")
+    .trim()
+    .toLowerCase();
 }
 
 function isActiveIssue(issue) {
@@ -21,7 +23,8 @@ function getTimestamp(value) {
   if (value === null || value === undefined || value === "") {
     return null;
   }
-  const timestamp = typeof value === "number" ? value : new Date(value).getTime();
+  const timestamp =
+    typeof value === "number" ? value : new Date(value).getTime();
   return Number.isFinite(timestamp) ? timestamp : null;
 }
 
@@ -108,6 +111,23 @@ function getEscalationState(issue) {
 
   const status = normalizeStatus(issue?.status);
 
+  const rawReviewStatus =
+    issue?.escalationAdminReviewStatus ??
+    nested?.adminReviewStatus ??
+    nested?.status ??
+    null;
+
+  const reviewStatus = hasNonEmptyValue(rawReviewStatus)
+    ? normalizeStatus(rawReviewStatus)
+    : null;
+
+  const terminalReviewStatuses = new Set(["resolved", "rejected", "dismissed"]);
+
+  const resolved =
+    issue?.escalationResolved === true ||
+    nested?.resolved === true ||
+    (reviewStatus !== null && terminalReviewStatuses.has(reviewStatus));
+
   const hasExplicitFlag =
     issue?.escalatedToAdmin === true ||
     issue?.is_escalated === true ||
@@ -115,9 +135,7 @@ function getEscalationState(issue) {
 
   const hasEscalationTimestamp =
     getTimestamp(
-      issue?.escalatedAt ??
-      issue?.escalationAt ??
-      nested?.escalatedAt
+      issue?.escalatedAt ?? issue?.escalationAt ?? nested?.escalatedAt,
     ) !== null;
 
   const hasEscalationReason =
@@ -128,31 +146,21 @@ function getEscalationState(issue) {
     hasNonEmptyValue(issue?.escalationCategory) ||
     hasNonEmptyValue(nested?.category);
 
-  const hasEscalationActor = Boolean(
-    issue?.escalatedBy ?? nested?.escalatedBy
-  );
+  const hasEscalationActor = Boolean(issue?.escalatedBy ?? nested?.escalatedBy);
 
   const hasResolutionHistory =
     issue?.escalationResolved === true ||
     nested?.resolved === true ||
-    getTimestamp(
-      issue?.escalationResolvedAt ?? nested?.resolvedAt
-    ) !== null;
+    getTimestamp(issue?.escalationResolvedAt ?? nested?.resolvedAt) !== null;
 
   const hasReviewHistory =
-    getTimestamp(
-      issue?.escalationReviewedAt ?? nested?.reviewedAt
-    ) !== null ||
-    Boolean(
-      issue?.escalationReviewedBy ?? nested?.reviewedBy
-    );
+    getTimestamp(issue?.escalationReviewedAt ?? nested?.reviewedAt) !== null ||
+    Boolean(issue?.escalationReviewedBy ?? nested?.reviewedBy);
 
   const hasEscalationCount =
-    Number(
-      issue?.escalationCount ?? nested?.escalationCount ?? 0
-    ) > 0;
+    Number(issue?.escalationCount ?? nested?.escalationCount ?? 0) > 0;
 
-  const isEscalated =
+  const hasHistory =
     status === "escalated" ||
     hasExplicitFlag ||
     hasEscalationTimestamp ||
@@ -163,30 +171,21 @@ function getEscalationState(issue) {
     hasReviewHistory ||
     hasEscalationCount;
 
-  const rawReviewStatus =
-    issue?.escalationAdminReviewStatus ??
-    nested?.adminReviewStatus ??
-    nested?.status ??
-    null;
+  const currentlyQueued =
+    issue?.escalatedToAdmin === true || status === "escalated";
 
-  const reviewStatus =
-    isEscalated && hasNonEmptyValue(rawReviewStatus)
-      ? normalizeStatus(rawReviewStatus)
-      : isEscalated
-        ? "pending"
-        : null;
-
-  const resolved =
-    isEscalated &&
-    (issue?.escalationResolved === true ||
-      nested?.resolved === true ||
-      reviewStatus === "resolved");
+  const isActive = currentlyQueued && !resolved;
 
   return {
-    isEscalated,
+    hasHistory,
+    isEscalated: currentlyQueued,
+    isActive,
     resolved,
-    isActive: isEscalated && !resolved,
-    reviewStatus,
+    reviewStatus: resolved
+      ? reviewStatus || "resolved"
+      : isActive
+        ? reviewStatus || "pending"
+        : reviewStatus,
     hasEscalationTimestamp,
     hasEscalationReason,
     hasReviewHistory,
@@ -345,19 +344,19 @@ export const getScopedSLAMonitoringData = query({
           ESCALATION_ACTION_TYPES.has(
             String(action.type ?? action.actionType ?? "")
               .trim()
-              .toLowerCase()
-          )
+              .toLowerCase(),
+          ),
         );
         const hasEscalationActions = escalationActions.length > 0;
-
-        const isEscalatedBase = escalationState.isEscalated;
-        const finalIsEscalated = isEscalatedBase || hasEscalationActions;
+        const escHasHistory =
+          escalationState.hasHistory || hasEscalationActions;
+        const finalIsEscalated = escHasHistory;
 
         const escAt = finalIsEscalated
           ? getTimestamp(
               issue.escalatedAt ??
-              issue.escalationAt ??
-              issue.escalation?.escalatedAt
+                issue.escalationAt ??
+                issue.escalation?.escalatedAt,
             )
           : null;
 
@@ -378,7 +377,7 @@ export const getScopedSLAMonitoringData = query({
           : null;
 
         const storedEscalationCount = Number(
-          issue.escalationCount ?? issue.escalation?.escalationCount ?? 0
+          issue.escalationCount ?? issue.escalation?.escalationCount ?? 0,
         );
         const escCount = finalIsEscalated
           ? Math.max(storedEscalationCount, 1)
@@ -390,7 +389,7 @@ export const getScopedSLAMonitoringData = query({
 
         const escReviewedAt = finalIsEscalated
           ? getTimestamp(
-              issue.escalationReviewedAt ?? issue.escalation?.reviewedAt
+              issue.escalationReviewedAt ?? issue.escalation?.reviewedAt,
             )
           : null;
 
@@ -401,18 +400,21 @@ export const getScopedSLAMonitoringData = query({
         const escResolved = finalIsEscalated ? escalationState.resolved : false;
         const escResolvedAt = finalIsEscalated
           ? getTimestamp(
-              issue.escalationResolvedAt ?? issue.escalation?.resolvedAt
+              issue.escalationResolvedAt ?? issue.escalation?.resolvedAt,
             )
           : null;
 
         const escResolutionNotes = finalIsEscalated
           ? (issue.escalationResolutionNotes ??
-             issue.escalation?.resolutionNote ??
-             issue.escalation?.resolutionNotes ??
-             null)
+            issue.escalation?.resolutionNote ??
+            issue.escalation?.resolutionNotes ??
+            null)
           : null;
 
-        if (!finalIsEscalated && (escAt !== null || escCount > 0 || escalationActions.length > 0)) {
+        if (
+          !finalIsEscalated &&
+          (escAt !== null || escCount > 0 || escalationActions.length > 0)
+        ) {
           console.warn("[SLA escalation normalization inconsistency]", {
             issueId: String(issue._id),
             issueCode: issue.issueCode,
@@ -462,34 +464,31 @@ export const getScopedSLAMonitoringData = query({
           overdue_hours: slaState.overdueHours,
 
           escalation: {
-            isEscalated: finalIsEscalated,
-            isActive: finalIsEscalated && !escResolved,
-            status: finalIsEscalated
-              ? (escalationState.reviewStatus ?? "pending")
-              : null,
-            category: escCategory,
-            priority: escPriority,
-            reason: escReason,
-            comments: escComments,
-            escalatedAt: escAt,
-            escalatedBy: escBy,
-            reviewedAt: escReviewedAt,
-            reviewedBy: escReviewedBy,
+            hasHistory: escHasHistory,
+            isEscalated: escalationState.isActive,
+            isActive: escalationState.isActive,
+            status: escalationState.reviewStatus,
+            category: escHasHistory ? escCategory : null,
+            priority: escHasHistory ? escPriority : null,
+            reason: escHasHistory ? escReason : null,
+            comments: escHasHistory ? escComments : null,
+            escalatedAt: escHasHistory ? escAt : null,
+            escalatedBy: escHasHistory ? escBy : null,
+            reviewedAt: escHasHistory ? escReviewedAt : null,
+            reviewedBy: escHasHistory ? escReviewedBy : null,
             resolved: escResolved,
-            resolvedAt: escResolvedAt,
-            resolutionNotes: escResolutionNotes,
-            resolutionActions: finalIsEscalated ? escalationActions : [],
-            count: escCount,
+            resolvedAt: escHasHistory ? escResolvedAt : null,
+            resolutionNotes: escHasHistory ? escResolutionNotes : null,
+            resolutionActions: escHasHistory ? escalationActions : [],
+            count: escHasHistory ? escCount : 0,
           },
-          is_escalated: finalIsEscalated,
-          escalation_category: escCategory,
-          escalation_priority: escPriority,
-          escalation_reason: escReason,
-          escalation_comments: escComments,
-          escalated_at: escAt,
-          escalation_admin_review_status: finalIsEscalated
-            ? escalationState.reviewStatus
-            : null,
+          is_escalated: escalationState.isActive,
+          escalation_category: escHasHistory ? escCategory : null,
+          escalation_priority: escHasHistory ? escPriority : null,
+          escalation_reason: escHasHistory ? escReason : null,
+          escalation_comments: escHasHistory ? escComments : null,
+          escalated_at: escHasHistory ? escAt : null,
+          escalation_admin_review_status: escalationState.reviewStatus,
           escalation_resolved: escResolved,
           escalation_resolved_at: escResolvedAt,
           escalation_resolution_notes: escResolutionNotes,
@@ -510,7 +509,7 @@ export const getScopedSLAMonitoringData = query({
     const monitoredIssuesList = scopedIssues.filter(
       (issue) =>
         isActiveIssue(issue) &&
-        getTimestamp(issue.slaDeadline ?? issue.sla?.deadline) !== null
+        getTimestamp(issue.slaDeadline ?? issue.sla?.deadline) !== null,
     );
     const monitoredIssues = monitoredIssuesList.length;
 
@@ -519,28 +518,59 @@ export const getScopedSLAMonitoringData = query({
       state: getSlaState(issue, now),
     }));
 
-    const breachedCount = slaStates.filter(({ state }) => state.status === "breached").length;
-    const dueSoonCount = slaStates.filter(({ state }) => state.status === "due_soon").length;
-    const atRiskCount = slaStates.filter(({ state }) => state.status === "at_risk").length;
-    const onTrackCount = slaStates.filter(({ state }) => state.status === "on_track").length;
-    const noDeadlineCount = slaStates.filter(({ state }) => state.status === "no_deadline").length;
-    const completedCount = slaStates.filter(({ state }) => state.status === "completed").length;
+    const breachedCount = slaStates.filter(
+      ({ state }) => state.status === "breached",
+    ).length;
+    const dueSoonCount = slaStates.filter(
+      ({ state }) => state.status === "due_soon",
+    ).length;
+    const atRiskCount = slaStates.filter(
+      ({ state }) => state.status === "at_risk",
+    ).length;
+    const onTrackCount = slaStates.filter(
+      ({ state }) => state.status === "on_track",
+    ).length;
+    const noDeadlineCount = slaStates.filter(
+      ({ state }) => state.status === "no_deadline",
+    ).length;
+    const completedCount = slaStates.filter(
+      ({ state }) => state.status === "completed",
+    ).length;
 
-    const activeMonitoredCount = breachedCount + dueSoonCount + atRiskCount + onTrackCount;
+    const activeMonitoredCount =
+      breachedCount + dueSoonCount + atRiskCount + onTrackCount;
     const compliantActiveCount = dueSoonCount + atRiskCount + onTrackCount;
 
     const complianceRate =
       activeMonitoredCount > 0
-        ? Number(((compliantActiveCount / activeMonitoredCount) * 100).toFixed(1))
+        ? Number(
+            ((compliantActiveCount / activeMonitoredCount) * 100).toFixed(1),
+          )
         : null;
 
-    const escalationStates = scopedIssues.map((issue) => getEscalationState(issue));
+    const escalationStates = scopedIssues.map((issue) =>
+      getEscalationState(issue),
+    );
 
-    const escalatedCount = escalationStates.filter((state) => state.isEscalated).length;
-    const activeEscalationCount = escalationStates.filter((state) => state.isActive).length;
-    const pendingReviewCount = escalationStates.filter((state) => state.isActive && state.reviewStatus === "pending").length;
-    const reviewedEscalationCount = escalationStates.filter((state) => state.isEscalated && ["reviewed", "action_required", "approved", "dismissed"].includes(state.reviewStatus)).length;
-    const resolvedEscalationCount = escalationStates.filter((state) => state.resolved).length;
+    const escalatedCount = escalationStates.filter(
+      (state) => state.isEscalated,
+    ).length;
+    const activeEscalationCount = escalationStates.filter(
+      (state) => state.isActive,
+    ).length;
+    const pendingReviewCount = escalationStates.filter(
+      (state) => state.isActive && state.reviewStatus === "pending",
+    ).length;
+    const reviewedEscalationCount = escalationStates.filter(
+      (state) =>
+        state.isEscalated &&
+        ["reviewed", "action_required", "approved", "dismissed"].includes(
+          state.reviewStatus,
+        ),
+    ).length;
+    const resolvedEscalationCount = escalationStates.filter(
+      (state) => state.resolved,
+    ).length;
 
     const criticalEscalations = scopedIssues.filter((i) => {
       const state = getEscalationState(i);
@@ -548,35 +578,35 @@ export const getScopedSLAMonitoringData = query({
     }).length;
 
     const unassignedIssues = activeIssuesList.filter(
-      (i) => !i.assignedUnitOfficer && !i.assignedFieldOfficer
+      (i) => !i.assignedUnitOfficer && !i.assignedFieldOfficer,
     ).length;
 
     const resolvedIssues = normalisedIssues.filter(
-      (i) => TERMINAL_ISSUE_STATUSES.has(i.status) && i.sla.deadline
+      (i) => TERMINAL_ISSUE_STATUSES.has(i.status) && i.sla.deadline,
     );
     const totalResolutionMs = resolvedIssues.reduce(
       (sum, i) => sum + Math.max(0, (i.updatedAt || now) - i.createdAt),
-      0
+      0,
     );
     const averageResolutionHours =
       resolvedIssues.length > 0
         ? Math.round(
-            totalResolutionMs / (1000 * 60 * 60) / resolvedIssues.length
+            totalResolutionMs / (1000 * 60 * 60) / resolvedIssues.length,
           )
         : 0;
 
     const reviewedEscalationItems = normalisedIssues.filter(
-      (i) => i.escalation.reviewedAt && i.escalation.escalatedAt
+      (i) => i.escalation.reviewedAt && i.escalation.escalatedAt,
     );
     const totalAckMs = reviewedEscalationItems.reduce(
       (sum, i) =>
         sum + Math.max(0, i.escalation.reviewedAt - i.escalation.escalatedAt),
-      0
+      0,
     );
     const averageAcknowledgementHours =
       reviewedEscalationItems.length > 0
         ? Math.round(
-            totalAckMs / (1000 * 60 * 60) / reviewedEscalationItems.length
+            totalAckMs / (1000 * 60 * 60) / reviewedEscalationItems.length,
           )
         : 0;
 
@@ -601,23 +631,23 @@ export const getScopedSLAMonitoringData = query({
       ([category, count]) => ({
         category,
         count,
-      })
+      }),
     );
     const byDepartment = Object.entries(deptCounts).map(
       ([department, count]) => ({
         department,
         count,
-      })
+      }),
     );
     const byPriority = Object.entries(priorityCounts).map(
       ([priority, count]) => ({
         priority,
         count,
-      })
+      }),
     );
 
     const activeMonitoredItems = normalisedIssues.filter(
-      (i) => !TERMINAL_ISSUE_STATUSES.has(normalizeStatus(i.status))
+      (i) => !TERMINAL_ISSUE_STATUSES.has(normalizeStatus(i.status)),
     );
 
     const mostDelayed = activeMonitoredItems
@@ -631,7 +661,7 @@ export const getScopedSLAMonitoringData = query({
           i.priority === "critical" &&
           (i.sla.status === "breached" ||
             i.sla.status === "due_soon" ||
-            i.escalation.isEscalated)
+            i.escalation.isEscalated),
       )
       .slice(0, 5);
 
@@ -653,7 +683,7 @@ export const getScopedSLAMonitoringData = query({
           (i.department || "").toLowerCase().includes(q) ||
           (i.assignedUnitOfficer?.name || "").toLowerCase().includes(q) ||
           (i.assignedFieldOfficer?.name || "").toLowerCase().includes(q) ||
-          (i.escalation?.reason || "").toLowerCase().includes(q)
+          (i.escalation?.reason || "").toLowerCase().includes(q),
       );
     }
 
@@ -693,8 +723,7 @@ export const getScopedSLAMonitoringData = query({
         }
         if (args.escalationStatus === "resolved") {
           return (
-            i.escalation.isEscalated === true &&
-            i.escalation.resolved === true
+            i.escalation.isEscalated === true && i.escalation.resolved === true
           );
         }
         return true;
@@ -708,7 +737,7 @@ export const getScopedSLAMonitoringData = query({
         if (args.assignmentStatus === "partially_assigned")
           return Boolean(
             (i.assignedUnitOfficer && !i.assignedFieldOfficer) ||
-              (!i.assignedUnitOfficer && i.assignedFieldOfficer)
+              (!i.assignedUnitOfficer && i.assignedFieldOfficer),
           );
         if (args.assignmentStatus === "unassigned")
           return !i.assignedUnitOfficer && !i.assignedFieldOfficer;
@@ -971,12 +1000,13 @@ export const requestCorrectiveAction = mutation({
 
     const uniqueOfficerRecipientIds = officerRecipientIds.filter(
       (id, index, array) =>
-        array.findIndex((candidate) => String(candidate) === String(id)) === index
+        array.findIndex((candidate) => String(candidate) === String(id)) ===
+        index,
     );
 
     if (uniqueOfficerRecipientIds.length === 0) {
       throw new Error(
-        "No assigned officers are available to receive the corrective action request."
+        "No assigned officers are available to receive the corrective action request.",
       );
     }
 
@@ -1033,10 +1063,7 @@ export const approveEscalation = mutation({
 
     await ctx.db.patch(args.issueId, {
       escalatedToAdmin: false,
-      escalationResolved: true,
-      escalationResolvedAt: now,
-      escalationResolutionNotes: args.notes,
-      escalationAdminReviewStatus: "resolved",
+      status: issue.escalation?.prevIssueStatus || "pending",
       escalation: {
         ...(issue.escalation || {}),
         resolved: true,
@@ -1044,7 +1071,6 @@ export const approveEscalation = mutation({
         resolutionNote: args.notes,
         adminReviewStatus: "resolved",
       },
-      updatedAt: now,
     });
 
     await ctx.db.insert("escalationResolutionActions", {
@@ -1122,6 +1148,7 @@ export const rejectEscalationResponse = mutation({
 
     await ctx.db.patch(args.issueId, {
       escalatedToAdmin: false,
+      status: issue.escalation?.prevIssueStatus || "pending",
       escalation: {
         ...(issue.escalation || {}),
         resolved: true,
