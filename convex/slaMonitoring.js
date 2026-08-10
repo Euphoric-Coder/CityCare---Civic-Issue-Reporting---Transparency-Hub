@@ -836,14 +836,6 @@ export const getScopedSLAMonitoringData = query({
         unresolvedCritical,
         repeatedEscalations,
       },
-      pagination: {
-        page,
-        pageSize,
-        totalItems,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1,
-      },
     };
   },
 });
