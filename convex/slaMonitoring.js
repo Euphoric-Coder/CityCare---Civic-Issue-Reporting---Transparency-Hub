@@ -130,8 +130,7 @@ function getEscalationState(issue) {
     (reviewStatus !== "" && terminalReviewStatuses.has(reviewStatus));
 
   const hasHistory =
-    Boolean(nested.escalatedAt) ||
-    Number(nested.escalationCount ?? 0) > 0;
+    Boolean(nested.escalatedAt) || Number(nested.escalationCount ?? 0) > 0;
 
   const currentlyQueued = issue.escalatedToAdmin === true;
 
@@ -142,7 +141,7 @@ function getEscalationState(issue) {
     isEscalated: currentlyQueued,
     isActive,
     resolved,
-    reviewStatus: hasHistory ? (reviewStatus || "pending") : null,
+    reviewStatus: hasHistory ? reviewStatus || "pending" : null,
   };
 }
 
@@ -858,13 +857,10 @@ export const reviewEscalation = mutation({
     const now = Date.now();
 
     await ctx.db.patch(args.issueId, {
-      escalationReviewedAt: now,
-      escalationReviewedBy: args.cityAdminUserId,
       escalation: {
         ...(issue.escalation || {}),
         adminReviewStatus: "reviewed",
       },
-      updatedAt: now,
     });
 
     await ctx.db.insert("escalationResolutionActions", {
