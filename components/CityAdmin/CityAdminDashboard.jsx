@@ -9,6 +9,7 @@ import CityAdminAllIssues from "../city-admin/CityAdminAllIssues";
 import CityAdminSLAMonitor from "../city-admin/CityAdminSLAMonitor";
 import CityIssueAnalytics from "../city-admin/CityIssueAnalytics";
 import CityAdminPublicModeration from "../city-admin/public-moderation/CityAdminPublicModeration";
+import CityAdminCitizenRewards from "../city-admin/rewards/CityAdminCitizenRewards";
 import {
   LayoutDashboard,
   AlertTriangle,
@@ -2170,6 +2171,12 @@ export default function CityAdminDashboard() {
               )}
               {activeTab === "public-moderation" && dbUser?._id && (
                 <CityAdminPublicModeration
+                  cityAdminUserId={dbUser._id}
+                  city={cityAdminProfile?.city || overviewData?.scope?.city}
+                />
+              )}
+              {activeTab === "citizen-rewards" && dbUser?._id && (cityAdminProfile?.city || overviewData?.scope?.city) && (
+                <CityAdminCitizenRewards
                   cityAdminUserId={dbUser._id}
                   city={cityAdminProfile?.city || overviewData?.scope?.city}
                 />
