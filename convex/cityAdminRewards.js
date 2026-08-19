@@ -247,8 +247,7 @@ export const getCityCitizenRewardDetails = query({
           pointBreakdown.resolution += tx.points;
         } else if (
           tx.type === "comment_added" ||
-          tx.type === "comment_liked" ||
-          tx.type === "report_upvoted"
+          tx.type === "comment_liked"
         ) {
           pointBreakdown.community += tx.points;
         } else if (tx.type === "streak_bonus") {

@@ -19,7 +19,7 @@ import IssueReportLimitCard from "./IssueReportLimitCard";
 
 const IssueForm = () => {
   const { data: session } = useSession();
-  const [currentStep, setCurrentStep] = useState(2);
+  const [currentStep, setCurrentStep] = useState(1);
   const [showPreview, setShowPreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
