@@ -30,6 +30,7 @@ import {
   Star,
   Layers,
   Trophy,
+  UserPlus,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { signOut, useSession } from "next-auth/react";
@@ -42,6 +43,7 @@ import { ModeToggle } from "../ModeToggle";
 import SLAMonitoringDashboard from "./SLAMonitoringDashboard";
 import { BadgeManagementSection } from "./BadgeManagementSystem";
 import SLAAnalyticsDashboard from "./SLAAnalyticsDashboard";
+import AccountProvisioningDashboard from "./AccountProvisioning/AccountProvisioningDashboard";
 // import ComprehensiveAuditLog from './ComprehensiveAuditLog';
 
 function displayPercent(value) {
@@ -1575,16 +1577,6 @@ export function AdminDashboard() {
                   Refresh
                 </span>
               </button>
-              <div className="relative">
-                <button className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
-                  <Bell size={18} />
-                </button>
-                {stats.escalated > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {stats.escalated}
-                  </span>
-                )}
-              </div>
               <ModeToggle />
               <div className="flex items-center gap-3 pl-3 border-l border-slate-300 dark:border-slate-700">
                 <div className="hidden sm:block text-right">
@@ -1706,6 +1698,11 @@ export function AdminDashboard() {
             <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent dark:from-white/5 pointer-events-none rounded-[2.5rem]"></div>
             <div className="flex items-center gap-2 hide-scrollbar relative z-10 px-1">
               {tabBtn("officers", <Users size={20} />, "Officers")}
+              {tabBtn(
+                "provisioning",
+                <UserPlus size={20} />,
+                "Account Provisioning",
+              )}
               {tabBtn("messages", <MessageSquare size={20} />, "Messages")}
               {tabBtn("sla", <Clock size={20} />, "SLA")}
               {tabBtn("badges", <Trophy size={20} />, "Badges")}
@@ -2305,6 +2302,11 @@ export function AdminDashboard() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Account Provisioning Tab */}
+          {activeTab === "provisioning" && (
+            <AccountProvisioningDashboard adminUserId={dbUser?._id} />
           )}
 
           {/* Messages tab */}
