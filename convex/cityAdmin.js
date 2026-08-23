@@ -47,194 +47,6 @@ async function resolveCityAdminUserId(ctx, cityAdminUserIdStr) {
   return null;
 }
 
-function normalizeStatus(value) {
-  return String(value || "").trim().toLowerCase();
-}
-
-export function hasActiveEscalation(issue) {
-  if (!issue) return false;
-  return issue.escalatedToAdmin === true && issue.escalation?.resolved !== true;
-}
-
-export function getActiveEscalationReviewPatch(issue) {
-  if (!hasActiveEscalation(issue) || !issue.escalation) {
-    return {};
-  }
-
-  const currentReviewStatus = issue.escalation.adminReviewStatus;
-
-  return {
-    escalation: {
-      ...issue.escalation,
-      adminReviewStatus:
-        currentReviewStatus === "pending" || !currentReviewStatus
-          ? "reviewed"
-          : currentReviewStatus,
-    },
-  };
-}
-
-async function logEscalationActionIfActive(
-  ctx,
-  { issue, actionType, performedBy, oldValue, newValue, notes, performedAt }
-) {
-  if (!hasActiveEscalation(issue)) {
-    return null;
-  }
-
-  return await ctx.db.insert("escalationResolutionActions", {
-    issueId: issue._id,
-    actionType,
-    performedBy,
-    performedAt: performedAt ?? Date.now(),
-    ...(oldValue !== undefined
-      ? {
-          oldValue:
-            typeof oldValue === "string"
-              ? oldValue
-              : JSON.stringify(oldValue),
-        }
-      : {}),
-    ...(newValue !== undefined
-      ? {
-          newValue:
-            typeof newValue === "string"
-              ? newValue
-              : JSON.stringify(newValue),
-        }
-      : {}),
-    ...(notes ? { notes } : {}),
-  });
-}
-
-function getOverviewRangeBounds(days, now = Date.now()) {
-  const currentDate = new Date(now);
-
-  if (days === 0) {
-    return {
-      isAllTime: true,
-      currentStart: null,
-      currentEnd: now,
-      previousStart: null,
-      previousEnd: null,
-    };
-  }
-
-  if (days === 1) {
-    const currentStartDate = new Date(currentDate);
-    currentStartDate.setHours(0, 0, 0, 0);
-    const currentStart = currentStartDate.getTime();
-    const previousEnd = currentStart - 1;
-    const previousStart = currentStart - 24 * 60 * 60 * 1000;
-
-    return {
-      isAllTime: false,
-      currentStart,
-      currentEnd: now,
-      previousStart,
-      previousEnd,
-    };
-  }
-
-  const duration = days * 24 * 60 * 60 * 1000;
-  const currentStart = now - duration;
-  const previousEnd = currentStart - 1;
-  const previousStart = currentStart - duration;
-
-  return {
-    isAllTime: false,
-    currentStart,
-    currentEnd: now,
-    previousStart,
-    previousEnd,
-  };
-}
-
-function getIssueTimestamp(issue) {
-  const value = issue.createdAt ?? issue._creationTime ?? null;
-  if (value === null || value === undefined) {
-    return null;
-  }
-  const timestamp = typeof value === "number" ? value : new Date(value).getTime();
-  return Number.isFinite(timestamp) ? timestamp : null;
-}
-
-function getResolutionTimestamp(issue) {
-  const value = issue.resolvedAt ?? issue.closedAt ?? null;
-  if (!value) {
-    return null;
-  }
-  const timestamp = typeof value === "number" ? value : new Date(value).getTime();
-  return Number.isFinite(timestamp) ? timestamp : null;
-}
-
-function getClosedTimestamp(issue) {
-  const value = issue.closedAt ?? null;
-  if (!value) {
-    return null;
-  }
-  const timestamp = typeof value === "number" ? value : new Date(value).getTime();
-  return Number.isFinite(timestamp) ? timestamp : null;
-}
-
-function isWithinRange(timestamp, start, end) {
-  if (timestamp === null || timestamp === undefined) {
-    return false;
-  }
-  return timestamp >= start && timestamp <= end;
-}
-
-function calculateKpiChange(currentValue, previousValue) {
-  const current = Number(currentValue) || 0;
-  const previous = Number(previousValue) || 0;
-  const changeValue = current - previous;
-
-  if (previous === 0) {
-    if (current === 0) {
-      return {
-        changeValue: 0,
-        changePercent: 0,
-        trendDirection: "neutral",
-      };
-    }
-    return {
-      changeValue,
-      changePercent: null,
-      trendDirection: "up",
-    };
-  }
-
-  const changePercent = Number((((current - previous) / previous) * 100).toFixed(1));
-  return {
-    changeValue,
-    changePercent,
-    trendDirection: changePercent > 0 ? "up" : changePercent < 0 ? "down" : "neutral",
-  };
-}
-
-function buildKpiResult(currentValue, previousValue, trendType, comparisonEnabled) {
-  if (!comparisonEnabled) {
-    return {
-      value: currentValue,
-      previousValue: null,
-      changeValue: null,
-      changePercent: null,
-      trendDirection: "neutral",
-      trendType,
-      comparisonAvailable: false,
-    };
-  }
-
-  const change = calculateKpiChange(currentValue, previousValue);
-  return {
-    value: currentValue,
-    previousValue,
-    ...change,
-    trendType,
-    comparisonAvailable: true,
-  };
-}
-
 export const getCityAdminOverview = query({
   args: {
     cityAdminUserId: v.id("users"),
@@ -262,8 +74,11 @@ export const getCityAdminOverview = query({
     const city = cityAdmin.city;
     const state = cityAdmin.state;
     const now = Date.now();
-    const rangeDays = args.days ?? 0; 
-    const bounds = getOverviewRangeBounds(rangeDays, now);
+    const rangeDays = args.days ?? 7; 
+    const isAllTime = rangeDays === 0;
+
+    // Filter range calculation
+    const cutoff = isAllTime ? 0 : now - rangeDays * 24 * 60 * 60 * 1000;
 
     // 3. Query issues within the city (indexed)
     const allCityIssues = await ctx.db
@@ -271,13 +86,11 @@ export const getCityAdminOverview = query({
       .withIndex("by_city", (q) => q.eq("city", city))
       .collect();
 
-    // Range-filtered issues
-    const rangeIssues = bounds.isAllTime
-      ? allCityIssues
-      : allCityIssues.filter((i) => {
-          const timestamp = getIssueTimestamp(i);
-          return isWithinRange(timestamp, bounds.currentStart, bounds.currentEnd);
-        });
+    // Split into all-time vs range-filtered
+    const rangeIssues = allCityIssues.filter((i) => {
+      const created = i.createdAt ?? i._creationTime ?? now;
+      return isAllTime || created >= cutoff;
+    });
 
     // 4. Query officers within the city (indexed/filtered)
     const unitOfficers = await ctx.db
@@ -734,130 +547,6 @@ export const getCityAdminOverview = query({
       });
     }
 
-    // Calculate comparative KPI metrics across current and previous periods
-    const currentPeriodIssuesForKpis = bounds.isAllTime
-      ? allCityIssues
-      : allCityIssues.filter((issue) => {
-          const timestamp = getIssueTimestamp(issue);
-          return isWithinRange(timestamp, bounds.currentStart, bounds.currentEnd);
-        });
-
-    const previousPeriodIssues = bounds.isAllTime
-      ? []
-      : allCityIssues.filter((issue) => {
-          const timestamp = getIssueTimestamp(issue);
-          return isWithinRange(timestamp, bounds.previousStart, bounds.previousEnd);
-        });
-
-    const totalIssuesVal = bounds.isAllTime ? allCityIssues.length : currentPeriodIssuesForKpis.length;
-    const previousTotalIssuesVal = previousPeriodIssues.length;
-
-    const countActive = (issuesList) =>
-      issuesList.filter((issue) => !TERMINAL_STATUSES.has(normalizeStatus(issue.status))).length;
-
-    const activeIssuesVal = bounds.isAllTime ? countActive(allCityIssues) : countActive(currentPeriodIssuesForKpis);
-    const previousActiveIssuesVal = countActive(previousPeriodIssues);
-
-    const currentResolvedIssuesVal = bounds.isAllTime
-      ? allCityIssues.filter((issue) => ["resolved", "closed"].includes(normalizeStatus(issue.status))).length
-      : allCityIssues.filter((issue) => {
-          const resolvedAt = getResolutionTimestamp(issue);
-          return resolvedAt !== null && isWithinRange(resolvedAt, bounds.currentStart, bounds.currentEnd);
-        }).length;
-
-    const previousResolvedIssuesVal = bounds.isAllTime
-      ? 0
-      : allCityIssues.filter((issue) => {
-          const resolvedAt = getResolutionTimestamp(issue);
-          return resolvedAt !== null && isWithinRange(resolvedAt, bounds.previousStart, bounds.previousEnd);
-        }).length;
-
-    const currentClosedIssuesVal = bounds.isAllTime
-      ? allCityIssues.filter((issue) => normalizeStatus(issue.status) === "closed").length
-      : allCityIssues.filter((issue) => {
-          const closedAt = getClosedTimestamp(issue);
-          if (closedAt !== null) {
-            return isWithinRange(closedAt, bounds.currentStart, bounds.currentEnd);
-          }
-          const timestamp = getIssueTimestamp(issue);
-          return normalizeStatus(issue.status) === "closed" && isWithinRange(timestamp, bounds.currentStart, bounds.currentEnd);
-        }).length;
-
-    const previousClosedIssuesVal = bounds.isAllTime
-      ? 0
-      : allCityIssues.filter((issue) => {
-          const closedAt = getClosedTimestamp(issue);
-          if (closedAt !== null) {
-            return isWithinRange(closedAt, bounds.previousStart, bounds.previousEnd);
-          }
-          const timestamp = getIssueTimestamp(issue);
-          return normalizeStatus(issue.status) === "closed" && isWithinRange(timestamp, bounds.previousStart, bounds.previousEnd);
-        }).length;
-
-    const isSlaBreached = (issue) =>
-      issue.slaBreached === true ||
-      Number(issue.slaBreachedCount ?? 0) > 0 ||
-      issue.sla?.status === "breached" ||
-      (issue.slaDeadline && !TERMINAL_STATUSES.has(normalizeStatus(issue.status)) && issue.slaDeadline < now);
-
-    const currentSlaBreachedVal = bounds.isAllTime
-      ? allCityIssues.filter(isSlaBreached).length
-      : currentPeriodIssuesForKpis.filter(isSlaBreached).length;
-
-    const previousSlaBreachedVal = bounds.isAllTime
-      ? 0
-      : previousPeriodIssues.filter(isSlaBreached).length;
-
-    const isHighPriority = (issue) => {
-      const priority = String(issue.priority ?? issue.severity ?? "").toLowerCase();
-      return priority === "high" || priority === "critical";
-    };
-
-    const currentHighPriorityVal = bounds.isAllTime
-      ? allCityIssues.filter(isHighPriority).length
-      : currentPeriodIssuesForKpis.filter(isHighPriority).length;
-
-    const previousHighPriorityVal = bounds.isAllTime
-      ? 0
-      : previousPeriodIssues.filter(isHighPriority).length;
-
-    const kpis = {
-      totalIssues: buildKpiResult(totalIssuesVal, previousTotalIssuesVal, "negative_when_up", !bounds.isAllTime),
-      activeIssues: buildKpiResult(activeIssuesVal, previousActiveIssuesVal, "negative_when_up", !bounds.isAllTime),
-      resolvedIssues: buildKpiResult(currentResolvedIssuesVal, previousResolvedIssuesVal, "positive_when_up", !bounds.isAllTime),
-      closedIssues: buildKpiResult(currentClosedIssuesVal, previousClosedIssuesVal, "positive_when_up", !bounds.isAllTime),
-      slaBreachedIssues: buildKpiResult(currentSlaBreachedVal, previousSlaBreachedVal, "negative_when_up", !bounds.isAllTime),
-      highPriorityIssues: buildKpiResult(currentHighPriorityVal, previousHighPriorityVal, "negative_when_up", !bounds.isAllTime),
-    };
-
-    const comparison = {
-      enabled: !bounds.isAllTime,
-      currentStart: bounds.currentStart,
-      currentEnd: bounds.currentEnd,
-      previousStart: bounds.previousStart,
-      previousEnd: bounds.previousEnd,
-      currentLabel:
-        rangeDays === 1
-          ? "Today"
-          : rangeDays === 7
-            ? "Last 7 Days"
-            : rangeDays === 30
-              ? "Last 30 Days"
-              : rangeDays === 90
-                ? "Last 90 Days"
-                : "All Time",
-      previousLabel:
-        rangeDays === 1
-          ? "Previous Day"
-          : rangeDays === 7
-            ? "Previous 7 Days"
-            : rangeDays === 30
-              ? "Previous 30 Days"
-              : rangeDays === 90
-                ? "Previous 90 Days"
-                : null,
-    };
-
     return {
       scope: {
         cityAdminUserId: args.cityAdminUserId,
@@ -865,12 +554,9 @@ export const getCityAdminOverview = query({
         city,
         state,
         rangeDays,
-        rangeLabel: bounds.isAllTime ? "All Time" : `${rangeDays} Days`,
+        rangeLabel: isAllTime ? "All Time" : `${rangeDays} Days`,
         generatedAt: now,
       },
-
-      kpis,
-      comparison,
 
       summary: {
         totalIssues: rangeIssues.length,
@@ -1504,12 +1190,6 @@ export const assignOrReassignUnitOfficer = mutation({
       }
     }
 
-    let oldUnitOfficerName = "Unassigned";
-    if (previousUnitOfficerUserId) {
-      const oldUser = await ctx.db.get(previousUnitOfficerUserId);
-      if (oldUser) oldUnitOfficerName = oldUser.fullName;
-    }
-
     // 1. Remove issue from previous Unit Officer's active list
     if (previousUnitOfficerUserId) {
       const prevOfficerProfile = await ctx.db
@@ -1533,21 +1213,9 @@ export const assignOrReassignUnitOfficer = mutation({
     await ctx.db.patch(issue._id, {
       assignedUnitOfficer: newOfficer.userId,
       status: nextStatus,
-      ...getActiveEscalationReviewPatch(issue),
     });
 
-    // 4. Log escalation action if active
-    await logEscalationActionIfActive(ctx, {
-      issue,
-      actionType: "reassign_unit_officer",
-      performedBy: args.cityAdminUserId,
-      performedAt: now,
-      oldValue: oldUnitOfficerName,
-      newValue: newOfficer.fullName,
-      notes: args.reason,
-    });
-
-    // 5. Create timeline entry
+    // 4. Create timeline entry
     await ctx.db.insert("issueUpdates", {
       issueId: issue._id,
       status: nextStatus,
@@ -1559,7 +1227,7 @@ export const assignOrReassignUnitOfficer = mutation({
       createdAt: now,
     });
 
-    // 6. Create audit log
+    // 5. Create audit log
     await ctx.db.insert("cityAdminAuditLogs", {
       action: "assign_unit_officer",
       performedByUserId: args.cityAdminUserId,
@@ -1627,12 +1295,6 @@ export const assignOrReassignFieldOfficer = mutation({
     const previousFieldOfficerUserId = issue.assignedFieldOfficer;
     const now = Date.now();
 
-    let oldFieldOfficerName = "Unassigned";
-    if (previousFieldOfficerUserId) {
-      const oldUser = await ctx.db.get(previousFieldOfficerUserId);
-      if (oldUser) oldFieldOfficerName = oldUser.fullName;
-    }
-
     // 1. Remove issue from previous Field Officer's active list
     if (previousFieldOfficerUserId) {
       const prevOfficerProfile = await ctx.db
@@ -1662,21 +1324,9 @@ export const assignOrReassignFieldOfficer = mutation({
     await ctx.db.patch(issue._id, {
       assignedFieldOfficer: newOfficer.userId,
       status: nextStatus,
-      ...getActiveEscalationReviewPatch(issue),
     });
 
-    // 4. Log escalation action if active
-    await logEscalationActionIfActive(ctx, {
-      issue,
-      actionType: "reassign_field_officer",
-      performedBy: args.cityAdminUserId,
-      performedAt: now,
-      oldValue: oldFieldOfficerName,
-      newValue: newOfficer.fullName,
-      notes: args.reason,
-    });
-
-    // 5. Create timeline entry
+    // 4. Create timeline entry
     await ctx.db.insert("issueUpdates", {
       issueId: issue._id,
       status: nextStatus,
@@ -1818,51 +1468,16 @@ export const changeIssueClassification = mutation({
       }
     }
 
-    const oldClassification = {
-      category: issue.category,
-      department: issue.department || issue.category,
-      subcategory: Array.isArray(issue.subcategory)
-        ? issue.subcategory
-        : issue.subcategory
-          ? [issue.subcategory]
-          : [],
-    };
-
-    const normalizedSubcategories = [
-      ...new Set(
-        (args.subcategory || [])
-          .map((value) => String(value || "").trim())
-          .filter(Boolean)
-      ),
-    ];
-
     // Perform reclassification patch
     const updatePayload = {
       category: normalizedCategory,
-      subcategory: normalizedSubcategories,
+      subcategory: args.subcategory,
       department: expectedDepartment,
-      ...getActiveEscalationReviewPatch(issue),
     };
     if (uoCleared) updatePayload.assignedUnitOfficer = null;
     if (foCleared) updatePayload.assignedFieldOfficer = null;
 
     await ctx.db.patch(issue._id, updatePayload);
-
-    const newClassification = {
-      category: normalizedCategory,
-      department: expectedDepartment,
-      subcategory: normalizedSubcategories,
-    };
-
-    await logEscalationActionIfActive(ctx, {
-      issue,
-      actionType: "change_classification",
-      performedBy: args.cityAdminUserId,
-      performedAt: now,
-      oldValue: oldClassification,
-      newValue: newClassification,
-      notes: args.reason,
-    });
 
     // Timeline comment
     let comment = `Issue classification updated by City Admin.\nNew Category: ${normalizedCategory}\nNew Department: ${expectedDepartment}\nReason: ${args.reason}`;
@@ -1923,17 +1538,6 @@ export const updateIssuePriority = mutation({
 
     await ctx.db.patch(issue._id, {
       priority: args.priority,
-      ...getActiveEscalationReviewPatch(issue),
-    });
-
-    await logEscalationActionIfActive(ctx, {
-      issue,
-      actionType: "update_priority",
-      performedBy: args.cityAdminUserId,
-      performedAt: now,
-      oldValue: oldPriority,
-      newValue: args.priority,
-      notes: args.reason,
     });
 
     // Timeline entry
@@ -2160,31 +1764,8 @@ export const updateSlaDeadline = mutation({
       throw new Error("Issue not found or unauthorized");
     }
 
-    const existingDeadline =
-      issue.slaDeadline !== null &&
-      issue.slaDeadline !== undefined &&
-      issue.slaDeadline !== ""
-        ? typeof issue.slaDeadline === "number"
-          ? issue.slaDeadline
-          : new Date(issue.slaDeadline).getTime()
-        : null;
-
-    if (!Number.isFinite(existingDeadline)) {
-      throw new Error(
-        "SLA_EXTENSION_NOT_ALLOWED: This issue has no existing SLA deadline. The Unit Officer must assign the initial deadline first."
-      );
-    }
-
-    if (args.newDeadline <= existingDeadline) {
-      throw new Error(
-        "The new SLA deadline must be later than the current deadline."
-      );
-    }
-
     const now = Date.now();
-    const oldDeadlineStr = existingDeadline
-      ? new Date(existingDeadline).toISOString()
-      : "None";
+    const oldDeadlineStr = args.oldDeadline ? new Date(args.oldDeadline).toISOString() : "None";
     const newDeadlineStr = new Date(args.newDeadline).toISOString();
 
     await ctx.db.patch(issue._id, {
@@ -2199,12 +1780,11 @@ export const updateSlaDeadline = mutation({
         extendedAt: now,
         newSlaDeadline: args.newDeadline,
       },
-      ...getActiveEscalationReviewPatch(issue),
     });
 
-    // Resolution action record (only if issue has active escalation)
-    await logEscalationActionIfActive(ctx, {
-      issue,
+    // Resolution action record
+    await ctx.db.insert("escalationResolutionActions", {
+      issueId: issue._id,
       actionType: "extend_sla",
       performedBy: args.cityAdminUserId,
       performedAt: now,
@@ -3111,558 +2691,3 @@ export const getCityIssueAnalytics = query({
     };
   },
 });
-
-/**
- * Read-only Detailed Issue Query for City Admin
- * Resolves full issue document, reporter profile, assigned officer profiles, and update logs safely.
- */
-export const getCityIssueDetails = query({
-  args: {
-    cityAdminUserId: v.id("users"),
-    issueId: v.id("issues"),
-  },
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.cityAdminUserId);
-    if (!user || user.role !== "city_admin") {
-      throw new Error("Unauthorized. Only City Admins can access issue details.");
-    }
-
-    const cityAdmin = await ctx.db
-      .query("cityAdmins")
-      .withIndex("by_user", (q) => q.eq("userId", args.cityAdminUserId))
-      .unique();
-
-    if (!cityAdmin) {
-      throw new Error("City Admin profile not found.");
-    }
-
-    const issue = await ctx.db.get(args.issueId);
-    if (!issue) {
-      return null;
-    }
-
-    // Verify city & state scope
-    const normalizedAdminCity = normalizeLocation(cityAdmin.city);
-    const normalizedAdminState = normalizeLocation(cityAdmin.state);
-
-    const issueCity = normalizeLocation(issue.city);
-    const issueState = normalizeLocation(issue.state);
-
-    if (
-      issueCity !== normalizedAdminCity ||
-      (normalizedAdminState && issueState && issueState !== normalizedAdminState)
-    ) {
-      throw new Error("Unauthorized. Issue is outside your administrative city scope.");
-    }
-
-    // Fetch reporter details
-    let reporterDetails = null;
-    if (issue.reportedBy) {
-      try {
-        const reporterUser = await ctx.db.get(issue.reportedBy);
-        if (reporterUser) {
-          reporterDetails = {
-            id: String(reporterUser._id),
-            name: reporterUser.fullName || reporterUser.name || "Registered Citizen",
-            email: reporterUser.email || null,
-            phone: reporterUser.phone || null,
-          };
-        }
-      } catch {
-        reporterDetails = null;
-      }
-    }
-
-    // Fetch assigned officers
-    let unitOfficerDetails = null;
-    if (issue.assignedUnitOfficer) {
-      try {
-        const officerUser = await ctx.db.get(issue.assignedUnitOfficer);
-        if (officerUser) {
-          unitOfficerDetails = {
-            id: String(officerUser._id),
-            name: officerUser.fullName || officerUser.name || "Assigned Unit Officer",
-            email: officerUser.email || null,
-            phone: officerUser.phone || null,
-            department: officerUser.department || issue.department || null,
-          };
-        }
-      } catch {
-        unitOfficerDetails = null;
-      }
-    }
-
-    let fieldOfficerDetails = null;
-    if (issue.assignedFieldOfficer) {
-      try {
-        const officerUser = await ctx.db.get(issue.assignedFieldOfficer);
-        if (officerUser) {
-          fieldOfficerDetails = {
-            id: String(officerUser._id),
-            name: officerUser.fullName || officerUser.name || "Assigned Field Officer",
-            email: officerUser.email || null,
-            phone: officerUser.phone || null,
-            department: officerUser.department || issue.department || null,
-          };
-        }
-      } catch {
-        fieldOfficerDetails = null;
-      }
-    }
-
-    // Fetch issue updates / timeline log
-    let issueUpdates = [];
-    try {
-      const updates = await ctx.db
-        .query("issueUpdates")
-        .withIndex("by_issue", (q) => q.eq("issueId", args.issueId))
-        .collect();
-      issueUpdates = updates.sort(
-        (a, b) => (a.createdAt || a._creationTime || 0) - (b.createdAt || b._creationTime || 0)
-      );
-    } catch {
-      issueUpdates = [];
-    }
-
-    return {
-      ...issue,
-      reporterDetails,
-      unitOfficerDetails,
-      fieldOfficerDetails,
-      issueUpdates,
-    };
-  },
-});
-
-function safeNumber(value) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
-}
-
-const DEPARTMENT_LABELS = {
-  road: "Road & Infrastructure",
-  electricity: "Electricity & Lighting",
-  water: "Water Supply",
-  sanitation: "Sanitation",
-  drainage: "Drainage & Sewer",
-  solid_waste: "Solid Waste Management",
-  public_health: "Public Health",
-  other: "Other",
-};
-
-/**
- * City-Wide Department Performance, Officer Metrics & Issue Statistics Query
- * Strictly city-scoped to the authenticated City Admin's assigned city.
- */
-export const getCityDepartmentPerformance = query({
-  args: {
-    cityAdminUserId: v.id("users"),
-  },
-
-  handler: async (ctx, args) => {
-    const user = await ctx.db.get(args.cityAdminUserId);
-    if (!user || user.role !== "city_admin") {
-      throw new Error("CITY_ADMIN_REQUIRED: City Administrator access required.");
-    }
-
-    const profile = await ctx.db
-      .query("cityAdmins")
-      .withIndex("by_user", (q) => q.eq("userId", args.cityAdminUserId))
-      .unique();
-
-    if (!profile) {
-      throw new Error("CITY_ADMIN_PROFILE_NOT_FOUND: Profile not found.");
-    }
-
-    const city = profile.city;
-    const state = profile.state || "";
-
-    // Fetch all issues for this city
-    const cityIssues = await ctx.db
-      .query("issues")
-      .withIndex("by_city", (q) => q.eq("city", city))
-      .collect();
-
-    // Fetch all Unit Officers for this city
-    const unitOfficers = await ctx.db
-      .query("unitOfficers")
-      .withIndex("by_city", (q) => q.eq("city", city))
-      .collect();
-
-    // Fetch all Field Officers for this city
-    const fieldOfficers = await ctx.db
-      .query("fieldOfficers")
-      .withIndex("by_city", (q) => q.eq("city", city))
-      .collect();
-
-    // Build user ID to name lookup maps
-    const officerNameMap = new Map();
-    unitOfficers.forEach((uo) => {
-      if (uo.userId) officerNameMap.set(String(uo.userId), uo.fullName);
-    });
-    fieldOfficers.forEach((fo) => {
-      if (fo.userId) officerNameMap.set(String(fo.userId), fo.fullName);
-    });
-
-    const TERMINAL_STATUSES = new Set(["resolved", "closed", "rejected", "withdrawn"]);
-
-    // Initialize department map
-    const deptMap = new Map();
-
-    function getDeptEntry(rawDept) {
-      const key = normalizeDepartment(rawDept);
-      if (!deptMap.has(key)) {
-        deptMap.set(key, {
-          department: key,
-          label: DEPARTMENT_LABELS[key] || (key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ")),
-          issues: [],
-          unitOfficers: [],
-          fieldOfficers: [],
-        });
-      }
-      return deptMap.get(key);
-    }
-
-    // Populate officers into department map
-    unitOfficers.forEach((uo) => {
-      const deptEntry = getDeptEntry(uo.department);
-      deptEntry.unitOfficers.push(uo);
-    });
-
-    fieldOfficers.forEach((fo) => {
-      const deptEntry = getDeptEntry(fo.department);
-      deptEntry.fieldOfficers.push(fo);
-    });
-
-    // Populate issues into department map
-    cityIssues.forEach((issue) => {
-      const deptKey = issue.department ?? issue.category ?? "other";
-      const deptEntry = getDeptEntry(deptKey);
-      deptEntry.issues.push(issue);
-    });
-
-    // Process performance metrics for each department
-    const departmentResults = [];
-
-    for (const [deptKey, data] of deptMap.entries()) {
-      const issues = data.issues;
-      const uos = data.unitOfficers;
-      const fos = data.fieldOfficers;
-
-      const totalIssues = issues.length;
-
-      // Status breakdown
-      const statusBreakdown = {
-        pending: 0,
-        verified: 0,
-        assigned: 0,
-        in_progress: 0,
-        pending_uo_verification: 0,
-        rework_required: 0,
-        reopened: 0,
-        escalated: 0,
-        resolved: 0,
-        closed: 0,
-        rejected: 0,
-        withdrawn: 0,
-      };
-
-      // Priority breakdown
-      const priorityBreakdown = {
-        low: 0,
-        medium: 0,
-        high: 0,
-        critical: 0,
-      };
-
-      let activeIssues = 0;
-      let slaBreachedIssues = 0;
-      let slaCompliantIssues = 0;
-      let slaNoDeadline = 0;
-      let slaExtensionCount = 0;
-      let activeEscalations = 0;
-      let totalReopenEvents = 0;
-
-      let totalResolutionMs = 0;
-      let resolvedCountForTime = 0;
-
-      let totalCitizenRating = 0;
-      let ratedIssueCount = 0;
-
-      const reportReadyIssues = [];
-
-      issues.forEach((issue) => {
-        const normStatus = String(issue.status || "pending").toLowerCase();
-        if (statusBreakdown[normStatus] !== undefined) {
-          statusBreakdown[normStatus] += 1;
-        } else {
-          statusBreakdown.pending += 1;
-        }
-
-        const normPriority = String(issue.priority || "medium").toLowerCase();
-        if (priorityBreakdown[normPriority] !== undefined) {
-          priorityBreakdown[normPriority] += 1;
-        } else {
-          priorityBreakdown.medium += 1;
-        }
-
-        if (!TERMINAL_STATUSES.has(normStatus)) {
-          activeIssues += 1;
-        }
-
-        // SLA
-        if (issue.slaBreached) {
-          slaBreachedIssues += 1;
-        } else if (issue.slaDeadline !== null && issue.slaDeadline !== undefined) {
-          slaCompliantIssues += 1;
-        } else {
-          slaNoDeadline += 1;
-        }
-
-        slaExtensionCount += safeNumber(issue.slaExtendedCount);
-
-        // Escalations
-        if (issue.escalatedToAdmin === true && issue.escalation?.resolved !== true) {
-          activeEscalations += 1;
-        }
-
-        // Reopens
-        if (issue.isReopened || normStatus === "reopened") {
-          totalReopenEvents += safeNumber(issue.reopenCount) || 1;
-        }
-
-        // Resolution Time
-        if (normStatus === "resolved" || normStatus === "closed") {
-          const finalTime = issue.resolvedAt || issue.closedAt;
-          if (finalTime && issue.createdAt && finalTime > issue.createdAt) {
-            totalResolutionMs += finalTime - issue.createdAt;
-            resolvedCountForTime += 1;
-          }
-        }
-
-        // Rating
-        if (issue.citizenRating !== null && issue.citizenRating !== undefined) {
-          totalCitizenRating += Number(issue.citizenRating);
-          ratedIssueCount += 1;
-        }
-
-        // Officers assigned names
-        const uoName = issue.assignedUnitOfficer
-          ? officerNameMap.get(String(issue.assignedUnitOfficer)) || "Unit Officer"
-          : "Unassigned";
-        const foName = issue.assignedFieldOfficer
-          ? officerNameMap.get(String(issue.assignedFieldOfficer)) || "Field Officer"
-          : "Unassigned";
-
-        reportReadyIssues.push({
-          issueId: issue._id,
-          issueCode: issue.issueCode,
-          title: issue.title,
-          category: issue.category,
-          department: deptKey,
-          priority: issue.priority,
-          status: issue.status,
-          createdAt: issue.createdAt,
-          resolvedAt: issue.resolvedAt || null,
-          closedAt: issue.closedAt || null,
-          slaDeadline: issue.slaDeadline || null,
-          slaBreached: issue.slaBreached ?? false,
-          citizenRating: issue.citizenRating ?? null,
-          assignedUnitOfficer: uoName,
-          assignedFieldOfficer: foName,
-        });
-      });
-
-      const evaluatedSlaCount = slaBreachedIssues + slaCompliantIssues;
-      const slaComplianceRate =
-        evaluatedSlaCount > 0 ? (slaCompliantIssues / evaluatedSlaCount) * 100 : 100;
-
-      const resolvedTotal = statusBreakdown.resolved + statusBreakdown.closed;
-      const resolutionRate = totalIssues > 0 ? (resolvedTotal / totalIssues) * 100 : 0;
-      const rejectionRate = totalIssues > 0 ? (statusBreakdown.rejected / totalIssues) * 100 : 0;
-
-      const avgResolutionMs =
-        resolvedCountForTime > 0 ? totalResolutionMs / resolvedCountForTime : 0;
-      const avgResolutionHours = safeNumber(avgResolutionMs / (1000 * 60 * 60));
-      const avgResolutionDays = safeNumber(avgResolutionMs / (1000 * 60 * 60 * 24));
-
-      const averageCitizenRating =
-        ratedIssueCount > 0 ? Number((totalCitizenRating / ratedIssueCount).toFixed(1)) : null;
-
-      // Unit Officers metrics
-      const unitOfficerList = uos.map((uo) => ({
-        profileId: uo._id,
-        userId: uo.userId,
-        fullName: uo.fullName,
-        department: uo.department,
-        city: uo.city,
-        accountApproved: uo.accountApproved,
-        rating: safeNumber(uo.rating),
-        efficiencyScore: safeNumber(uo.efficiencyScore),
-        avgResolutionTime: safeNumber(uo.avgResolutionTime),
-        totalVerifiedIssues: safeNumber(uo.totalVerifiedIssues),
-        totalRejectedIssues: safeNumber(uo.totalRejectedIssues),
-        activeIssues: uo.activeIssueIds?.length ?? 0,
-        resolvedIssues: uo.resolvedIssueIds?.length ?? 0,
-      }));
-
-      // Field Officers metrics
-      let totalFoWorkloadPercent = 0;
-      let officersAtCapacityCount = 0;
-
-      const fieldOfficerList = fos.map((fo) => {
-        const currentActive = safeNumber(fo.currentActiveIssues);
-        const maxCapacity = safeNumber(fo.maxIssueCapacity);
-        const workloadPercent = maxCapacity > 0 ? Math.min(100, (currentActive / maxCapacity) * 100) : 0;
-        totalFoWorkloadPercent += workloadPercent;
-
-        if (maxCapacity > 0 && currentActive >= maxCapacity) {
-          officersAtCapacityCount += 1;
-        }
-
-        return {
-          profileId: fo._id,
-          userId: fo.userId,
-          fullName: fo.fullName,
-          department: fo.department,
-          city: fo.city,
-          specialisations: fo.specialisations ?? [],
-          accountApproved: fo.accountApproved,
-          currentActiveIssues: currentActive,
-          maxIssueCapacity: maxCapacity,
-          workloadPercent: Number(workloadPercent.toFixed(1)),
-          totalResolvedIssues: safeNumber(fo.totalResolvedIssues),
-          avgResolutionTime: safeNumber(fo.avgResolutionTime),
-          onTimeCompletionRate: safeNumber(fo.onTimeCompletionRate),
-          rating: safeNumber(fo.rating),
-          efficiencyScore: safeNumber(fo.efficiencyScore),
-        };
-      });
-
-      const activeUoCount = uos.filter((o) => o.accountApproved).length;
-      const activeFoCount = fos.filter((o) => o.accountApproved).length;
-
-      const avgUoRating =
-        uos.length > 0
-          ? Number((uos.reduce((s, o) => s + safeNumber(o.rating), 0) / uos.length).toFixed(1))
-          : 0;
-      const avgUoEfficiency =
-        uos.length > 0
-          ? Math.round(uos.reduce((s, o) => s + safeNumber(o.efficiencyScore), 0) / uos.length)
-          : 0;
-
-      const avgFoRating =
-        fos.length > 0
-          ? Number((fos.reduce((s, o) => s + safeNumber(o.rating), 0) / fos.length).toFixed(1))
-          : 0;
-      const avgFoEfficiency =
-        fos.length > 0
-          ? Math.round(fos.reduce((s, o) => s + safeNumber(o.efficiencyScore), 0) / fos.length)
-          : 0;
-      const avgFoOnTimeRate =
-        fos.length > 0
-          ? Number((fos.reduce((s, o) => s + safeNumber(o.onTimeCompletionRate), 0) / fos.length).toFixed(1))
-          : 0;
-      const avgFoWorkload =
-        fos.length > 0 ? Number((totalFoWorkloadPercent / fos.length).toFixed(1)) : 0;
-
-      departmentResults.push({
-        department: deptKey,
-        label: DEPARTMENT_LABELS[deptKey] || (deptKey.charAt(0).toUpperCase() + deptKey.slice(1).replace(/_/g, " ")),
-        metrics: {
-          totalIssues,
-          activeIssues,
-          resolvedIssues: statusBreakdown.resolved,
-          closedIssues: statusBreakdown.closed,
-          rejectedIssues: statusBreakdown.rejected,
-          withdrawnIssues: statusBreakdown.withdrawn,
-          resolutionRate: Number(resolutionRate.toFixed(1)),
-          rejectionRate: Number(rejectionRate.toFixed(1)),
-
-          slaBreachedIssues,
-          slaCompliantIssues,
-          slaNoDeadline,
-          slaComplianceRate: Number(slaComplianceRate.toFixed(1)),
-          slaExtensionCount,
-          averageSlaExtensions: totalIssues > 0 ? Number((slaExtensionCount / totalIssues).toFixed(1)) : 0,
-
-          avgResolutionHours: Number(avgResolutionHours.toFixed(1)),
-          avgResolutionDays: Number(avgResolutionDays.toFixed(1)),
-
-          averageCitizenRating,
-          ratedIssueCount,
-
-          activeEscalations,
-          totalReopenEvents,
-
-          unitOfficerCount: uos.length,
-          activeUnitOfficerCount: activeUoCount,
-          fieldOfficerCount: fos.length,
-          activeFieldOfficerCount: activeFoCount,
-
-          averageUnitOfficerRating: avgUoRating,
-          averageUnitOfficerEfficiency: avgUoEfficiency,
-          averageFieldOfficerRating: avgFoRating,
-          averageFieldOfficerEfficiency: avgFoEfficiency,
-          averageFieldOfficerOnTimeRate: avgFoOnTimeRate,
-          averageFieldOfficerWorkload: avgFoWorkload,
-          officersAtCapacity: officersAtCapacityCount,
-        },
-        statusBreakdown,
-        priorityBreakdown,
-        unitOfficers: unitOfficerList,
-        fieldOfficers: fieldOfficerList,
-        issues: reportReadyIssues,
-      });
-    }
-
-    // Sort departments: highest issue count first
-    departmentResults.sort((a, b) => b.metrics.totalIssues - a.metrics.totalIssues);
-
-    // City-wide summary
-    let cityTotalIssues = 0;
-    let cityActiveIssues = 0;
-    let cityResolvedIssues = 0;
-    let cityClosedIssues = 0;
-    let citySlaBreached = 0;
-    let citySlaCompliant = 0;
-    let cityUnitOfficers = 0;
-    let cityFieldOfficers = 0;
-
-    departmentResults.forEach((d) => {
-      cityTotalIssues += d.metrics.totalIssues;
-      cityActiveIssues += d.metrics.activeIssues;
-      cityResolvedIssues += d.metrics.resolvedIssues;
-      cityClosedIssues += d.metrics.closedIssues;
-      citySlaBreached += d.metrics.slaBreachedIssues;
-      citySlaCompliant += d.metrics.slaCompliantIssues;
-      cityUnitOfficers += d.metrics.unitOfficerCount;
-      cityFieldOfficers += d.metrics.fieldOfficerCount;
-    });
-
-    const totalEvaluatedSla = citySlaBreached + citySlaCompliant;
-    const overallSlaComplianceRate =
-      totalEvaluatedSla > 0 ? Number(((citySlaCompliant / totalEvaluatedSla) * 100).toFixed(1)) : 100;
-
-    return {
-      scope: {
-        city,
-        state,
-      },
-      generatedAt: Date.now(),
-      summary: {
-        totalDepartments: departmentResults.length,
-        totalIssues: cityTotalIssues,
-        activeIssues: cityActiveIssues,
-        resolvedIssues: cityResolvedIssues,
-        closedIssues: cityClosedIssues,
-        slaBreachedIssues: citySlaBreached,
-        totalUnitOfficers: cityUnitOfficers,
-        totalFieldOfficers: cityFieldOfficers,
-        overallSlaComplianceRate,
-      },
-      departments: departmentResults,
-    };
-  },
-});
-

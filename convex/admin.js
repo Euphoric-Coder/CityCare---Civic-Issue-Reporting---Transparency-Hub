@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { auditIssueAction } from "./lib/auditLogger";
 
 // Helper function to resolve the admin's database user ID (v.id("users"))
 async function resolveAdminUserId(ctx, adminUserIdStr) {
@@ -1068,6 +1069,24 @@ export const adminAssignIssue = mutation({
         read: false,
         createdAt: now,
       });
+
+      // Universal Audit Log
+      await auditIssueAction(ctx, {
+        issue,
+        performedByUserId: adminDbId,
+        performerRole: "admin",
+        action: "assign_unit_officer",
+        actionCategory: "assignment",
+        oldValue: {
+          assignedUnitOfficer: issue.assignedUnitOfficer ?? null,
+        },
+        newValue: {
+          assignedUnitOfficer: args.officerUserId,
+        },
+        reason: args.comment,
+        description: `System Admin assigned Unit Officer ${uo.fullName} to issue ${issue.issueCode}.`,
+        source: "web",
+      });
     } else {
       const fo = await ctx.db
         .query("fieldOfficers")
@@ -1138,6 +1157,25 @@ export const adminAssignIssue = mutation({
         type: "assigned",
         read: false,
         createdAt: now,
+      });
+
+      // Universal Audit Log
+      const isReassign = Boolean(issue.assignedFieldOfficer);
+      await auditIssueAction(ctx, {
+        issue,
+        performedByUserId: adminDbId,
+        performerRole: "admin",
+        action: isReassign ? "reassign_field_officer" : "assign_field_officer",
+        actionCategory: "assignment",
+        oldValue: {
+          assignedFieldOfficer: issue.assignedFieldOfficer ?? null,
+        },
+        newValue: {
+          assignedFieldOfficer: args.officerUserId,
+        },
+        reason: args.comment,
+        description: `System Admin ${isReassign ? "reassigned" : "assigned"} Field Officer ${fo.fullName} to issue ${issue.issueCode}.`,
+        source: "web",
       });
     }
 
@@ -1276,6 +1314,24 @@ export const adminReassignIssue = mutation({
         read: false,
         createdAt: now,
       });
+
+      // Universal Audit Log
+      await auditIssueAction(ctx, {
+        issue,
+        performedByUserId: adminDbId,
+        performerRole: "admin",
+        action: "reassign_unit_officer",
+        actionCategory: "assignment",
+        oldValue: {
+          assignedUnitOfficer: oldOfficerUserId ?? null,
+        },
+        newValue: {
+          assignedUnitOfficer: args.newOfficerUserId,
+        },
+        reason: args.reason,
+        description: `System Admin reassigned Unit Officer ${newUO.fullName} to issue ${issue.issueCode}.`,
+        source: "web",
+      });
     } else {
       // field_officer
       const oldOfficerUserId = issue.assignedFieldOfficer;
@@ -1376,6 +1432,24 @@ export const adminReassignIssue = mutation({
         type: "assigned",
         read: false,
         createdAt: now,
+      });
+
+      // Universal Audit Log
+      await auditIssueAction(ctx, {
+        issue,
+        performedByUserId: adminDbId,
+        performerRole: "admin",
+        action: "reassign_field_officer",
+        actionCategory: "assignment",
+        oldValue: {
+          assignedFieldOfficer: oldOfficerUserId ?? null,
+        },
+        newValue: {
+          assignedFieldOfficer: args.newOfficerUserId,
+        },
+        reason: args.reason,
+        description: `System Admin reassigned Field Officer ${newFO.fullName} to issue ${issue.issueCode}.`,
+        source: "web",
       });
     }
 
@@ -1669,6 +1743,24 @@ export const adminExtendSLA = mutation({
       createdAt: now,
     });
 
+    // Universal Audit Log
+    await auditIssueAction(ctx, {
+      issue,
+      performedByUserId: adminDbId,
+      performerRole: "admin",
+      action: "extend_sla",
+      actionCategory: "sla",
+      oldValue: {
+        slaDeadline: issue.slaDeadline,
+      },
+      newValue: {
+        slaDeadline: args.newDeadline,
+      },
+      reason: args.reason,
+      description: `System Admin extended SLA deadline to ${new Date(args.newDeadline).toLocaleDateString()}.`,
+      source: "web",
+    });
+
     return { success: true };
   },
 });
@@ -1741,6 +1833,24 @@ export const adminSendForRework = mutation({
       type: "rework",
       read: false,
       createdAt: now,
+    });
+
+    // Universal Audit Log
+    await auditIssueAction(ctx, {
+      issue,
+      performedByUserId: adminDbId,
+      performerRole: "admin",
+      action: "rework_requested",
+      actionCategory: "rework",
+      oldValue: {
+        status: issue.status,
+      },
+      newValue: {
+        status: "rework_required",
+      },
+      reason: args.reworkReason,
+      description: `System Admin requested rework for issue ${issue.issueCode}.`,
+      source: "web",
     });
 
     return { success: true };
@@ -1846,6 +1956,24 @@ export const adminCloseIssue = mutation({
       type: "closed",
       read: false,
       createdAt: now,
+    });
+
+    // Universal Audit Log
+    await auditIssueAction(ctx, {
+      issue,
+      performedByUserId: adminDbId,
+      performerRole: "admin",
+      action: "issue_closed",
+      actionCategory: "resolution",
+      oldValue: {
+        status: issue.status,
+      },
+      newValue: {
+        status: "closed",
+      },
+      reason: args.comment,
+      description: `System Admin closed issue ${issue.issueCode}.`,
+      source: "web",
     });
 
     return { success: true };
@@ -1983,6 +2111,28 @@ export const adminEscalateIssue = mutation({
       type: "escalated",
       read: false,
       createdAt: now,
+    });
+
+    // Universal Audit Log
+    await auditIssueAction(ctx, {
+      issue,
+      performedByUserId: args.escalatedBy,
+      performerRole: "admin",
+      action: "issue_escalated",
+      actionCategory: "escalation",
+      oldValue: {
+        status: issue.status,
+        escalatedToAdmin: false,
+      },
+      newValue: {
+        status: "escalated",
+        escalatedToAdmin: true,
+        escalationCategory: args.category,
+        escalationPriority: args.priority,
+      },
+      reason: args.reason,
+      description: `Issue ${issue.issueCode} escalated to Admin.`,
+      source: "web",
     });
 
     // Notify Admin Team (All Admins)
