@@ -2691,3 +2691,560 @@ export const getCityIssueAnalytics = query({
     };
   },
 });
+
+/**
+ * Query for City Admin Department Performance & Officers Analytics Dashboard
+ */
+export const getCityDepartmentPerformance = query({
+  args: {
+    cityAdminUserId: v.optional(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    // 1. Resolve City Admin user & profile
+    let cityAdmin = null;
+
+    if (args.cityAdminUserId) {
+      cityAdmin = await ctx.db
+        .query("cityAdmins")
+        .withIndex("by_user", (q) => q.eq("userId", args.cityAdminUserId))
+        .first();
+    }
+
+    if (!cityAdmin) {
+      cityAdmin = await ctx.db.query("cityAdmins").first();
+    }
+
+    if (!cityAdmin) {
+      return {
+        scope: { cityAdminId: null, city: "City-Wide", state: "" },
+        summary: {
+          totalDepartments: 0,
+          totalIssues: 0,
+          activeIssues: 0,
+          resolvedIssues: 0,
+          closedIssues: 0,
+          overallSlaComplianceRate: 100,
+          totalUnitOfficers: 0,
+          totalFieldOfficers: 0,
+        },
+        departments: [],
+      };
+    }
+
+    const city = cityAdmin.city;
+    const state = cityAdmin.state;
+    const now = Date.now();
+
+    // 2. Fetch issues and officers in city
+    const allCityIssues = await ctx.db
+      .query("issues")
+      .withIndex("by_city", (q) => q.eq("city", city))
+      .collect();
+
+    const unitOfficers = await ctx.db
+      .query("unitOfficers")
+      .withIndex("by_city", (q) => q.eq("city", city))
+      .collect();
+
+    const fieldOfficers = await ctx.db
+      .query("fieldOfficers")
+      .withIndex("by_city", (q) => q.eq("city", city))
+      .collect();
+
+    // Fetch user names for officer resolution
+    const userIds = [
+      ...new Set([
+        ...unitOfficers.map((u) => u.userId),
+        ...fieldOfficers.map((f) => f.userId),
+        ...allCityIssues.map((i) => i.assignedUnitOfficer).filter(Boolean),
+        ...allCityIssues.map((i) => i.assignedFieldOfficer).filter(Boolean),
+      ]),
+    ];
+
+    const userMap = new Map();
+    for (const uid of userIds) {
+      const u = await ctx.db.get(uid);
+      if (u) userMap.set(String(uid), u);
+    }
+
+    // Canonical Department Definitions
+    const CANONICAL_DEPTS = [
+      { key: "road", label: "Road & Infrastructure" },
+      { key: "electricity", label: "Electricity & Lighting" },
+      { key: "water", label: "Water Supply" },
+      { key: "sanitation", label: "Public Sanitation" },
+      { key: "drainage", label: "Drainage & Sewerage" },
+      { key: "solid_waste", label: "Solid Waste Management" },
+      { key: "public_health", label: "Public Health" },
+      { key: "other", label: "Other Civic Maintenance" },
+    ];
+
+    const normalizeDeptKey = (deptStr = "") => {
+      const cleaned = String(deptStr).toLowerCase().trim().replace(/[\s\-\/]+/g, "_");
+      if (cleaned.includes("road") || cleaned.includes("infrastruct")) return "road";
+      if (cleaned.includes("electr") || cleaned.includes("power")) return "electricity";
+      if (cleaned.includes("water") || cleaned.includes("sewag")) return "water";
+      if (cleaned.includes("sanitat")) return "sanitation";
+      if (cleaned.includes("drain")) return "drainage";
+      if (cleaned.includes("solid") || cleaned.includes("garbage")) return "solid_waste";
+      if (cleaned.includes("health") || cleaned.includes("hygien")) return "public_health";
+      return "other";
+    };
+
+    const activeStatuses = new Set([
+      "pending",
+      "verified",
+      "assigned",
+      "in_progress",
+      "pending_uo_verification",
+      "rework_required",
+      "reopened",
+      "escalated",
+    ]);
+
+    let globalTotalIssues = 0;
+    let globalActiveIssues = 0;
+    let globalResolvedIssues = 0;
+    let globalClosedIssues = 0;
+    let globalOverdueIssues = 0;
+
+    const departmentResults = CANONICAL_DEPTS.map(({ key, label }) => {
+      const deptIssues = allCityIssues.filter(
+        (i) => normalizeDeptKey(i.department || i.category) === key
+      );
+      const deptUos = unitOfficers.filter((u) => normalizeDeptKey(u.department) === key);
+      const deptFos = fieldOfficers.filter((f) => normalizeDeptKey(f.department) === key);
+
+      let activeCount = 0;
+      let resolvedCount = 0;
+      let closedCount = 0;
+      let rejectedCount = 0;
+      let overdueCount = 0;
+      let totalResolutionMs = 0;
+      let resolvedWithTimeCount = 0;
+
+      const statusBreakdown = {
+        pending: 0,
+        verified: 0,
+        assigned: 0,
+        in_progress: 0,
+        pending_uo_verification: 0,
+        rework_required: 0,
+        reopened: 0,
+        escalated: 0,
+        resolved: 0,
+        closed: 0,
+        rejected: 0,
+      };
+
+      const priorityBreakdown = {
+        critical: 0,
+        high: 0,
+        medium: 0,
+        low: 0,
+      };
+
+      deptIssues.forEach((i) => {
+        const st = String(i.status || "").toLowerCase();
+        const prio = String(i.priority || "").toLowerCase();
+        const created = i.createdAt ?? i._creationTime ?? now;
+
+        if (statusBreakdown[st] !== undefined) {
+          statusBreakdown[st]++;
+        } else if (st) {
+          statusBreakdown.pending++;
+        }
+
+        if (priorityBreakdown[prio] !== undefined) {
+          priorityBreakdown[prio]++;
+        } else if (prio) {
+          priorityBreakdown.medium++;
+        }
+
+        if (activeStatuses.has(st)) {
+          activeCount++;
+          if (i.slaBreached || (i.slaDeadline && i.slaDeadline < now)) {
+            overdueCount++;
+          }
+        } else if (st === "resolved") {
+          resolvedCount++;
+          if (i.resolvedAt && i.resolvedAt > created) {
+            totalResolutionMs += i.resolvedAt - created;
+            resolvedWithTimeCount++;
+          }
+        } else if (st === "closed") {
+          closedCount++;
+          if (i.closedAt && i.closedAt > created) {
+            totalResolutionMs += i.closedAt - created;
+            resolvedWithTimeCount++;
+          }
+        } else if (st === "rejected") {
+          rejectedCount++;
+        }
+      });
+
+      const totalDeptIssues = deptIssues.length;
+      const completedDeptIssues = resolvedCount + closedCount;
+
+      globalTotalIssues += totalDeptIssues;
+      globalActiveIssues += activeCount;
+      globalResolvedIssues += resolvedCount;
+      globalClosedIssues += closedCount;
+      globalOverdueIssues += overdueCount;
+
+      const resolutionRate =
+        totalDeptIssues > 0 ? Math.round((completedDeptIssues / totalDeptIssues) * 100) : 0;
+
+      const slaComplianceRate =
+        totalDeptIssues > 0
+          ? Math.max(0, Math.round(((totalDeptIssues - overdueCount) / totalDeptIssues) * 100))
+          : 100;
+
+      const avgResolutionHours =
+        resolvedWithTimeCount > 0
+          ? Math.round(totalResolutionMs / (1000 * 60 * 60 * resolvedWithTimeCount))
+          : 0;
+
+      const avgResolutionDays = Math.round((avgResolutionHours / 24) * 10) / 10;
+
+      const foEfficiencies = deptFos.map((f) => f.efficiencyScore ?? (f.rating ? f.rating * 20 : 85));
+      const averageFieldOfficerEfficiency =
+        foEfficiencies.length > 0
+          ? Math.round(foEfficiencies.reduce((a, b) => a + b, 0) / foEfficiencies.length)
+          : 85;
+
+      const enrichedUos = deptUos.map((u) => {
+        const usr = userMap.get(String(u.userId));
+        return {
+          ...u,
+          fullName: u.fullName || usr?.fullName || "Unit Officer",
+          email: u.email || usr?.email || "",
+          activeIssueCount: Array.isArray(u.activeIssueIds) ? u.activeIssueIds.length : 0,
+          resolvedIssueCount: Array.isArray(u.resolvedIssueIds) ? u.resolvedIssueIds.length : 0,
+        };
+      });
+
+      const enrichedFos = deptFos.map((f) => {
+        const usr = userMap.get(String(f.userId));
+        return {
+          ...f,
+          fullName: f.fullName || usr?.fullName || "Field Officer",
+          email: f.email || usr?.email || "",
+          activeIssueCount: f.currentActiveIssues ?? (Array.isArray(f.assignedIssueIds) ? f.assignedIssueIds.length : 0),
+          resolvedIssueCount: f.totalResolvedIssues ?? (Array.isArray(f.completedIssueIds) ? f.completedIssueIds.length : 0),
+        };
+      });
+
+      const enrichedIssues = deptIssues.map((i) => {
+        const uoUser = userMap.get(String(i.assignedUnitOfficer));
+        const foUser = userMap.get(String(i.assignedFieldOfficer));
+
+        return {
+          _id: i._id,
+          issueCode: i.issueCode,
+          title: i.title,
+          description: i.description,
+          category: i.category,
+          department: i.department || i.category,
+          status: i.status,
+          priority: i.priority,
+          address: i.address,
+          city: i.city,
+          state: i.state,
+          createdAt: i.createdAt ?? i._creationTime,
+          slaDeadline: i.slaDeadline,
+          slaBreached: i.slaBreached || (i.slaDeadline ? i.slaDeadline < now : false),
+          assignedUnitOfficer: uoUser?.fullName || "Unassigned",
+          assignedFieldOfficer: foUser?.fullName || "Unassigned",
+        };
+      });
+
+      return {
+        department: key,
+        label,
+        metrics: {
+          totalIssues: totalDeptIssues,
+          activeIssues: activeCount,
+          resolvedIssues: resolvedCount,
+          closedIssues: closedCount,
+          rejectedIssues: rejectedCount,
+          overdueIssues: overdueCount,
+          resolutionRate,
+          slaComplianceRate,
+          avgResolutionHours,
+          avgResolutionDays,
+          unitOfficerCount: deptUos.length,
+          fieldOfficerCount: deptFos.length,
+          averageFieldOfficerEfficiency,
+        },
+        statusBreakdown,
+        priorityBreakdown,
+        unitOfficers: enrichedUos,
+        fieldOfficers: enrichedFos,
+        issues: enrichedIssues,
+      };
+    });
+
+    const overallSlaComplianceRate =
+      globalTotalIssues > 0
+        ? Math.max(0, Math.round(((globalTotalIssues - globalOverdueIssues) / globalTotalIssues) * 100))
+        : 100;
+
+    return {
+      scope: {
+        cityAdminId: cityAdmin._id,
+        city: cityAdmin.city,
+        state: cityAdmin.state,
+      },
+      summary: {
+        totalDepartments: CANONICAL_DEPTS.length,
+        totalIssues: globalTotalIssues,
+        activeIssues: globalActiveIssues,
+        resolvedIssues: globalResolvedIssues,
+        closedIssues: globalClosedIssues,
+        overallSlaComplianceRate,
+        totalUnitOfficers: unitOfficers.length,
+        totalFieldOfficers: fieldOfficers.length,
+      },
+      departments: departmentResults,
+    };
+  },
+});
+
+/**
+ * Query detailed issue information for City Admin Dashboard Modal
+ */
+export const getCityIssueDetails = query({
+  args: {
+    cityAdminUserId: v.id("users"),
+    issueId: v.id("issues"),
+  },
+  handler: async (ctx, args) => {
+    const { city } = await requireCityAdmin(ctx, args.cityAdminUserId);
+
+    const issue = await ctx.db.get(args.issueId);
+    if (!issue) return null;
+
+    // Verify issue belongs to the City Admin's assigned city
+    if (normalizeLocation(issue.city) !== normalizeLocation(city)) {
+      return null;
+    }
+
+    const now = Date.now();
+
+    // 1. Fetch Reporter details
+    let citizen = null;
+    if (issue.reportedBy) {
+      const citizenUser = await ctx.db.get(issue.reportedBy);
+      const citizenProfile = await ctx.db
+        .query("citizens")
+        .withIndex("by_user", (q) => q.eq("userId", issue.reportedBy))
+        .first();
+
+      if (citizenUser || citizenProfile) {
+        citizen = {
+          id: citizenUser?._id,
+          name: citizenProfile?.fullName || citizenUser?.fullName || "Anonymous Citizen",
+          fullName: citizenProfile?.fullName || citizenUser?.fullName || "Anonymous Citizen",
+          email: citizenUser?.email || citizenProfile?.email || "",
+          phone: citizenProfile?.phone || "",
+          points: citizenProfile?.points ?? 0,
+          levelTitle: citizenProfile?.levelTitle || "Civic Starter",
+          reportsSubmitted: citizenProfile?.reportsSubmitted ?? 0,
+        };
+      }
+    }
+
+    // 2. Fetch Assigned Unit Officer details
+    let assignedUnitOfficer = null;
+    if (issue.assignedUnitOfficer) {
+      const uoUser = await ctx.db.get(issue.assignedUnitOfficer);
+      const uoProfile = await ctx.db
+        .query("unitOfficers")
+        .withIndex("by_user", (q) => q.eq("userId", issue.assignedUnitOfficer))
+        .first();
+
+      if (uoUser || uoProfile) {
+        assignedUnitOfficer = {
+          profileId: uoProfile?._id ?? null,
+          userId: uoUser?._id ?? uoProfile?.userId,
+          name: uoProfile?.fullName || uoUser?.fullName || "Unit Officer",
+          fullName: uoProfile?.fullName || uoUser?.fullName || "Unit Officer",
+          email: uoUser?.email || uoProfile?.email || "",
+          phone: uoProfile?.phone || "",
+          department: uoProfile?.department || issue.department || issue.category,
+          city: uoProfile?.city || issue.city,
+          rating: uoProfile?.rating ?? 0,
+          efficiencyScore: uoProfile?.efficiencyScore ?? 0,
+        };
+      }
+    }
+
+    // 3. Fetch Assigned Field Officer details
+    let assignedFieldOfficer = null;
+    if (issue.assignedFieldOfficer) {
+      const foUser = await ctx.db.get(issue.assignedFieldOfficer);
+      const foProfile = await ctx.db
+        .query("fieldOfficers")
+        .withIndex("by_user", (q) => q.eq("userId", issue.assignedFieldOfficer))
+        .first();
+
+      if (foUser || foProfile) {
+        assignedFieldOfficer = {
+          profileId: foProfile?._id ?? null,
+          userId: foUser?._id ?? foProfile?.userId,
+          name: foProfile?.fullName || foUser?.fullName || "Field Officer",
+          fullName: foProfile?.fullName || foUser?.fullName || "Field Officer",
+          email: foUser?.email || foProfile?.email || "",
+          phone: foProfile?.phone || "",
+          department: foProfile?.department || issue.department || issue.category,
+          city: foProfile?.city || issue.city,
+          rating: foProfile?.rating ?? 0,
+          efficiencyScore: foProfile?.efficiencyScore ?? 0,
+        };
+      }
+    }
+
+    // 4. Fetch Issue Updates / Timeline
+    const rawUpdates = await ctx.db
+      .query("issueUpdates")
+      .withIndex("by_issue", (q) => q.eq("issueId", args.issueId))
+      .collect();
+
+    const updates = await Promise.all(
+      rawUpdates.map(async (u) => {
+        let updaterName = "System";
+        if (u.updatedBy) {
+          const updaterUser = await ctx.db.get(u.updatedBy);
+          if (updaterUser) updaterName = updaterUser.fullName;
+        }
+        return {
+          id: u._id,
+          status: u.status,
+          comment: u.comment,
+          role: u.role,
+          updatedByName: updaterName,
+          attachments: u.attachments || [],
+          createdAt: u.createdAt ?? u._creationTime,
+        };
+      })
+    );
+
+    // 5. Fetch Audit Logs for this issue
+    const rawAuditLogs = await ctx.db
+      .query("auditLogs")
+      .withIndex("by_issue", (q) => q.eq("issueId", args.issueId))
+      .collect();
+
+    const auditLogs = await Promise.all(
+      rawAuditLogs.map(async (a) => {
+        let actorName = "System";
+        if (a.performedByUserId) {
+          const actorUser = await ctx.db.get(a.performedByUserId);
+          if (actorUser) actorName = actorUser.fullName;
+        }
+        return {
+          id: a._id,
+          action: a.action,
+          actionCategory: a.actionCategory,
+          performedByRole: a.performerRole,
+          performedByName: actorName,
+          oldValue: a.oldValue,
+          newValue: a.newValue,
+          reason: a.reason,
+          timestamp: a.timestamp,
+        };
+      })
+    );
+
+    // 6. SLA State calculations
+    let slaStatus = "no_sla";
+    let hoursRemaining = 0;
+    let overdueHours = 0;
+    if (issue.slaDeadline) {
+      const diff = issue.slaDeadline - now;
+      hoursRemaining = Math.max(0, Math.floor(diff / (1000 * 60 * 60)));
+      overdueHours = Math.max(0, Math.floor(-diff / (1000 * 60 * 60)));
+
+      if (issue.status === "resolved" || issue.status === "closed") {
+        const completedAt = issue.resolvedAt ?? issue.closedAt ?? now;
+        slaStatus = completedAt <= issue.slaDeadline ? "resolved_on_time" : "breached";
+      } else {
+        if (issue.slaDeadline < now) {
+          slaStatus = "breached";
+        } else if (diff < 48 * 60 * 60 * 1000) {
+          slaStatus = "at_risk";
+        } else {
+          slaStatus = "on_track";
+        }
+      }
+    }
+
+    return {
+      _id: issue._id,
+      id: issue._id,
+      issueCode: issue.issueCode,
+      code: issue.issueCode,
+      ticket_id: issue.issueCode,
+      title: issue.title,
+      description: issue.description,
+      category: issue.category,
+      subcategory: Array.isArray(issue.subcategory) ? issue.subcategory : issue.subcategory ? [issue.subcategory] : [],
+      department: issue.department || issue.category,
+      status: issue.status,
+      priority: issue.priority,
+      severity: issue.priority,
+      address: issue.address,
+      location: issue.address,
+      city: issue.city,
+      state: issue.state,
+      postal: issue.postal,
+      latitude: issue.latitude,
+      longitude: issue.longitude,
+      createdAt: issue.createdAt ?? issue._creationTime,
+      created_at: issue.createdAt ?? issue._creationTime,
+      updatedAt: issue.updatedAt ?? issue.createdAt ?? issue._creationTime,
+      updated_at: issue.updatedAt ?? issue.createdAt ?? issue._creationTime,
+      resolvedAt: issue.resolvedAt,
+      closedAt: issue.closedAt,
+
+      citizen,
+      unitOfficerDetails: assignedUnitOfficer,
+      assignedUnitOfficer,
+      assignedUnitOfficerDetails: assignedUnitOfficer,
+      fieldOfficerDetails: assignedFieldOfficer,
+      assignedFieldOfficer,
+      assignedFieldOfficerDetails: assignedFieldOfficer,
+
+      sla: {
+        deadline: issue.slaDeadline,
+        status: slaStatus,
+        hoursRemaining,
+        overdueHours,
+        extensionCount: issue.slaExtendedCount ?? 0,
+      },
+      slaDeadline: issue.slaDeadline,
+      slaStatus,
+      slaBreached: issue.slaBreached || (issue.slaDeadline ? issue.slaDeadline < now : false),
+
+      escalatedToAdmin: issue.escalatedToAdmin || false,
+      is_escalated: issue.escalatedToAdmin || Boolean(issue.escalation),
+      escalation: issue.escalation || null,
+
+      rejection: issue.rejection || null,
+      rejectionReason: issue.rejectionReason || null,
+
+      images: issue.photos || issue.images || [],
+      photos: issue.photos || issue.images || [],
+      attachments: issue.attachments || [],
+      beforePhotos: issue.beforePhotos || [],
+      afterPhotos: issue.afterPhotos || [],
+      resolutionImages: issue.resolutionImages || [],
+
+      updates,
+      auditLogs,
+    };
+  },
+});
+
+

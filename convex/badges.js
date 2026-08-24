@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
-import { awardBadgeIfNotExists } from "@/lib/gamificationAwards";
+import { awardBadgeIfNotExists } from "../lib/gamificationAwards";
 
 const badgeCategoryValidator = v.union(
   v.literal("reporting"),
