@@ -372,7 +372,7 @@ export function MessagesCenter({ user, profile }) {
     const r = (role || "").toLowerCase();
     if (r === "admin" || r === "administrator") return "Admin";
     if (r === "cityadmin" || r === "city_admin") return "City Admin";
-    if (r === "unitofficer" || r === "unit_officer") return "Ward Officer";
+    if (r === "unitofficer" || r === "unit_officer") return "Unit Officer";
     return "Field Officer";
   }
 

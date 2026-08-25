@@ -12,7 +12,6 @@ import {
   ArrowRight,
   Users2,
 } from "lucide-react";
-import { Leaderboard } from "./LeaderBoard";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ModeToggle } from "./ModeToggle";
@@ -522,28 +521,6 @@ export function LandingPage({ onGetStarted }) {
         </div>
       </section>
 
-      <section className="py-20 bg-gradient-to-b from-white to-gray-50 dark:from-gray-950 dark:to-gray-900 transition-colors duration-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center mb-4">
-              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 dark:from-yellow-500 dark:to-orange-600 rounded-full p-3 shadow-md dark:shadow-yellow-700/20">
-                <Award className="text-white" size={32} />
-              </div>
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              Community Champions
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Recognizing our most active contributors making our city better
-              every day
-            </p>
-          </div>
-          <div className="max-w-2xl mx-auto">
-            <Leaderboard />
-          </div>
-        </div>
-      </section>
-
       <section className="py-20 bg-gradient-to-br from-teal-600 via-emerald-600 to-cyan-700 text-white relative dark:from-teal-800 dark:via-emerald-800 dark:to-cyan-900 transition-colors duration-500">
         {/* Bottom Wave Design */}
         <div className="waveb dark:hidden">
@@ -582,7 +559,9 @@ export function LandingPage({ onGetStarted }) {
             Start reporting issues today.
           </p>
           <button
-            onClick={onGetStarted}
+            onClick={() => {
+              router.push("sign-up");
+            }}
             className="group px-10 py-4 bg-white text-teal-600 rounded-full font-semibold text-lg hover:bg-teal-50 dark:bg-gray-100 dark:text-teal-700 dark:hover:bg-gray-200 transition-all transform hover:scale-105 hover:shadow-2xl inline-flex items-center space-x-2"
           >
             <span>Get Started Now</span>
