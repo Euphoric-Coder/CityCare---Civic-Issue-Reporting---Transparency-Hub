@@ -1,21 +1,21 @@
-import { v } from 'convex/values';
-import { query } from './_generated/server';
+import { requireApprovedUnitOfficer } from "./officerAuth";
+import { v } from "convex/values";
+import { query } from "./_generated/server";
 import {
   analyseIssueTrends,
   analyseCurrentIssueTrend,
   normalizeKey,
   departmentMatchesCategory,
   isPendingDuplicateReviewStatus,
-  strictDepartmentMatchesCategory,
+  buildRecurringPatterns,
   buildCityTrendBreakdown,
   buildDepartmentTrendBreakdown,
+  buildSystemAdminDuplicateTrend,
   buildSystemSlaAnalytics,
   buildEscalationAnalytics,
   buildCityAwareHotspots,
-  buildSystemAdminDuplicateTrend,
   buildSystemAdminTrendRecommendations,
-  buildRecurringPatterns,
-} from '../lib/trendAnalyzer';
+} from "../lib/trendAnalyzer";
 
 const rangeValidation = v.optional(v.number());
 
@@ -30,30 +30,42 @@ async function getUnitOfficerAnalyticsIssuePool(ctx, unitOfficer, userId) {
 
   // 2. Fetch by assigned unit officer
   const assignedIssues = await ctx.db
-    .query('issues')
-    .withIndex('by_assigned_unit_officer', (q) => q.eq('assignedUnitOfficer', userId))
+    .query("issues")
+    .withIndex("by_assigned_unit_officer", (q) =>
+      q.eq("assignedUnitOfficer", userId),
+    )
     .collect();
 
   // 3. Fetch by city for duplicate review/assignment (scoped by city and department matches)
   const cityIssues = await ctx.db
-    .query('issues')
-    .withIndex('by_city', (q) => q.eq('city', unitOfficer.city))
+    .query("issues")
+    .withIndex("by_city", (q) => q.eq("city", unitOfficer.city))
     .collect();
 
   const matchingCityDeptIssues = cityIssues.filter((issue) => {
     // Matches category / department
-    const isCategoryMatch = departmentMatchesCategory(unitOfficer.department, issue.category);
+    const isCategoryMatch = departmentMatchesCategory(
+      unitOfficer.department,
+      issue.category,
+    );
     // Visible for duplicate review or assignment (pending, reopened, verified, etc.)
     const status = normalizeKey(issue.status);
-    const isDuplicateOrUnassigned = ['pending', 'reopened', 'verified'].includes(status) ||
-                                    !issue.assignedUnitOfficer ||
-                                    issue.assignedUnitOfficer === userId;
+    const isDuplicateOrUnassigned =
+      ["pending", "reopened", "verified"].includes(status) ||
+      !issue.assignedUnitOfficer ||
+      issue.assignedUnitOfficer === userId;
     return isCategoryMatch && isDuplicateOrUnassigned;
   });
 
   // Merge and deduplicate by _id
-  const merged = [...fetchedByIds, ...assignedIssues, ...matchingCityDeptIssues];
-  const uniqueIssues = Array.from(new Map(merged.map((issue) => [String(issue._id), issue])).values());
+  const merged = [
+    ...fetchedByIds,
+    ...assignedIssues,
+    ...matchingCityDeptIssues,
+  ];
+  const uniqueIssues = Array.from(
+    new Map(merged.map((issue) => [String(issue._id), issue])).values(),
+  );
 
   return {
     uniqueIssues,
@@ -63,19 +75,20 @@ async function getUnitOfficerAnalyticsIssuePool(ctx, unitOfficer, userId) {
       fetchedByIdsCount: fetchedByIds.length,
       fetchedByVisibilityCount: matchingCityDeptIssues.length,
       finalPoolCount: uniqueIssues.length,
-    }
+    },
   };
 }
 
 export const getUnitOfficerTrendAnalytics = query({
   args: {
-    userId: v.id('users'),
+    userId: v.id("users"),
     days: rangeValidation,
   },
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.userId);
     const unitOfficer = await ctx.db
-      .query('unitOfficers')
-      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .query("unitOfficers")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .first();
 
     const selectedDays = args.days ?? 30;
@@ -85,12 +98,12 @@ export const getUnitOfficerTrendAnalytics = query({
       return {
         scope: {
           userId: args.userId,
-          unitOfficerId: '',
-          city: '',
-          state: '',
-          department: '',
+          unitOfficerId: "",
+          city: "",
+          state: "",
+          department: "",
           days: selectedDays,
-          rangeLabel: isAllTime ? 'All Time' : `${selectedDays} Days`,
+          rangeLabel: isAllTime ? "All Time" : `${selectedDays} Days`,
           isAllTime,
           totalIssuesAnalysed: 0,
           generatedAt: Date.now(),
@@ -105,7 +118,7 @@ export const getUnitOfficerTrendAnalytics = query({
             duplicateGroups: 0,
             hotspotAreas: 0,
             hotspotIssueCount: 0,
-          }
+          },
         },
         summary: {
           totalIssues: 0,
@@ -134,8 +147,8 @@ export const getUnitOfficerTrendAnalytics = query({
           currentWindowCount: 0,
           previousWindowCount: 0,
           changePercent: 0,
-          direction: 'stable',
-          label: 'No data yet',
+          direction: "stable",
+          label: "No data yet",
         },
         categoryTrends: [],
         subcategoryTrends: [],
@@ -158,34 +171,39 @@ export const getUnitOfficerTrendAnalytics = query({
           onTrackCount: 0,
           notSetCount: 0,
           overdueRate: 0,
-          mostOverdueCategory: 'None',
+          mostOverdueCategory: "None",
           avgSlaDelayHours: 0,
         },
         recurringPatterns: [],
         recommendations: [
           {
-            type: 'normal',
-            severity: 'low',
-            title: 'No Data',
-            message: 'No trend data available yet. Trends will appear as more issues are reported and processed.',
-            relatedCategory: 'General',
-            relatedSubcategory: 'General',
+            type: "normal",
+            severity: "low",
+            title: "No Data",
+            message:
+              "No trend data available yet. Trends will appear as more issues are reported and processed.",
+            relatedCategory: "General",
+            relatedSubcategory: "General",
             relatedIssueIds: [],
           },
         ],
       };
     }
 
-    const { uniqueIssues, counts } = await getUnitOfficerAnalyticsIssuePool(ctx, unitOfficer, args.userId);
+    const { uniqueIssues, counts } = await getUnitOfficerAnalyticsIssuePool(
+      ctx,
+      unitOfficer,
+      args.userId,
+    );
 
     const scopedIssues = uniqueIssues.filter(
       (issue) =>
         normalizeKey(issue.city) === normalizeKey(unitOfficer.city) &&
-        departmentMatchesCategory(unitOfficer.department, issue.category)
+        departmentMatchesCategory(unitOfficer.department, issue.category),
     );
 
     const duplicateRelevantCount = scopedIssues.filter((i) =>
-      isPendingDuplicateReviewStatus(i.status)
+      isPendingDuplicateReviewStatus(i.status),
     ).length;
 
     const analytics = analyseIssueTrends(scopedIssues, {
@@ -201,7 +219,7 @@ export const getUnitOfficerTrendAnalytics = query({
         state: unitOfficer.state,
         department: unitOfficer.department,
         days: selectedDays,
-        rangeLabel: isAllTime ? 'All Time' : `${selectedDays} Days`,
+        rangeLabel: isAllTime ? "All Time" : `${selectedDays} Days`,
         isAllTime,
         totalIssuesAnalysed: scopedIssues.length,
         generatedAt: Date.now(),
@@ -212,7 +230,7 @@ export const getUnitOfficerTrendAnalytics = query({
           duplicateGroups: analytics.duplicateTrend.totalGroups,
           hotspotAreas: analytics.hotspotTrends.length,
           hotspotIssueCount: analytics.summary.hotspotIssueCount,
-        }
+        },
       },
       ...analytics,
     };
@@ -221,23 +239,24 @@ export const getUnitOfficerTrendAnalytics = query({
 
 export const getCurrentIssueTrendAnalysis = query({
   args: {
-    userId: v.id('users'),
-    issueId: v.id('issues'),
+    userId: v.id("users"),
+    issueId: v.id("issues"),
     days: rangeValidation,
   },
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.userId);
     const unitOfficer = await ctx.db
-      .query('unitOfficers')
-      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .query("unitOfficers")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .first();
 
     if (!unitOfficer) {
-      throw new Error('Unit Officer not found');
+      throw new Error("Unit Officer not found");
     }
 
     const issue = await ctx.db.get(args.issueId);
     if (!issue) {
-      throw new Error('Issue not found');
+      throw new Error("Issue not found");
     }
 
     const isAllowed =
@@ -246,15 +265,19 @@ export const getCurrentIssueTrendAnalysis = query({
       issue.assignedUnitOfficer === args.userId;
 
     if (!isAllowed) {
-      throw new Error('Unauthorized access to issue trend analysis');
+      throw new Error("Unauthorized access to issue trend analysis");
     }
 
-    const { uniqueIssues } = await getUnitOfficerAnalyticsIssuePool(ctx, unitOfficer, args.userId);
+    const { uniqueIssues } = await getUnitOfficerAnalyticsIssuePool(
+      ctx,
+      unitOfficer,
+      args.userId,
+    );
 
     const scopedIssues = uniqueIssues.filter(
       (i) =>
         normalizeKey(i.city) === normalizeKey(unitOfficer.city) &&
-        departmentMatchesCategory(unitOfficer.department, i.category)
+        departmentMatchesCategory(unitOfficer.department, i.category),
     );
 
     const pool = [...scopedIssues];
@@ -262,7 +285,9 @@ export const getCurrentIssueTrendAnalysis = query({
       pool.push(issue);
     }
 
-    const analysis = analyseCurrentIssueTrend(issue, pool, { days: args.days ?? 90 });
+    const analysis = analyseCurrentIssueTrend(issue, pool, {
+      days: args.days ?? 90,
+    });
 
     return analysis;
   },
@@ -270,7 +295,7 @@ export const getCurrentIssueTrendAnalysis = query({
 
 export const getSystemAdminCitywideTrendAnalytics = query({
   args: {
-    userId: v.id('users'),
+    userId: v.id("users"),
     city: v.optional(v.string()),
     department: v.optional(v.string()),
     days: v.optional(v.number()),
@@ -279,29 +304,32 @@ export const getSystemAdminCitywideTrendAnalytics = query({
     // 1. Fetch user & verify allowed role
     const user = await ctx.db.get(args.userId);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
     const role = normalizeKey(user.role);
-    const allowedRoles = new Set(['admin', 'system_admin', 'administrator']);
+    const allowedRoles = new Set(["admin", "system_admin", "administrator"]);
     if (!allowedRoles.has(role)) {
-      throw new Error('Unauthorized access to system administration analytics');
+      throw new Error("Unauthorized access to system administration analytics");
     }
 
     // 2. Fetch all issues or city-scoped issues
     let allIssues = [];
     if (args.city) {
       allIssues = await ctx.db
-        .query('issues')
-        .withIndex('by_city', (q) => q.eq('city', args.city))
+        .query("issues")
+        .withIndex("by_city", (q) => q.eq("city", args.city))
         .collect();
     } else {
-      allIssues = await ctx.db.query('issues').collect();
+      allIssues = await ctx.db.query("issues").collect();
     }
 
     // 3. Apply category/department filter
     const scopedIssues = allIssues.filter((issue) => {
-      const matchesCity = !args.city || normalizeKey(issue.city) === normalizeKey(args.city);
-      const matchesDepartment = !args.department || strictDepartmentMatchesCategory(args.department, issue.category);
+      const matchesCity =
+        !args.city || normalizeKey(issue.city) === normalizeKey(args.city);
+      const matchesDepartment =
+        !args.department ||
+        departmentMatchesCategory(args.department, issue.category);
       return matchesCity && matchesDepartment;
     });
 
@@ -320,7 +348,9 @@ export const getSystemAdminCitywideTrendAnalytics = query({
     }
 
     // 5. Gather available cities & departments lists for frontend drop-downs
-    const availableCities = [...new Set(allIssues.map((i) => i.city).filter(Boolean))].sort();
+    const availableCities = [
+      ...new Set(allIssues.map((i) => i.city).filter(Boolean)),
+    ].sort();
     const availableDepartments = [
       ...new Set(allIssues.map((i) => i.category).filter(Boolean)),
     ].sort();
@@ -332,17 +362,31 @@ export const getSystemAdminCitywideTrendAnalytics = query({
     });
 
     // 7. System Admin breakdowns, duplicates, SLA, escalations, hotspots, recommendations
-    const cityBreakdown = buildCityTrendBreakdown(scopedIssues, now, selectedDays);
-    const departmentBreakdown = buildDepartmentTrendBreakdown(scopedIssues, now, selectedDays);
-    const systemDuplicateTrend = buildSystemAdminDuplicateTrend(currentRangeIssues);
+    const cityBreakdown = buildCityTrendBreakdown(
+      scopedIssues,
+      now,
+      selectedDays,
+    );
+    const departmentBreakdown = buildDepartmentTrendBreakdown(
+      scopedIssues,
+      now,
+      selectedDays,
+    );
+    const systemDuplicateTrend =
+      buildSystemAdminDuplicateTrend(currentRangeIssues);
     const systemSlaAnalytics = buildSystemSlaAnalytics(currentRangeIssues, now);
-    const escalationAnalytics = buildEscalationAnalytics(currentRangeIssues, now);
+    const escalationAnalytics = buildEscalationAnalytics(
+      currentRangeIssues,
+      now,
+    );
     const cityAwareHotspots = buildCityAwareHotspots(currentRangeIssues, 500);
-    const recurringPatterns = buildRecurringPatterns(currentRangeIssues, { radiusMeters: 500 });
+    const recurringPatterns = buildRecurringPatterns(currentRangeIssues, {
+      radiusMeters: 500,
+    });
 
     const systemRecommendations = buildSystemAdminTrendRecommendations({
-      cityBreakdown,
-      departmentBreakdown,
+      cityBreakdown: cityBreakdown,
+      departmentBreakdown: departmentBreakdown,
       systemSlaAnalytics,
       escalationAnalytics,
       systemDuplicateTrend,
@@ -354,36 +398,47 @@ export const getSystemAdminCitywideTrendAnalytics = query({
     const escalationRate = escalationAnalytics.escalationRate;
     const duplicateRate = systemDuplicateTrend.duplicateRate;
     const activeCount = currentRangeIssues.filter((i) =>
-      ['assigned', 'in_progress', 'submitted_for_review', 'pending_uo_verification', 'rework_required', 'escalated'].includes(i.status)
+      [
+        "assigned",
+        "in_progress",
+        "submitted_for_review",
+        "pending_uo_verification",
+        "rework_required",
+        "escalated",
+      ].includes(i.status),
     ).length;
-    const unresolvedRate = currentRangeIssues.length > 0 ? (activeCount / currentRangeIssues.length) * 100 : 0;
+    const unresolvedRate =
+      currentRangeIssues.length > 0
+        ? (activeCount / currentRangeIssues.length) * 100
+        : 0;
 
     const systemRiskScore = Math.round(
-      overdueRate * 0.40 +
-      escalationRate * 0.25 +
-      unresolvedRate * 0.20 +
-      duplicateRate * 0.15
+      overdueRate * 0.4 +
+        escalationRate * 0.25 +
+        unresolvedRate * 0.2 +
+        duplicateRate * 0.15,
     );
 
-    const systemRiskLevel = systemRiskScore >= 70
-      ? 'critical'
-      : systemRiskScore >= 50
-        ? 'high'
-        : systemRiskScore >= 30
-          ? 'medium'
-          : 'low';
+    const systemRiskLevel =
+      systemRiskScore >= 70
+        ? "critical"
+        : systemRiskScore >= 50
+          ? "high"
+          : systemRiskScore >= 30
+            ? "medium"
+            : "low";
 
-    const mostAtRiskCity = cityBreakdown[0]?.city || 'None';
-    const mostAtRiskDepartment = departmentBreakdown[0]?.department || 'None';
+    const mostAtRiskCity = cityBreakdown[0]?.city || "None";
+    const mostAtRiskDepartment = departmentBreakdown[0]?.department || "None";
 
     return {
       scope: {
         userId: args.userId,
         role: user.role,
-        city: args.city ?? 'all',
-        department: args.department ?? 'all',
+        city: args.city ?? "all",
+        department: args.department ?? "all",
         days: selectedDays,
-        rangeLabel: isAllTime ? 'All Time' : `${selectedDays} Days`,
+        rangeLabel: isAllTime ? "All Time" : `${selectedDays} Days`,
         isAllTime,
         totalIssuesAnalysed: currentRangeIssues.length,
         generatedAt: now,
@@ -392,8 +447,8 @@ export const getSystemAdminCitywideTrendAnalytics = query({
       filters: {
         availableCities,
         availableDepartments,
-        selectedCity: args.city ?? 'all',
-        selectedDepartment: args.department ?? 'all',
+        selectedCity: args.city ?? "all",
+        selectedDepartment: args.department ?? "all",
       },
 
       summary: {
@@ -407,7 +462,8 @@ export const getSystemAdminCitywideTrendAnalytics = query({
         systemRiskLevel,
         mostAtRiskCity,
         mostAtRiskDepartment,
-        pendingDuplicateCandidateCount: systemDuplicateTrend.activeDuplicateCandidateCount,
+        pendingDuplicateCandidateCount:
+          systemDuplicateTrend.activeDuplicateCandidateCount,
         duplicateGroups: systemDuplicateTrend.totalGroups,
         duplicateIssues: systemDuplicateTrend.duplicateGroupIssueCount,
         redundantDuplicateIssues: systemDuplicateTrend.redundantDuplicateIssues,
@@ -420,13 +476,13 @@ export const getSystemAdminCitywideTrendAnalytics = query({
       categoryTrends: baseAnalytics.categoryTrends,
       subcategoryTrends: baseAnalytics.subcategoryTrends,
 
-      cityBreakdown,
-      departmentBreakdown,
+      cityBreakdown: cityBreakdown,
+      departmentBreakdown: departmentBreakdown,
       systemDuplicateTrend,
       hotspotTrends: cityAwareHotspots,
       systemSlaAnalytics,
       escalationAnalytics,
-      recurringPatterns,
+      recurringPatterns: recurringPatterns,
       recommendations: systemRecommendations,
 
       debugCounts: {
@@ -435,7 +491,8 @@ export const getSystemAdminCitywideTrendAnalytics = query({
         selectedRangeIssueCount: currentRangeIssues.length,
         cityCount: availableCities.length,
         departmentCount: availableDepartments.length,
-        activeDuplicateCandidateCount: systemDuplicateTrend.activeDuplicateCandidateCount,
+        activeDuplicateCandidateCount:
+          systemDuplicateTrend.activeDuplicateCandidateCount,
         duplicateGroupCount: systemDuplicateTrend.totalGroups,
         hotspotCount: cityAwareHotspots.length,
         slaApplicableCount: systemSlaAnalytics.applicableIssueCount,

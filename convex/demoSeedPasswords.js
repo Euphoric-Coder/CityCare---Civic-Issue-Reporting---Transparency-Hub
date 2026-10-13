@@ -1,11 +1,11 @@
-"use node";
+'use node';
 
-import bcrypt from "bcryptjs";
-import { internalAction } from "./_generated/server";
-import { internal } from "./_generated/api";
+import bcrypt from 'bcryptjs';
+import { internalAction } from './_generated/server';
+import { internal } from './_generated/api';
 
-const DEMO_PASSWORD = "CityCare@Demo2026";
-const BCRYPT_ROUNDS = 10;
+const DEMO_PASSWORD = 'CityCare@Demo2026';
+const BCRYPT_ROUNDS = Number(process.env.BCRYPT_ROUNDS ?? 12);
 
 /**
  * Node action to repair passwords of known deterministic demo users.
@@ -14,17 +14,15 @@ const BCRYPT_ROUNDS = 10;
 export const repairDemoPasswords = internalAction({
   args: {},
   handler: async (ctx) => {
-    const demoUsers = await ctx.runQuery(
-      internal.demoSeed.getDemoUsersForPasswordRepair,
-      {}
-    );
+    const demoUsers =
+      await ctx.runQuery(internal.demoSeed.getDemoUsersForPasswordRepair, {});
 
     const idsToRepair = [];
 
     for (const user of demoUsers) {
       let isValid = false;
       try {
-        if (user.password && typeof user.password === "string") {
+        if (user.password && typeof user.password === 'string') {
           isValid = await bcrypt.compare(DEMO_PASSWORD, user.password);
         }
       } catch {
@@ -63,6 +61,8 @@ export const repairDemoPasswords = internalAction({
     };
   },
 });
+
+export const repairDemoPasswordsAction = repairDemoPasswords;
 
 /**
  * Main Node action orchestrator invoked by Cron or manual trigger.

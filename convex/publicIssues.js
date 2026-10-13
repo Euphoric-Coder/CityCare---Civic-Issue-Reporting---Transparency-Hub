@@ -1,3 +1,4 @@
+import { requireApprovedUnitOfficer } from "./officerAuth";
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 
@@ -59,11 +60,16 @@ export const syncPublicIssues = internalMutation({
 
       const photosAfter = await getPhotoUrls(ctx, issue.afterPhotos || []);
 
-      const payload = {
+      // Only fields that should stay synchronized with the original issue.
+      const syncedPayload = {
         issueId: issue._id,
 
         issueCode: issue.issueCode,
-        title: issue.title,
+
+        // Do NOT overwrite a moderated/published title after publication.
+        // Preserve existing public title if one already exists.
+        title: existing?.title ?? issue.title,
+
         description: issue.description,
 
         category: issue.category,
@@ -89,8 +95,6 @@ export const syncPublicIssues = internalMutation({
 
         rejectedAt: !isResolved ? toISO(issue.rejection?.rejectedAt) : null,
 
-        publicCompletionNote: existing?.publicCompletionNote ?? null,
-
         rejectionReason: !isResolved
           ? issue.rejection?.reason ||
             issue.rejection?.comment ||
@@ -99,18 +103,30 @@ export const syncPublicIssues = internalMutation({
 
         photosBefore,
         photosAfter: isResolved ? photosAfter : [],
-
-        publicVisible: false,
-        publishStatus: "draft",
-
-        createdPublicAt: existing?.createdPublicAt ?? Date.now(),
       };
 
       if (existing) {
-        await ctx.db.patch(existing._id, payload);
+        // IMPORTANT:
+        // Only synchronize issue-derived fields.
+        // Do NOT reset moderation/publication state.
+        await ctx.db.patch(existing._id, syncedPayload);
+
         updated++;
       } else {
-        await ctx.db.insert("publicIssues", payload);
+        // Only a brand-new public issue starts as a draft.
+        await ctx.db.insert("publicIssues", {
+          ...syncedPayload,
+
+          publicCompletionNote: null,
+
+          publicVisible: false,
+          publishStatus: "draft",
+
+          foVisible: false,
+
+          createdPublicAt: Date.now(),
+        });
+
         inserted++;
       }
     }
@@ -129,6 +145,7 @@ export const getPublicIssues = query({
   },
 
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.unitOfficerId);
     const unitOfficer = await ctx.db
       .query("unitOfficers")
       .withIndex("by_user", (q) => q.eq("userId", args.unitOfficerId))
@@ -361,6 +378,7 @@ export const getCityPublicIssueByIssueCode = query({
 
 export const publishPublicIssue = mutation({
   args: {
+    unitOfficerId: v.id("users"),
     id: v.id("publicIssues"),
     title: v.string(),
     publicCompletionNote: v.string(),
@@ -369,6 +387,7 @@ export const publishPublicIssue = mutation({
   },
 
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.unitOfficerId);
     const publicIssue = await ctx.db.get(args.id);
 
     if (!publicIssue) {
@@ -397,10 +416,12 @@ export const publishPublicIssue = mutation({
 
 export const unpublishPublicIssue = mutation({
   args: {
+    unitOfficerId: v.id("users"),
     id: v.id("publicIssues"),
   },
 
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.unitOfficerId);
     const publicIssue = await ctx.db.get(args.id);
 
     if (!publicIssue) {
@@ -424,6 +445,7 @@ export const unpublishPublicIssue = mutation({
 
 export const saveDraftPublicIssue = mutation({
   args: {
+    unitOfficerId: v.id("users"),
     id: v.id("publicIssues"),
     title: v.string(),
     publicCompletionNote: v.optional(v.string()),
@@ -431,6 +453,7 @@ export const saveDraftPublicIssue = mutation({
   },
 
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.unitOfficerId);
     const publicIssue = await ctx.db.get(args.id);
 
     if (!publicIssue) {

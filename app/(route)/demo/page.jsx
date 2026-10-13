@@ -135,8 +135,17 @@ export default function DemoCredentialsPage() {
           </div>
           <div className="flex items-center gap-4">
             <ModeToggle />
-            <button onClick={() => router.push("/sign-in")} className="px-5 py-2 rounded-xl font-bold bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:scale-105 transition-transform duration-300 shadow-lg">
-              Sign In
+            <button 
+              onClick={() => router.push("/sign-in")} 
+              className="px-5 py-2 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/25 hover:scale-105 transition-all duration-300"
+            >
+              Citizen Sign In
+            </button>
+            <button 
+              onClick={() => router.push("/staff/sign-in")} 
+              className="px-5 py-2 rounded-xl font-bold bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 shadow-lg hover:scale-105 transition-all duration-300"
+            >
+              Admin Sign In
             </button>
           </div>
         </div>

@@ -1,32 +1,74 @@
-import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { requireApprovedFieldOfficer } from './officerAuth';
+import { v } from 'convex/values';
+import { mutation, query } from './_generated/server';
+import { auditIssueActionMobile } from './mobileAuditLogger';
 
 export const getFieldOfficerByUserId = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.id('users') },
   handler: async (ctx, args) => {
-    return await ctx.db
-      .query("fieldOfficers")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+    const officer = await ctx.db
+      .query('fieldOfficers')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
       .unique();
+
+    if (!officer) return null;
+
+    let profilePictureUrl = null;
+    if (officer.profilePicture) {
+      profilePictureUrl = await ctx.storage.getUrl(officer.profilePicture);
+    }
+
+    return {
+      ...officer,
+      profilePictureUrl,
+    };
+  },
+});
+
+export const updateFieldOfficerProfilePicture = mutation({
+  args: {
+    userId: v.id('users'),
+    profilePicture: v.optional(v.id('_storage')),
+  },
+  handler: async (ctx, args) => {
+    const officer = await ctx.db
+      .query('fieldOfficers')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .unique();
+
+    if (!officer) throw new Error('Field Officer not found');
+
+    // Delete old profile picture from storage
+    if (officer.profilePicture) {
+      await ctx.storage.delete(officer.profilePicture);
+    }
+
+    await ctx.db.patch(officer._id, {
+      profilePicture: args.profilePicture,
+    });
+
+    return { success: true };
   },
 });
 
 export const getFieldOfficerIssues = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.id('users') },
 
   handler: async (ctx, args) => {
+    await requireApprovedFieldOfficer(ctx, args.userId);
     // 1. Get Unit Officer
     const officer = await ctx.db
-      .query("fieldOfficers")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .query('fieldOfficers')
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
       .unique();
 
     if (!officer) return [];
 
-    // 2. Fetch Issues
-    const issues = await Promise.all(
-      officer.assignedIssueIds.map((id) => ctx.db.get(id)),
-    );
+    // 2. Fetch Issues using by_assigned_field_officer index (canonical source for Field Officer issues)
+    const issues = await ctx.db
+      .query('issues')
+      .withIndex('by_assigned_field_officer', (q) => q.eq('assignedFieldOfficer', officer.userId))
+      .collect();
 
     const validIssues = issues.filter(Boolean);
 
@@ -37,8 +79,8 @@ export const getFieldOfficerIssues = query({
 
         // reportedBy = userId of citizen
         const citizen = await ctx.db
-          .query("citizens")
-          .withIndex("by_user", (q) => q.eq("userId", issue.reportedBy))
+          .query('citizens')
+          .withIndex('by_user', (q) => q.eq('userId', issue.reportedBy))
           .unique();
 
         // Main preview (first photo)
@@ -46,7 +88,7 @@ export const getFieldOfficerIssues = query({
           (issue.photos || []).map(async (fileId) => {
             const url = await ctx.storage.getUrl(fileId);
             return url;
-          }),
+          })
         );
 
         // Citizen Video Evidence (if exists)
@@ -61,12 +103,12 @@ export const getFieldOfficerIssues = query({
           videoUrl,
 
           citizenDetails: {
-            fullName: citizen?.fullName ?? "Unknown",
-            email: citizen?.email ?? "N/A",
-            phone: citizen?.phone ?? "N/A",
+            fullName: citizen?.fullName ?? 'Unknown',
+            email: citizen?.email ?? 'N/A',
+            phone: citizen?.phone ?? 'N/A',
           },
         };
-      }),
+      })
     );
 
     return enrichedIssues.filter(Boolean);
@@ -75,18 +117,20 @@ export const getFieldOfficerIssues = query({
 
 export const getIssueById = query({
   args: {
-    issueId: v.id("issues"),
+    userId: v.id('users'),
+    issueId: v.id('issues'),
   },
 
   handler: async (ctx, args) => {
+    await requireApprovedFieldOfficer(ctx, args.userId);
     const issue = await ctx.db.get(args.issueId);
 
     if (!issue) return null;
 
     // Fetch Citizen Details
     const citizen = await ctx.db
-      .query("citizens")
-      .withIndex("by_user", (q) => q.eq("userId", issue.reportedBy))
+      .query('citizens')
+      .withIndex('by_user', (q) => q.eq('userId', issue.reportedBy))
       .unique();
 
     // Fetch Field Officer using userId stored in issue
@@ -94,8 +138,8 @@ export const getIssueById = query({
 
     if (issue.assignedFieldOfficer) {
       const fo = await ctx.db
-        .query("fieldOfficers")
-        .withIndex("by_user", (q) => q.eq("userId", issue.assignedFieldOfficer))
+        .query('fieldOfficers')
+        .withIndex('by_user', (q) => q.eq('userId', issue.assignedFieldOfficer))
         .unique();
 
       if (fo) {
@@ -111,8 +155,7 @@ export const getIssueById = query({
           efficiencyScore: fo.efficiencyScore,
           currentActiveIssues: fo.currentActiveIssues,
           maxIssueCapacity: fo.maxIssueCapacity,
-          workloadPercentage:
-            (fo.currentActiveIssues / fo.maxIssueCapacity) * 100,
+          workloadPercentage: (fo.currentActiveIssues / fo.maxIssueCapacity) * 100,
           specialisations: fo.specialisations,
         };
       }
@@ -123,7 +166,7 @@ export const getIssueById = query({
       (issue.photos || []).map(async (fileId) => {
         const url = await ctx.storage.getUrl(fileId);
         return url;
-      }),
+      })
     );
 
     // Resolve BEFORE photos
@@ -131,7 +174,7 @@ export const getIssueById = query({
       (issue.beforePhotos || []).map(async (fileId) => {
         const url = await ctx.storage.getUrl(fileId);
         return url;
-      }),
+      })
     );
 
     // Resolve AFTER photos
@@ -139,7 +182,7 @@ export const getIssueById = query({
       (issue.afterPhotos || []).map(async (fileId) => {
         const url = await ctx.storage.getUrl(fileId);
         return url;
-      }),
+      })
     );
 
     // Citizen Video Evidence (if exists)
@@ -151,9 +194,9 @@ export const getIssueById = query({
     return {
       ...issue,
       citizenDetails: {
-        fullName: citizen?.fullName ?? "Unknown",
-        email: citizen?.email ?? "N/A",
-        phone: citizen?.phone ?? "N/A",
+        fullName: citizen?.fullName ?? 'Unknown',
+        email: citizen?.email ?? 'N/A',
+        phone: citizen?.phone ?? 'N/A',
       },
       photoUrl,
       beforePhotos,
@@ -168,67 +211,84 @@ export const getIssueById = query({
 
 export const startWork = mutation({
   args: {
-    issueId: v.id("issues"),
-    userId: v.id("users"),
+    issueId: v.id('issues'),
+    userId: v.id('users'),
   },
 
   handler: async (ctx, args) => {
+    await requireApprovedFieldOfficer(ctx, args.userId);
     const issue = await ctx.db.get(args.issueId);
-    if (!issue) throw new Error("Issue not found");
+    if (!issue) throw new Error('Issue not found');
 
     const fieldOfficer = await ctx.db.get(args.userId);
-    if (!fieldOfficer) throw new Error("Field Officer not found");
+    if (!fieldOfficer) throw new Error('Field Officer not found');
 
     const now = Date.now();
 
     // Update issue status to "in_progress"
     await ctx.db.patch(args.issueId, {
-      status: "in_progress",
+      status: 'in_progress',
     });
 
     // Add entry to issue timeline
-    await ctx.db.insert("issueUpdates", {
+    await ctx.db.insert('issueUpdates', {
       issueId: args.issueId,
-      status: "in_progress",
+      status: 'in_progress',
       comment: `Field Officer ${fieldOfficer.fullName} has started work on this issue - "${issue.title}" with Issue Code "${issue.issueCode}".`,
       updatedBy: args.userId,
-      role: "field_officer",
+      role: 'field_officer',
       attachments: [],
-      scope: "officer_and_citizen",
+      scope: 'officer_and_citizen',
       createdAt: now,
     });
 
     // Notify Citizen
-    await ctx.db.insert("notifications", {
+    await ctx.db.insert('notifications', {
       userId: issue.reportedBy,
       issueId: args.issueId,
       title: `Field Officer ${fieldOfficer.fullName} has started work on ${issue.issueCode}`,
       message: `Field Officer ${fieldOfficer.fullName} has started work on your issue "${issue.title}" (${issue.issueCode}).`,
-      type: "in_progress",
+      type: 'in_progress',
       read: false,
       createdAt: now,
     });
 
     // Notify Field Officer
-    await ctx.db.insert("notifications", {
+    await ctx.db.insert('notifications', {
       userId: issue.assignedFieldOfficer,
       issueId: args.issueId,
       title: `You have started work on ${issue.issueCode}`,
       message: `You have started work on this issue - "${issue.title}" (${issue.issueCode}).`,
-      type: "in_progress",
+      type: 'in_progress',
       read: false,
       createdAt: now,
     });
 
     // Notify Unit Officer
-    await ctx.db.insert("notifications", {
+    await ctx.db.insert('notifications', {
       userId: issue.assignedUnitOfficer,
       issueId: args.issueId,
       title: `Field Officer ${fieldOfficer.fullName} has started work on ${issue.issueCode}`,
       message: `Field Officer ${fieldOfficer.fullName} has started work on this issue - "${issue.title}" (${issue.issueCode}).`,
-      type: "in_progress",
+      type: 'in_progress',
       read: false,
       createdAt: now,
+    });
+
+    // Audit log
+    await auditIssueActionMobile(ctx, {
+      issue,
+      performedByUserId: args.userId,
+      performerRole: 'field_officer',
+      action: 'work_started',
+      actionCategory: 'issue',
+      oldValue: {
+        status: issue.status,
+      },
+      newValue: {
+        status: 'in_progress',
+      },
+      description: `Field Officer started work on ${issue.issueCode}.`,
     });
 
     return { success: true };
@@ -237,36 +297,38 @@ export const startWork = mutation({
 
 export const submitFieldOfficerWork = mutation({
   args: {
-    issueId: v.id("issues"),
+    userId: v.id('users'),
+    issueId: v.id('issues'),
 
-    beforePhotos: v.optional(v.array(v.id("_storage"))),
-    afterPhotos: v.optional(v.array(v.id("_storage"))),
+    beforePhotos: v.optional(v.array(v.id('_storage'))),
+    afterPhotos: v.optional(v.array(v.id('_storage'))),
 
     beforeLocation: v.optional(
       v.object({
         latitude: v.number(),
         longitude: v.number(),
-      }),
+      })
     ),
 
     afterLocation: v.optional(
       v.object({
         latitude: v.number(),
         longitude: v.number(),
-      }),
+      })
     ),
 
     notes: v.string(),
 
-    fieldOfficerId: v.id("users"),
+    fieldOfficerId: v.id('users'),
   },
 
   handler: async (ctx, args) => {
+    await requireApprovedFieldOfficer(ctx, args.userId);
     const issue = await ctx.db.get(args.issueId);
-    if (!issue) throw new Error("Issue not found");
+    if (!issue) throw new Error('Issue not found');
 
     const fieldOfficer = await ctx.db.get(args.fieldOfficerId);
-    if (!fieldOfficer) throw new Error("Field Officer not found");
+    if (!fieldOfficer) throw new Error('Field Officer not found');
 
     const now = Date.now();
 
@@ -277,35 +339,32 @@ export const submitFieldOfficerWork = mutation({
       beforeLocation: args.beforeLocation,
       afterLocation: args.afterLocation,
       notes: args.notes,
-      status: "pending_uo_verification",
+      status: 'pending_uo_verification',
     });
 
     // Timeline entry (VERY important for CityCare tracking)
-    await ctx.db.insert("issueUpdates", {
+    await ctx.db.insert('issueUpdates', {
       issueId: args.issueId,
-      status:
-        issue.status === "rework_required"
-          ? issue.status
-          : "pending_uo_verification",
+      status: issue.status === 'rework_required' ? issue.status : 'pending_uo_verification',
       updatedBy: args.fieldOfficerId,
-      comment: `Field Officer ${fieldOfficer.fullName} has ${issue.status === "rework_required" ? "reworked and resubmitted" : "submitted"} the resolution for issue "${issue.title}" (${issue.issueCode}).`,
-      role: "field_officer",
-      scope: "officer_and_citizen",
+      comment: `Field Officer ${fieldOfficer.fullName} has ${issue.status === 'rework_required' ? 'reworked and resubmitted' : 'submitted'} the resolution for issue "${issue.title}" (${issue.issueCode}).`,
+      role: 'field_officer',
+      scope: 'officer_and_citizen',
       attachments: [],
       createdAt: now,
     });
 
     // Notify Unit Officer
     if (issue.assignedUnitOfficer) {
-      await ctx.db.insert("notifications", {
+      await ctx.db.insert('notifications', {
         userId: issue.assignedUnitOfficer,
-        type: "submission_success",
+        type: 'submission_success',
         title:
-          issue.status === "rework_required"
+          issue.status === 'rework_required'
             ? `Resolution rework submitted successfully for issue "${issue.title}" (${issue.issueCode})`
             : `Resolution submitted successfully for issue "${issue.title}" (${issue.issueCode})`,
         message:
-          issue.status === "rework_required"
+          issue.status === 'rework_required'
             ? `Resolution rework submitted successfully by Field Officer ${fieldOfficer.fullName} for issue "${issue.title}" (${issue.issueCode}).`
             : `Resolution submitted successfully by Field Officer ${fieldOfficer.fullName} for issue "${issue.title}" (${issue.issueCode}).`,
         read: false,
@@ -314,19 +373,40 @@ export const submitFieldOfficerWork = mutation({
     }
 
     // Notify Field Officer (confirmation)
-    await ctx.db.insert("notifications", {
+    await ctx.db.insert('notifications', {
       userId: args.fieldOfficerId,
-      type: "submission_success",
+      type: 'submission_success',
       title:
-        issue.status === "rework_required"
+        issue.status === 'rework_required'
           ? `Resolution rework submitted successfully for issue "${issue.title}" (${issue.issueCode})`
           : `Resolution submitted successfully for issue "${issue.title}" (${issue.issueCode})`,
       message:
-        issue.status === "rework_required"
+        issue.status === 'rework_required'
           ? `Resolution rework submitted successfully by you for issue "${issue.title}" (${issue.issueCode}).`
           : `Resolution submitted successfully by you for issue "${issue.title}" (${issue.issueCode}).`,
       read: false,
       createdAt: now,
+    });
+
+    const isRework = issue.status === 'rework_required' || issue.status === 'rework_requested';
+
+    // Audit log
+    await auditIssueActionMobile(ctx, {
+      issue,
+      performedByUserId: args.fieldOfficerId,
+      performerRole: 'field_officer',
+      action: isRework ? 'rework_resubmitted' : 'resolution_submitted',
+      actionCategory: isRework ? 'rework' : 'resolution',
+      oldValue: {
+        status: issue.status,
+      },
+      newValue: {
+        status: 'pending_uo_verification',
+        hasBeforeEvidence: Array.isArray(args.beforePhotos) && args.beforePhotos.length > 0,
+        hasAfterEvidence: Array.isArray(args.afterPhotos) && args.afterPhotos.length > 0,
+      },
+      reason: args.notes,
+      description: `Resolution ${isRework ? 'rework resubmitted' : 'submitted'} for issue ${issue.issueCode}.`,
     });
 
     return { success: true };

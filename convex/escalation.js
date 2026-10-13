@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { auditIssueActionMobile } from "./mobileAuditLogger";
 
 // Helper function to resolve the admin's database user ID
 async function resolveAdminUserId(ctx, adminUserIdStr) {
@@ -320,7 +321,10 @@ export const reviewEscalation = mutation({
     if (!issue) throw new Error("Issue not found");
 
     const now = Date.now();
-    const adminDbId = await resolveAdminUserId(ctx, args.adminUserId || args.reviewedBy);
+    const adminDbId = await resolveAdminUserId(
+      ctx,
+      args.adminUserId || args.reviewedBy,
+    );
 
     await ctx.db.patch(args.issueId, {
       escalation: issue.escalation
@@ -385,7 +389,10 @@ export const extendIssueSla = mutation({
     if (!issue) throw new Error("Issue not found");
 
     const now = Date.now();
-    const adminDbId = await resolveAdminUserId(ctx, args.adminId || args.adminUserId);
+    const adminDbId = await resolveAdminUserId(
+      ctx,
+      args.adminId || args.adminUserId,
+    );
 
     // Auto-log review if pending
     const currentStatus = issue.escalation?.adminReviewStatus;
@@ -466,7 +473,9 @@ export const extendIssueSla = mutation({
 export const reassignIssueOfficer = mutation({
   args: {
     issueId: v.id("issues"),
-    officerType: v.optional(v.union(v.literal("unit_officer"), v.literal("field_officer"))),
+    officerType: v.optional(
+      v.union(v.literal("unit_officer"), v.literal("field_officer")),
+    ),
     newOfficerProfileId: v.optional(v.string()),
     newUnitOfficerId: v.optional(v.string()),
     newFieldOfficerId: v.optional(v.string()),
@@ -481,7 +490,10 @@ export const reassignIssueOfficer = mutation({
     if (!issue) throw new Error("Issue not found");
 
     const now = Date.now();
-    const adminDbId = await resolveAdminUserId(ctx, args.adminId || args.adminUserId);
+    const adminDbId = await resolveAdminUserId(
+      ctx,
+      args.adminId || args.adminUserId,
+    );
 
     const currentStatus = issue.escalation?.adminReviewStatus;
     if (currentStatus === "pending" || !currentStatus) {
@@ -494,7 +506,13 @@ export const reassignIssueOfficer = mutation({
       });
     }
 
-    const effectiveType = args.officerType || (args.newUnitOfficerId ? "unit_officer" : args.newFieldOfficerId ? "field_officer" : null);
+    const effectiveType =
+      args.officerType ||
+      (args.newUnitOfficerId
+        ? "unit_officer"
+        : args.newFieldOfficerId
+          ? "field_officer"
+          : null);
 
     if (effectiveType === "unit_officer") {
       const candidateIdStr = args.newOfficerProfileId || args.newUnitOfficerId;
@@ -514,7 +532,12 @@ export const reassignIssueOfficer = mutation({
         throw new Error("Selected Unit Officer account is not approved.");
       }
 
-      if (profile.city && issue.city && profile.city !== issue.city && !args.confirmCrossCity) {
+      if (
+        profile.city &&
+        issue.city &&
+        profile.city !== issue.city &&
+        !args.confirmCrossCity
+      ) {
         return {
           code: "CROSS_CITY_CONFIRMATION_REQUIRED",
           message: `The selected officer belongs to ${profile.city}, while this issue belongs to ${issue.city}. Cross-city assignment confirmation is required.`,
@@ -524,7 +547,12 @@ export const reassignIssueOfficer = mutation({
       }
 
       const issueDept = issue.department || issue.category;
-      if (profile.department && issueDept && profile.department !== issueDept && !args.confirmDepartmentMismatch) {
+      if (
+        profile.department &&
+        issueDept &&
+        profile.department !== issueDept &&
+        !args.confirmDepartmentMismatch
+      ) {
         return {
           code: "DEPARTMENT_MISMATCH_CONFIRMATION_REQUIRED",
           message: `Issue Department: ${issueDept}. Selected Officer Department: ${profile.department}. Department mismatch confirmation is required.`,
@@ -542,13 +570,17 @@ export const reassignIssueOfficer = mutation({
           .unique();
         if (oldUoProfile) {
           await ctx.db.patch(oldUoProfile._id, {
-            activeIssueIds: (oldUoProfile.activeIssueIds || []).filter((id) => id !== args.issueId),
+            activeIssueIds: (oldUoProfile.activeIssueIds || []).filter(
+              (id) => id !== args.issueId,
+            ),
           });
         }
       }
 
       await ctx.db.patch(profile._id, {
-        activeIssueIds: Array.from(new Set([...(profile.activeIssueIds || []), args.issueId])),
+        activeIssueIds: Array.from(
+          new Set([...(profile.activeIssueIds || []), args.issueId]),
+        ),
       });
 
       await ctx.db.patch(args.issueId, {
@@ -556,7 +588,11 @@ export const reassignIssueOfficer = mutation({
         escalation: issue.escalation
           ? {
               ...issue.escalation,
-              adminReviewStatus: issue.escalation.adminReviewStatus === "pending" || !issue.escalation.adminReviewStatus ? "reviewed" : issue.escalation.adminReviewStatus,
+              adminReviewStatus:
+                issue.escalation.adminReviewStatus === "pending" ||
+                !issue.escalation.adminReviewStatus
+                  ? "reviewed"
+                  : issue.escalation.adminReviewStatus,
             }
           : undefined,
       });
@@ -594,14 +630,20 @@ export const reassignIssueOfficer = mutation({
           .withIndex("by_user", (q) => q.eq("userId", candidateIdStr))
           .unique();
       }
-      if (!profile) throw new Error("Selected Field Officer profile not found.");
+      if (!profile)
+        throw new Error("Selected Field Officer profile not found.");
 
       const officerUser = await ctx.db.get(profile.userId);
       if (officerUser && officerUser.accountApproved === false) {
         throw new Error("Selected Field Officer account is not approved.");
       }
 
-      if (profile.city && issue.city && profile.city !== issue.city && !args.confirmCrossCity) {
+      if (
+        profile.city &&
+        issue.city &&
+        profile.city !== issue.city &&
+        !args.confirmCrossCity
+      ) {
         return {
           code: "CROSS_CITY_CONFIRMATION_REQUIRED",
           message: `The selected officer belongs to ${profile.city}, while this issue belongs to ${issue.city}. Cross-city assignment confirmation is required.`,
@@ -611,7 +653,12 @@ export const reassignIssueOfficer = mutation({
       }
 
       const issueDept = issue.department || issue.category;
-      if (profile.department && issueDept && profile.department !== issueDept && !args.confirmDepartmentMismatch) {
+      if (
+        profile.department &&
+        issueDept &&
+        profile.department !== issueDept &&
+        !args.confirmDepartmentMismatch
+      ) {
         return {
           code: "DEPARTMENT_MISMATCH_CONFIRMATION_REQUIRED",
           message: `Issue Department: ${issueDept}. Selected Officer Department: ${profile.department}. Department mismatch confirmation is required.`,
@@ -628,7 +675,9 @@ export const reassignIssueOfficer = mutation({
           .withIndex("by_user", (q) => q.eq("userId", oldFo))
           .unique();
         if (oldFoProfile) {
-          const assigned = (oldFoProfile.assignedIssueIds || []).filter((id) => id !== args.issueId);
+          const assigned = (oldFoProfile.assignedIssueIds || []).filter(
+            (id) => id !== args.issueId,
+          );
           await ctx.db.patch(oldFoProfile._id, {
             assignedIssueIds: assigned,
             currentActiveIssues: assigned.length,
@@ -636,7 +685,9 @@ export const reassignIssueOfficer = mutation({
         }
       }
 
-      const assigned = Array.from(new Set([...(profile.assignedIssueIds || []), args.issueId]));
+      const assigned = Array.from(
+        new Set([...(profile.assignedIssueIds || []), args.issueId]),
+      );
       await ctx.db.patch(profile._id, {
         assignedIssueIds: assigned,
         currentActiveIssues: assigned.length,
@@ -647,7 +698,11 @@ export const reassignIssueOfficer = mutation({
         escalation: issue.escalation
           ? {
               ...issue.escalation,
-              adminReviewStatus: issue.escalation.adminReviewStatus === "pending" || !issue.escalation.adminReviewStatus ? "reviewed" : issue.escalation.adminReviewStatus,
+              adminReviewStatus:
+                issue.escalation.adminReviewStatus === "pending" ||
+                !issue.escalation.adminReviewStatus
+                  ? "reviewed"
+                  : issue.escalation.adminReviewStatus,
             }
           : undefined,
       });
@@ -693,7 +748,10 @@ export const changeIssueCategory = mutation({
     if (!issue) throw new Error("Issue not found");
 
     const now = Date.now();
-    const adminDbId = await resolveAdminUserId(ctx, args.adminId || args.adminUserId);
+    const adminDbId = await resolveAdminUserId(
+      ctx,
+      args.adminId || args.adminUserId,
+    );
 
     const oldCategory = issue.category;
 
@@ -749,7 +807,10 @@ export const approveEscalation = mutation({
     if (!issue) throw new Error("Issue not found");
 
     const now = Date.now();
-    const adminDbId = await resolveAdminUserId(ctx, args.adminId || args.adminUserId);
+    const adminDbId = await resolveAdminUserId(
+      ctx,
+      args.adminId || args.adminUserId,
+    );
 
     const targetStatus =
       issue.status === "escalated"
@@ -789,7 +850,10 @@ export const approveEscalation = mutation({
       createdAt: now,
     });
 
-    const notifyUsers = [issue.assignedUnitOfficer, issue.assignedFieldOfficer].filter(Boolean);
+    const notifyUsers = [
+      issue.assignedUnitOfficer,
+      issue.assignedFieldOfficer,
+    ].filter(Boolean);
     for (const p of notifyUsers) {
       await ctx.db.insert("notifications", {
         userId: p,
@@ -822,11 +886,16 @@ export const rejectEscalation = mutation({
 
     const reason = args.reason.trim();
     if (!reason) {
-      throw new Error("A reason for rejecting the escalation response is required.");
+      throw new Error(
+        "A reason for rejecting the escalation response is required.",
+      );
     }
 
     const now = Date.now();
-    const adminDbId = await resolveAdminUserId(ctx, args.adminId || args.adminUserId);
+    const adminDbId = await resolveAdminUserId(
+      ctx,
+      args.adminId || args.adminUserId,
+    );
 
     await ctx.db.patch(args.issueId, {
       escalatedToAdmin: true,
@@ -863,7 +932,10 @@ export const rejectEscalation = mutation({
       createdAt: now,
     });
 
-    const notifyUsers = [issue.assignedUnitOfficer, issue.assignedFieldOfficer].filter(Boolean);
+    const notifyUsers = [
+      issue.assignedUnitOfficer,
+      issue.assignedFieldOfficer,
+    ].filter(Boolean);
     for (const p of notifyUsers) {
       await ctx.db.insert("notifications", {
         userId: p,
@@ -987,5 +1059,337 @@ export const getEscalationAnalytics = query({
       escalationsByDepartment,
       mostDelayedOfficers,
     };
+  },
+});
+
+// Mobile Escalation Functions
+export const getEscalationDetailsByIssueId = query({
+  args: {
+    issueId: v.id('issues'),
+  },
+
+  handler: async (ctx, args) => {
+    const issue = await ctx.db.get(args.issueId);
+
+    if (!issue) return null;
+
+    const actions = await ctx.db
+
+      .query('escalationResolutionActions')
+
+      .withIndex('by_issue', (q) => q.eq('issueId', args.issueId))
+
+      .collect();
+
+    const enrichedActions = await Promise.all(
+      actions.map(async (a) => {
+        const performer = await ctx.db.get(a.performedBy);
+
+        return {
+          id: a._id,
+
+          issueId: a.issueId,
+
+          type: a.actionType,
+
+          performedBy: performer ? performer.fullName : 'System Admin',
+
+          performedAt: a.performedAt,
+
+          oldValue: a.oldValue,
+
+          newValue: a.newValue,
+
+          notes: a.notes,
+        };
+      })
+    );
+
+    enrichedActions.sort((x, y) => x.performedAt - y.performedAt);
+
+    return {
+      escalatedToAdmin: issue.escalatedToAdmin || false,
+
+      status: issue.status,
+
+      escalation: issue.escalation || null,
+
+      actions: enrichedActions,
+    };
+  },
+});
+
+export const escalateIssueMobile = mutation({
+  args: {
+    issueId: v.id('issues'),
+
+    prevIssueStatus: v.string(),
+
+    escalationCategory: v.union(
+      v.literal('sla_breach'),
+
+      v.literal('resource_shortage'),
+
+      v.literal('technical_complexity'),
+
+      v.literal('public_safety_risk'),
+
+      v.literal('legal_or_regulatory'),
+
+      v.literal('citizen_escalation'),
+
+      v.literal('repeat_failure'),
+
+      v.literal('cross_department_dependency'),
+
+      v.literal('budget_approval_required'),
+
+      v.literal('emergency_response'),
+
+      v.literal('officer_non_responsiveness'),
+
+      v.literal('technical_dependency'),
+
+      v.literal('third_party_dependency'),
+
+      v.literal('environmental_risk'),
+
+      v.literal('administrative_approval_pending'),
+
+      v.literal('other')
+    ),
+
+    escalationPriority: v.union(v.literal('medium'), v.literal('high'), v.literal('critical')),
+
+    escalationReason: v.string(),
+
+    adminUserId: v.string(),
+  },
+
+  handler: async (ctx, args) => {
+    const issue = await ctx.db.get(args.issueId);
+
+    if (!issue) throw new Error('Issue not found');
+
+    const now = Date.now();
+
+    const adminDbId = await resolveAdminUserId(ctx, args.adminUserId);
+
+    await ctx.db.patch(args.issueId, {
+      escalatedToAdmin: true,
+
+      status: 'escalated',
+
+      escalation: {
+        category: args.escalationCategory,
+
+        priority: args.escalationPriority,
+
+        reason: args.escalationReason,
+
+        comments: '',
+
+        escalatedBy: adminDbId,
+
+        escalatedAt: now,
+
+        prevIssueStatus: args.prevIssueStatus,
+
+        resolved: false,
+
+        adminReviewStatus: 'pending',
+
+        escalationCount: (issue.escalation?.escalationCount || 0) + 1,
+      },
+    });
+
+    await ctx.db.insert('escalationResolutionActions', {
+      issueId: args.issueId,
+
+      actionType: 'escalate',
+
+      performedBy: adminDbId,
+
+      performedAt: now,
+
+      newValue: args.escalationCategory,
+
+      notes: args.escalationReason,
+    });
+
+    await ctx.db.insert('issueUpdates', {
+      issueId: args.issueId,
+
+      status: 'escalated',
+
+      comment: `Escalated to Admin. Category: ${args.escalationCategory}. Priority: ${args.escalationPriority}. Reason: ${args.escalationReason}`,
+
+      updatedBy: adminDbId,
+
+      role: 'admin',
+
+      attachments: [],
+
+      scope: 'officer_and_citizen',
+
+      createdAt: now,
+    });
+
+    // Notify Reporter
+
+    await ctx.db.insert('notifications', {
+      userId: issue.reportedBy,
+
+      issueId: args.issueId,
+
+      title: `Issue Escalated - "${issue.title}"`,
+
+      message: `Your issue has been escalated to administrative queue. Category: ${args.escalationCategory}`,
+
+      type: 'issue_escalated',
+
+      read: false,
+
+      createdAt: now,
+    });
+
+    // Notify Officers
+
+    if (issue.assignedUnitOfficer) {
+      await ctx.db.insert('notifications', {
+        userId: issue.assignedUnitOfficer,
+
+        issueId: args.issueId,
+
+        title: `Assigned Issue Escalated - "${issue.title}"`,
+
+        message: `An issue assigned to you has been escalated to administrative queue. Category: ${args.escalationCategory}`,
+
+        type: 'issue_escalated',
+
+        read: false,
+
+        createdAt: now,
+      });
+    }
+
+    if (issue.assignedFieldOfficer) {
+      await ctx.db.insert('notifications', {
+        userId: issue.assignedFieldOfficer,
+
+        issueId: args.issueId,
+
+        title: `Assigned Issue Escalated - "${issue.title}"`,
+
+        message: `An issue assigned to you has been escalated to administrative queue. Category: ${args.escalationCategory}`,
+
+        type: 'issue_escalated',
+
+        read: false,
+
+        createdAt: now,
+      });
+    }
+
+    // Notify Admins
+
+    const admins = await ctx.db
+
+      .query('users')
+
+      .withIndex('by_role', (q) => q.eq('role', 'admin'))
+
+      .collect();
+
+    for (const admin of admins) {
+      await ctx.db.insert('notifications', {
+        userId: admin._id,
+
+        issueId: args.issueId,
+
+        title: `Escalation Pending - "${issue.title}"`,
+
+        message: `A new escalation is pending review: "${issue.title}". Category: ${args.escalationCategory}`,
+
+        type: 'issue_escalated',
+
+        read: false,
+
+        createdAt: now,
+      });
+    }
+
+    // Notify City Admins if critical
+
+    if (args.escalationPriority === 'critical') {
+      const cityAdmins = await ctx.db
+
+        .query('users')
+
+        .withIndex('by_role', (q) => q.eq('role', 'city_admin'))
+
+        .collect();
+
+      for (const ca of cityAdmins) {
+        await ctx.db.insert('notifications', {
+          userId: ca._id,
+
+          issueId: args.issueId,
+
+          title: `URGENT: Critical Escalation - "${issue.title}"`,
+
+          message: `CRITICAL escalation requires immediate action: "${issue.title}". Category: ${args.escalationCategory}`,
+
+          type: 'issue_escalated',
+
+          read: false,
+
+          createdAt: now,
+        });
+      }
+    }
+
+    // Escalation Audit Log
+    await auditIssueActionMobile(ctx, {
+      issue,
+
+      performedByUserId: args.adminUserId,
+      performerRole: "unit_officer",
+
+      action: "issue_escalated",
+      actionCategory: "escalation",
+
+      oldValue: {
+        status: issue.status,
+        escalatedToAdmin: issue.escalatedToAdmin ?? false,
+        escalation: issue.escalation ?? null,
+      },
+
+      newValue: {
+        status: "escalated",
+        escalatedToAdmin: true,
+
+        escalation: {
+          category: args.escalationCategory,
+          priority: args.escalationPriority,
+          reason: args.escalationReason,
+          escalatedBy: args.adminUserId,
+          escalatedAt: now,
+          prevIssueStatus: args.prevIssueStatus,
+          resolved: false,
+          adminReviewStatus: "pending",
+          escalationCount: (issue.escalation?.escalationCount || 0) + 1,
+        },
+      },
+
+      reason: args.escalationReason,
+
+      description:
+        `Issue ${issue.issueCode} escalated to System Admin by Unit Officer. ` +
+        `Category: ${args.escalationCategory}. ` +
+        `Priority: ${args.escalationPriority}.`,
+    });
+
+    return { success: true };
   },
 });

@@ -558,6 +558,16 @@ const StaffSignIn = () => {
                 </div>
               </div>
 
+              {/* Forgot Password Link */}
+              <div className="flex justify-end mt-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => router.push(`/forgot-password?role=${formData.role || "city_admin"}${formData.email ? `&email=${encodeURIComponent(formData.email.trim())}` : ""}`)}
+                  className="text-14-regular text-emerald-600 dark:text-emerald-500 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors font-medium"
+                >
+                  Forgot password?
+                </button>
+              </div>
               {/* Submit */}
               <button
                 type="submit"

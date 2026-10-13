@@ -28,6 +28,7 @@ import type * as gamificationAutomation from "../gamificationAutomation.js";
 import type * as helpers_cityAdminAuth from "../helpers/cityAdminAuth.js";
 import type * as issueAnalytics from "../issueAnalytics.js";
 import type * as issueDiscussions from "../issueDiscussions.js";
+import type * as issueReview from "../issueReview.js";
 import type * as issueUpdates from "../issueUpdates.js";
 import type * as issues from "../issues.js";
 import type * as issuesMedia from "../issuesMedia.js";
@@ -35,10 +36,16 @@ import type * as lib_auditLogger from "../lib/auditLogger.js";
 import type * as lib_cityIssueAnalytics from "../lib/cityIssueAnalytics.js";
 import type * as lib_officerPerformanceCalculations from "../lib/officerPerformanceCalculations.js";
 import type * as messages from "../messages.js";
+import type * as mobileAuditLogger from "../mobileAuditLogger.js";
 import type * as notifications from "../notifications.js";
 import type * as officerAssign from "../officerAssign.js";
+import type * as officerAuth from "../officerAuth.js";
+import type * as officerAuthInternal from "../officerAuthInternal.js";
 import type * as officerPerformance from "../officerPerformance.js";
 import type * as officerPerformanceMaintenance from "../officerPerformanceMaintenance.js";
+import type * as passwordResetInternal from "../passwordResetInternal.js";
+import type * as passwordResetNode from "../passwordResetNode.js";
+import type * as passwordResetPublic from "../passwordResetPublic.js";
 import type * as publicIssues from "../publicIssues.js";
 import type * as signUp from "../signUp.js";
 import type * as slaMonitoring from "../slaMonitoring.js";
@@ -51,14 +58,6 @@ import type {
   FunctionReference,
 } from "convex/server";
 
-/**
- * A utility for referencing Convex functions in your app's API.
- *
- * Usage:
- * ```js
- * const myFunctionReference = api.myModule.myFunction;
- * ```
- */
 declare const fullApi: ApiFromModules<{
   accountProvisioning: typeof accountProvisioning;
   accountProvisioningActions: typeof accountProvisioningActions;
@@ -80,6 +79,7 @@ declare const fullApi: ApiFromModules<{
   "helpers/cityAdminAuth": typeof helpers_cityAdminAuth;
   issueAnalytics: typeof issueAnalytics;
   issueDiscussions: typeof issueDiscussions;
+  issueReview: typeof issueReview;
   issueUpdates: typeof issueUpdates;
   issues: typeof issues;
   issuesMedia: typeof issuesMedia;
@@ -87,24 +87,46 @@ declare const fullApi: ApiFromModules<{
   "lib/cityIssueAnalytics": typeof lib_cityIssueAnalytics;
   "lib/officerPerformanceCalculations": typeof lib_officerPerformanceCalculations;
   messages: typeof messages;
+  mobileAuditLogger: typeof mobileAuditLogger;
   notifications: typeof notifications;
   officerAssign: typeof officerAssign;
+  officerAuth: typeof officerAuth;
+  officerAuthInternal: typeof officerAuthInternal;
   officerPerformance: typeof officerPerformance;
   officerPerformanceMaintenance: typeof officerPerformanceMaintenance;
+  passwordResetInternal: typeof passwordResetInternal;
+  passwordResetNode: typeof passwordResetNode;
+  passwordResetPublic: typeof passwordResetPublic;
   publicIssues: typeof publicIssues;
   signUp: typeof signUp;
   slaMonitoring: typeof slaMonitoring;
   unitOfficers: typeof unitOfficers;
   users: typeof users;
 }>;
-declare const fullApiWithMounts: typeof fullApi;
 
+/**
+ * A utility for referencing Convex functions in your app's public API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = api.myModule.myFunction;
+ * ```
+ */
 export declare const api: FilterApi<
-  typeof fullApiWithMounts,
+  typeof fullApi,
   FunctionReference<any, "public">
 >;
+
+/**
+ * A utility for referencing Convex functions in your app's internal API.
+ *
+ * Usage:
+ * ```js
+ * const myFunctionReference = internal.myModule.myFunction;
+ * ```
+ */
 export declare const internal: FilterApi<
-  typeof fullApiWithMounts,
+  typeof fullApi,
   FunctionReference<any, "internal">
 >;
 

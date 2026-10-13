@@ -16,6 +16,7 @@ export default defineSchema({
     ),
 
     createdAt: v.string(),
+    nextPasswordChangeAllowedAt: v.optional(v.number()),
   })
     .index("by_email", ["email"])
     .index("by_role", ["role"]),
@@ -65,6 +66,7 @@ export default defineSchema({
 
     createdAt: v.optional(v.number()),
     updatedAt: v.optional(v.number()),
+    nextPasswordChangeAllowedAt: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
     .index("by_city", ["city"])
@@ -213,6 +215,7 @@ export default defineSchema({
     createdBy: v.id("users"),
     profileImage: v.optional(v.id("_storage")),
     notes: v.optional(v.string()),
+    nextPasswordChangeAllowedAt: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
     .index("by_email", ["email"])
@@ -738,7 +741,15 @@ export default defineSchema({
 
   passwordResetRequests: defineTable({
     userId: v.id("users"),
-    officerRole: v.union(v.literal("unit_officer"), v.literal("field_officer")),
+    // Historical field name retained for mobile backward compatibility.
+    // Represents the account role participating in password recovery.
+    officerRole: v.union(
+      v.literal("citizen"),
+      v.literal("unit_officer"),
+      v.literal("field_officer"),
+      v.literal("city_admin"),
+      v.literal("admin")
+    ),
     emailNormalized: v.string(),
     maskedDeliveryEmail: v.string(),
     otpHash: v.string(),

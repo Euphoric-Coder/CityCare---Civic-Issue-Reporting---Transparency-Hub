@@ -20,7 +20,6 @@ export const verifyUser = action({
       email: args.email.toLowerCase(),
     });
 
-    // Do NOT throw
     if (!user) {
       return {
         success: false,
@@ -37,22 +36,37 @@ export const verifyUser = action({
       };
     }
 
-    // Role mismatch check
-    if (args.role && user.role !== args.role.toLowerCase().replace(" ", "_")) {
+    const normalizedRole = args.role?.toLowerCase().replace(/\s+/g, "_");
+
+    if (normalizedRole && user.role !== normalizedRole) {
       return {
         success: false,
         error: "Role mismatch. Please select the correct role.",
       };
     }
 
+    let mustChangePassword = false;
+
+    if (user.role === "unit_officer" || user.role === "field_officer") {
+      const officer = await ctx.runQuery(api.users.getOfficerProfile, {
+        userId: user._id,
+        role: user.role,
+      });
+
+      mustChangePassword = officer?.mustChangePassword ?? true;
+    }
+
     return {
       success: true,
+
       token: "token-" + user._id,
+
       user: {
         id: user._id,
         name: user.fullName,
         email: user.email,
         role: user.role,
+        mustChangePassword,
       },
     };
   },

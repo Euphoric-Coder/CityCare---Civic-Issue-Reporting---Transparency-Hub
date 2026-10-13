@@ -1,30 +1,80 @@
-import { v } from 'convex/values';
-import { mutation, query } from './_generated/server';
+import { requireApprovedUnitOfficer } from "./officerAuth";
+import { v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+import {
+  awardCitizenPoints,
+  checkAndAwardCitizenBadges,
+} from "../lib/gamificationAwards";
+import { auditIssueActionMobile } from "./mobileAuditLogger";
 
 export const getUnitOfficerByUserId = query({
-  args: { userId: v.id('users') },
+  args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    return await ctx.db
-      .query('unitOfficers')
-      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+    const officer = await ctx.db
+      .query("unitOfficers")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .unique();
+
+    if (!officer) return null;
+
+    let profilePictureUrl = null;
+    if (officer.profilePicture) {
+      profilePictureUrl = await ctx.storage.getUrl(officer.profilePicture);
+    }
+
+    return {
+      ...officer,
+      profilePictureUrl,
+    };
+  },
+});
+
+export const updateUnitOfficerProfilePicture = mutation({
+  args: {
+    userId: v.id("users"),
+    profilePicture: v.optional(v.id("_storage")),
+  },
+  handler: async (ctx, args) => {
+    const officer = await ctx.db
+      .query("unitOfficers")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .unique();
+
+    if (!officer) throw new Error("Unit Officer not found");
+
+    // Delete old profile picture from storage
+    if (officer.profilePicture) {
+      await ctx.storage.delete(officer.profilePicture);
+    }
+
+    await ctx.db.patch(officer._id, {
+      profilePicture: args.profilePicture,
+    });
+
+    return { success: true };
   },
 });
 
 export const getUnitOfficerIssues = query({
-  args: { userId: v.id('users') },
+  args: { userId: v.id("users") },
 
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.userId);
     // 1. Get Unit Officer
     const officer = await ctx.db
-      .query('unitOfficers')
-      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .query("unitOfficers")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .unique();
 
     if (!officer) return [];
 
-    // 2. Fetch Issues
-    const issues = await Promise.all(officer.activeIssueIds.map((id) => ctx.db.get(id)));
+    // 2. Fetch Issues using by_assigned_unit_officer index (canonical source for Unit Officer issues)
+    const issues = await ctx.db
+      .query("issues")
+      .withIndex("by_assigned_unit_officer", (q) =>
+        q.eq("assignedUnitOfficer", officer.userId),
+      )
+      .collect();
 
     const validIssues = issues.filter(Boolean);
 
@@ -35,8 +85,8 @@ export const getUnitOfficerIssues = query({
 
         // reportedBy = userId of citizen
         const citizen = await ctx.db
-          .query('citizens')
-          .withIndex('by_user', (q) => q.eq('userId', issue.reportedBy))
+          .query("citizens")
+          .withIndex("by_user", (q) => q.eq("userId", issue.reportedBy))
           .unique();
 
         // Fetch Field Officer using userId stored in issue
@@ -44,8 +94,10 @@ export const getUnitOfficerIssues = query({
 
         if (issue.assignedFieldOfficer) {
           const fo = await ctx.db
-            .query('fieldOfficers')
-            .withIndex('by_user', (q) => q.eq('userId', issue.assignedFieldOfficer))
+            .query("fieldOfficers")
+            .withIndex("by_user", (q) =>
+              q.eq("userId", issue.assignedFieldOfficer),
+            )
             .unique();
 
           if (fo) {
@@ -61,7 +113,8 @@ export const getUnitOfficerIssues = query({
               efficiencyScore: fo.efficiencyScore,
               currentActiveIssues: fo.currentActiveIssues,
               maxIssueCapacity: fo.maxIssueCapacity,
-              workloadPercentage: (fo.currentActiveIssues / fo.maxIssueCapacity) * 100,
+              workloadPercentage:
+                (fo.currentActiveIssues / fo.maxIssueCapacity) * 100,
               specialisations: fo.specialisations,
             };
           }
@@ -70,14 +123,15 @@ export const getUnitOfficerIssues = query({
         return {
           ...issue,
 
+          department: officer.department,
           citizenDetails: {
-            fullName: citizen?.fullName ?? 'Unknown',
-            email: citizen?.email ?? 'N/A',
-            phone: citizen?.phone ?? 'N/A',
+            fullName: citizen?.fullName ?? "Unknown",
+            email: citizen?.email ?? "N/A",
+            phone: citizen?.phone ?? "N/A",
           },
           fieldOfficerDetails,
         };
-      })
+      }),
     );
 
     return enrichedIssues.filter(Boolean);
@@ -86,28 +140,39 @@ export const getUnitOfficerIssues = query({
 
 export const getIssueById = query({
   args: {
-    issueId: v.id('issues'),
+    userId: v.id("users"),
+    issueId: v.id("issues"),
   },
 
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.userId);
     const issue = await ctx.db.get(args.issueId);
 
     if (!issue) return null;
 
     // Fetch Citizen Details
     const citizen = await ctx.db
-      .query('citizens')
-      .withIndex('by_user', (q) => q.eq('userId', issue.reportedBy))
+      .query("citizens")
+      .withIndex("by_user", (q) => q.eq("userId", issue.reportedBy))
       .unique();
 
     // Fetch Field Officer using userId stored in issue
     let fieldOfficerDetails = null;
 
+    let department = "road";
+
     if (issue.assignedFieldOfficer) {
       const fo = await ctx.db
-        .query('fieldOfficers')
-        .withIndex('by_user', (q) => q.eq('userId', issue.assignedFieldOfficer))
+        .query("fieldOfficers")
+        .withIndex("by_user", (q) => q.eq("userId", issue.assignedFieldOfficer))
         .unique();
+
+      const uo = await ctx.db
+        .query("unitOfficers")
+        .withIndex("by_user", (q) => q.eq("userId", issue.assignedFieldOfficer))
+        .unique();
+
+      if (uo) department = uo.department;
 
       if (fo) {
         const foUser = await ctx.db.get(fo.userId);
@@ -122,7 +187,8 @@ export const getIssueById = query({
           efficiencyScore: fo.efficiencyScore,
           currentActiveIssues: fo.currentActiveIssues,
           maxIssueCapacity: fo.maxIssueCapacity,
-          workloadPercentage: (fo.currentActiveIssues / fo.maxIssueCapacity) * 100,
+          workloadPercentage:
+            (fo.currentActiveIssues / fo.maxIssueCapacity) * 100,
           specialisations: fo.specialisations,
         };
       }
@@ -133,7 +199,7 @@ export const getIssueById = query({
       (issue.photos || []).map(async (fileId) => {
         const url = await ctx.storage.getUrl(fileId);
         return url;
-      })
+      }),
     );
 
     // Resolve BEFORE photos
@@ -141,7 +207,7 @@ export const getIssueById = query({
       (issue.beforePhotos || []).map(async (fileId) => {
         const url = await ctx.storage.getUrl(fileId);
         return url;
-      })
+      }),
     );
 
     // Resolve AFTER photos
@@ -149,7 +215,7 @@ export const getIssueById = query({
       (issue.afterPhotos || []).map(async (fileId) => {
         const url = await ctx.storage.getUrl(fileId);
         return url;
-      })
+      }),
     );
 
     // Citizen Video Evidence (if exists)
@@ -160,10 +226,11 @@ export const getIssueById = query({
 
     return {
       ...issue,
+      department,
       citizenDetails: {
-        fullName: citizen?.fullName ?? 'Unknown',
-        email: citizen?.email ?? 'N/A',
-        phone: citizen?.phone ?? 'N/A',
+        fullName: citizen?.fullName ?? "Unknown",
+        email: citizen?.email ?? "N/A",
+        phone: citizen?.phone ?? "N/A",
       },
       photoUrl,
       beforePhotos,
@@ -176,7 +243,7 @@ export const getIssueById = query({
 
 export const verifyIssue = mutation({
   args: {
-    issueId: v.id('issues'),
+    issueId: v.id("issues"),
 
     issueCode: v.string(),
 
@@ -195,20 +262,21 @@ export const verifyIssue = mutation({
 
     status: v.string(),
 
-    verifiedBy: v.id('users'),
+    verifiedBy: v.id("users"),
 
     issueName: v.string(),
 
-    reporterId: v.id('users'),
+    reporterId: v.id("users"),
   },
 
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.unitOfficerUserId);
     const issue = await ctx.db.get(args.issueId);
-    if (!issue) throw new Error('Issue not found');
+    if (!issue) throw new Error("Issue not found");
 
     // Update Issue Status
     await ctx.db.patch(args.issueId, {
-      status: 'verified',
+      status: "verified",
 
       verificationChecklist: {
         ...args.verificationChecklist,
@@ -220,103 +288,157 @@ export const verifyIssue = mutation({
       slaDeadline: args.slaDeadline,
     });
 
-    if (args.status === 'reopened') {
+    if (args.status === "reopened") {
       // Add the Issue Timeline Update for the reopened issues
-      await ctx.db.insert('issueUpdates', {
+      await ctx.db.insert("issueUpdates", {
         issueId: args.issueId,
-        status: 'verified',
+        status: "verified",
         comment: `Issue verified again by Unit Officer ${args.UOName} after reopening and ready for assignment.`,
-        role: 'unit_officer',
+        role: "unit_officer",
         attachments: [],
         updatedBy: args.verifiedBy,
-        scope: 'officer_and_citizen',
+        scope: "officer_and_citizen",
         createdAt: Date.now(),
       });
 
       // Add Notification to Citizen for the reopened issues
-      await ctx.db.insert('notifications', {
+      await ctx.db.insert("notifications", {
         userId: args.reporterId, // citizen
         issueId: args.issueId,
         title: `Verified Re-opened Issue - "${args.issueName} (${args.issueCode})"`,
         message: `Your issue "${args.issueName}" with Issue Code "${args.issueCode}" has been successfully verified again by the Unit Officer ${args.UOName} after reopening and will be assigned shortly.`,
-        type: 'verified',
+        type: "verified",
         read: false,
         createdAt: Date.now(),
       });
 
       // Add Notification to Unit Officer for the reopenened issues
-      await ctx.db.insert('notifications', {
+      await ctx.db.insert("notifications", {
         userId: args.verifiedBy,
         issueId: args.issueId,
         title: `Verified Re-opened Issue - "${args.issueName} (${args.issueCode})"`,
         message: `You have successfully verified again the issue "${args.issueName}" with Issue Code "${args.issueCode}" after reopening.`,
-        type: 'verified',
+        type: "verified",
         read: false,
         createdAt: Date.now(),
       });
     } else {
       // Add the Issue Timeline Update for the verified issues
-      await ctx.db.insert('issueUpdates', {
+      await ctx.db.insert("issueUpdates", {
         issueId: args.issueId,
-        status: 'verified',
+        status: "verified",
         comment: `Issue verified by Unit Officer ${args.UOName} and ready for assignment.`,
-        role: 'unit_officer',
+        role: "unit_officer",
         attachments: [],
         updatedBy: args.verifiedBy,
-        scope: 'officer_and_citizen',
+        scope: "officer_and_citizen",
         createdAt: Date.now(),
       });
 
       // Add Notification to Citizen for the verified issues
-      await ctx.db.insert('notifications', {
+      await ctx.db.insert("notifications", {
         userId: args.reporterId, // citizen
         issueId: args.issueId,
         title: `Verified Issue - "${args.issueName} (${args.issueCode})"`,
         message: `Your issue "${args.issueName}" with Issue Code "${args.issueCode}" has been successfully verified by the Unit Officer ${args.UOName} and will be assigned shortly.`,
-        type: 'verified',
+        type: "verified",
         read: false,
         createdAt: Date.now(),
       });
 
       // Add Notification to Unit Officer for the verified issues
-      await ctx.db.insert('notifications', {
+      await ctx.db.insert("notifications", {
         userId: args.verifiedBy,
         issueId: args.issueId,
         title: `Verified Issue - "${args.issueName} (${args.issueCode})"`,
         message: `You have successfully verified the issue "${args.issueName}" with Issue Code "${args.issueCode}".`,
-        type: 'verified',
+        type: "verified",
         read: false,
         createdAt: Date.now(),
       });
+
+      // Verified Issue Gamification Reward
+      const citizen = await ctx.db
+        .query("citizens")
+        .withIndex("by_user", (q) => q.eq("userId", args.reporterId))
+        .first();
+
+      if (citizen) {
+        const existingVerifiedReward = await ctx.db
+          .query("citizenPointTransactions")
+          .withIndex("by_issue", (q) => q.eq("relatedIssueId", args.issueId))
+          .filter((q) => q.eq(q.field("type"), "issue_verified"))
+          .first();
+
+        if (!existingVerifiedReward) {
+          await awardCitizenPoints(ctx, {
+            citizenId: citizen._id,
+            userId: citizen.userId,
+            type: "issue_verified",
+            points: 20,
+            reason: "Issue verified by Unit Officer",
+            relatedIssueId: args.issueId,
+            metadata: {
+              source: "issue_verification",
+            },
+          });
+
+          await checkAndAwardCitizenBadges(ctx, {
+            citizenId: citizen._id,
+            userId: citizen.userId,
+            relatedIssueId: args.issueId,
+          });
+        }
+      }
     }
+
+    await auditIssueActionMobile(ctx, {
+      issue,
+      performedByUserId: args.verifiedBy,
+      performerRole: "unit_officer",
+      action: "issue_verified",
+      actionCategory: "verification",
+      oldValue: {
+        status: issue.status,
+        slaDeadline: issue.slaDeadline,
+      },
+      newValue: {
+        status: "verified",
+        slaDeadline: args.slaDeadline,
+        verificationChecklist: args.verificationChecklist,
+      },
+      reason: args.notes,
+      description: `Issue ${issue.issueCode} verified by Unit Officer.`,
+    });
   },
 });
 
 export const rejectIssue = mutation({
   args: {
-    issueId: v.id('issues'),
+    issueId: v.id("issues"),
     issueCode: v.string(),
     reason: v.string(),
     comment: v.string(),
     UOName: v.string(),
     status: v.string(),
-    rejectedBy: v.id('users'),
+    rejectedBy: v.id("users"),
     issueName: v.string(),
-    reporterId: v.id('users'),
+    reporterId: v.id("users"),
     isSlaRejection: v.optional(v.boolean()),
   },
 
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.rejectedBy);
     const issue = await ctx.db.get(args.issueId);
 
     // Fallback for missing issue
     if (!issue) {
-      throw new Error('Issue not found');
+      throw new Error("Issue not found");
     }
 
     // Fallback for already rejected issue (if any)
-    if (issue.status === 'rejected') {
-      throw new Error('Issue already rejected');
+    if (issue.status === "rejected") {
+      throw new Error("Issue already rejected");
     }
 
     const now = Date.now();
@@ -324,7 +446,7 @@ export const rejectIssue = mutation({
     // Update issue status to "rejected" and add rejection details
     if (args.isSlaRejection) {
       await ctx.db.patch(args.issueId, {
-        status: 'rejected',
+        status: "rejected",
         rejection: {
           reason: args.reason,
           comment: args.comment ?? null,
@@ -344,7 +466,7 @@ export const rejectIssue = mutation({
       });
     } else {
       await ctx.db.patch(args.issueId, {
-        status: 'rejected',
+        status: "rejected",
         rejection: {
           reason: args.reason,
           comment: args.comment ?? null,
@@ -356,109 +478,164 @@ export const rejectIssue = mutation({
       });
     }
 
-    if (args.status === 'reopened') {
+    if (args.status === "reopened") {
       // Add the Issue Timeline Update for reopened issue
-      await ctx.db.insert('issueUpdates', {
+      await ctx.db.insert("issueUpdates", {
         issueId: args.issueId,
-        status: 'rejected',
+        status: "rejected",
         comment: `The Issue "${args.issueName}" with Issue Code "${args.issueCode}" has been rejected again by the Unit Officer ${args.UOName} after issue reopened by citizen.\nReason: ${args.reason}\nComment: ${args.comment}`,
         updatedBy: args.rejectedBy,
-        role: 'unit_officer',
+        role: "unit_officer",
         attachments: [],
-        scope: 'citizen',
+        scope: "citizen",
         createdAt: now,
       });
 
       // Add Notification to Citizen for reopened issue
-      await ctx.db.insert('notifications', {
+      await ctx.db.insert("notifications", {
         userId: args.reporterId, // citizen
         issueId: args.issueId,
         title: `Reopened Issue Rejected - "${args.issueName} (${args.issueCode})"`,
         message: `Your issue "${args.issueName}" with Issue Code "${args.issueCode}" has been rejected again by the Unit Officer ${args.UOName} after issue reopened by citizen`,
-        type: 'rejected',
+        type: "rejected",
         read: false,
         createdAt: now,
       });
 
       // Add Notification to Unit Officer for reopened issue
-      await ctx.db.insert('notifications', {
+      await ctx.db.insert("notifications", {
         userId: args.rejectedBy,
         issueId: args.issueId,
         title: `Reopened Issue Rejected - "${args.issueName} (${args.issueCode})"`,
         message: `You have successfully rejected again after reopening of the issue "${args.issueName}" with Issue Code "${args.issueCode}".`,
-        type: 'rejected',
+        type: "rejected",
         read: false,
         createdAt: now,
       });
     } else if (args.isSlaRejection) {
       // Add the Issue Timeline Update for rejected issue after missing SLA Deadline
-      await ctx.db.insert('issueUpdates', {
+      await ctx.db.insert("issueUpdates", {
         issueId: args.issueId,
-        status: 'rejected',
+        status: "rejected",
         comment: `The Issue "${args.issueName}" with Issue Code "${args.issueCode}" has been rejected by the Unit Officer ${args.UOName}.\nReason: ${args.reason}\nComment: ${args.comment}\n We are very sorry for the inconvenience caused due to the delay in handling the issue.`,
         updatedBy: args.rejectedBy,
-        role: 'unit_officer',
+        role: "unit_officer",
         attachments: [],
-        scope: 'citizen',
+        scope: "citizen",
         createdAt: now,
       });
 
       // Add Notification to Citizen for rejected issue after missing SLA Deadline
-      await ctx.db.insert('notifications', {
+      await ctx.db.insert("notifications", {
         userId: args.reporterId, // citizen
         issueId: args.issueId,
         title: `Rejected Issue - "${args.issueName} (${args.issueCode})"`,
         message: `Your issue "${args.issueName}" with Issue Code "${args.issueCode}" has been rejected by the Unit Officer ${args.UOName}.`,
-        type: 'rejected',
+        type: "rejected",
         read: false,
         createdAt: now,
       });
 
       // Add Notification to Unit Officer for rejected issue after missing SLA Deadline
-      await ctx.db.insert('notifications', {
+      await ctx.db.insert("notifications", {
         userId: args.rejectedBy,
         issueId: args.issueId,
         title: `Rejected Issue - "${args.issueName} (${args.issueCode})"`,
         message: `You have successfully rejected the issue "${args.issueName}" with Issue Code "${args.issueCode}" after SLA breach.`,
-        type: 'rejected',
+        type: "rejected",
         read: false,
         createdAt: now,
       });
     } else {
       // Add the Issue Timeline Update for rejected issue
-      await ctx.db.insert('issueUpdates', {
+      await ctx.db.insert("issueUpdates", {
         issueId: args.issueId,
-        status: 'rejected',
+        status: "rejected",
         comment: `The Issue "${args.issueName}" with Issue Code "${args.issueCode}" has been rejected by the Unit Officer ${args.UOName}.\nReason: ${args.reason}\nComment: ${args.comment}`,
         updatedBy: args.rejectedBy,
-        role: 'unit_officer',
+        role: "unit_officer",
         attachments: [],
-        scope: 'citizen',
+        scope: "citizen",
         createdAt: now,
       });
 
       // Add Notification to Citizen for rejected issue
-      await ctx.db.insert('notifications', {
+      await ctx.db.insert("notifications", {
         userId: args.reporterId, // citizen
         issueId: args.issueId,
         title: `Rejected Issue - "${args.issueName} (${args.issueCode})"`,
         message: `Your issue "${args.issueName}" with Issue Code "${args.issueCode}" has been rejected by the Unit Officer ${args.UOName}.`,
-        type: 'rejected',
+        type: "rejected",
         read: false,
         createdAt: now,
       });
 
       // Add Notification to Unit Officer for rejected issue
-      await ctx.db.insert('notifications', {
+      await ctx.db.insert("notifications", {
         userId: args.rejectedBy,
         issueId: args.issueId,
         title: `Rejected Issue - "${args.issueName} (${args.issueCode})"`,
         message: `You have successfully rejected the issue "${args.issueName}" with Issue Code "${args.issueCode}".`,
-        type: 'rejected',
+        type: "rejected",
         read: false,
         createdAt: now,
       });
     }
+
+    // Rejected Issue Gamification 15 Points Penalty
+    const citizen = await ctx.db
+      .query("citizens")
+      .withIndex("by_user", (q) => q.eq("userId", args.reporterId))
+      .first();
+
+    if (citizen) {
+      const existingRejectedPenalty = await ctx.db
+        .query("citizenPointTransactions")
+        .withIndex("by_issue", (q) => q.eq("relatedIssueId", args.issueId))
+        .filter((q) => q.eq(q.field("type"), "issue_rejected"))
+        .first();
+
+      if (!existingRejectedPenalty) {
+        await awardCitizenPoints(ctx, {
+          citizenId: citizen._id,
+          userId: citizen.userId,
+          type: "issue_rejected",
+          points: -15,
+          reason: "Issue rejected by Unit Officer",
+          relatedIssueId: args.issueId,
+          metadata: {
+            source: args.isSlaRejection
+              ? "sla_rejection"
+              : args.status === "reopened"
+                ? "reopened_issue_rejection"
+                : "issue_rejection",
+          },
+        });
+
+        await checkAndAwardCitizenBadges(ctx, {
+          citizenId: citizen._id,
+          userId: citizen.userId,
+          relatedIssueId: args.issueId,
+        });
+      }
+    }
+
+    await auditIssueActionMobile(ctx, {
+      issue,
+      performedByUserId: args.rejectedBy,
+      performerRole: "unit_officer",
+      action: "issue_rejected",
+      actionCategory: "rejection",
+      oldValue: {
+        status: issue.status,
+      },
+      newValue: {
+        status: "rejected",
+      },
+      reason: args.reason,
+      description:
+        `Issue ${issue.issueCode} rejected by Unit Officer.${args.comment ? ` Comment: ${args.comment}` : ""}`.trim(),
+    });
 
     return { success: true };
   },
@@ -466,21 +643,22 @@ export const rejectIssue = mutation({
 
 export const getAssignedFieldOfficers = query({
   args: {
-    userId: v.id('users'),
+    userId: v.id("users"),
   },
 
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.userId);
     // Find Unit Officer using userId
     const unitOfficer = await ctx.db
-      .query('unitOfficers')
-      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .query("unitOfficers")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .unique();
 
     if (!unitOfficer) return [];
 
     // Fetch Field Officers using stored _id
     const fieldOfficers = await Promise.all(
-      unitOfficer.assignedFieldOfficers.map((foId) => ctx.db.get(foId))
+      unitOfficer.assignedFieldOfficers.map((foId) => ctx.db.get(foId)),
     );
 
     // Clean nulls (if any)
@@ -490,9 +668,9 @@ export const getAssignedFieldOfficers = query({
 
 export const assignIssueToFieldOfficer = mutation({
   args: {
-    issueId: v.id('issues'),
-    fieldOfficerId: v.id('fieldOfficers'), // fieldOfficers table _id
-    assignedBy: v.id('users'), // Unit Officer userId
+    issueId: v.id("issues"),
+    fieldOfficerId: v.id("fieldOfficers"), // fieldOfficers table _id
+    assignedBy: v.id("users"), // Unit Officer userId
 
     issueTitle: v.string(),
     issueCode: v.string(),
@@ -506,28 +684,29 @@ export const assignIssueToFieldOfficer = mutation({
   },
 
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.assignedBy);
     const issue = await ctx.db.get(args.issueId);
-    if (!issue) throw new Error('Issue not found');
+    if (!issue) throw new Error("Issue not found");
 
     const fieldOfficer = await ctx.db.get(args.fieldOfficerId);
-    if (!fieldOfficer) throw new Error('Field officer not found');
+    if (!fieldOfficer) throw new Error("Field officer not found");
 
     const unitOfficer = await ctx.db
-      .query('unitOfficers')
-      .withIndex('by_user', (q) => q.eq('userId', args.assignedBy))
+      .query("unitOfficers")
+      .withIndex("by_user", (q) => q.eq("userId", args.assignedBy))
       .unique();
 
-    if (!unitOfficer) throw new Error('Unit officer not found');
+    if (!unitOfficer) throw new Error("Unit officer not found");
 
     const now = Date.now();
 
-    let previousFOId = '';
+    let previousFOId = "";
 
     // Handle reassignmet
     if (args.isReassign && issue.assignedFieldOfficer) {
       const prevFO = await ctx.db
-        .query('fieldOfficers')
-        .withIndex('by_user', (q) => q.eq('userId', issue.assignedFieldOfficer))
+        .query("fieldOfficers")
+        .withIndex("by_user", (q) => q.eq("userId", issue.assignedFieldOfficer))
         .unique();
 
       if (prevFO) {
@@ -535,21 +714,25 @@ export const assignIssueToFieldOfficer = mutation({
         previousFOId = prevFO.userId;
 
         // Notification to Previous Field Officer
-        await ctx.db.insert('notifications', {
+        await ctx.db.insert("notifications", {
           userId: prevFO.userId,
           issueId: args.issueId,
           title: `Issue Reassigned - "${args.issueTitle} (${args.issueCode})"`,
           message: `Issue "${args.issueTitle}" with Issue Code "${args.issueCode}" has been reassigned from you by Unit Officer ${unitOfficer.fullName} to Field Officer ${fieldOfficer.fullName}.${
-            args.reassignmentReason ? `\nReason: ${args.reassignmentReason}.` : ''
-          }${args.reassignmentComment ? `\nComment: ${args.reassignmentComment}` : ''}
-          ${args.isSlaReassign ? `\nThe issue was reassigned due to SLA non-adherence.` : ''}`,
-          type: 'assigned',
+            args.reassignmentReason
+              ? `\nReason: ${args.reassignmentReason}.`
+              : ""
+          }${args.reassignmentComment ? `\nComment: ${args.reassignmentComment}` : ""}
+          ${args.isSlaReassign ? `\nThe issue was reassigned due to SLA non-adherence.` : ""}`,
+          type: "assigned",
           read: false,
           createdAt: now,
         });
 
         // Remove the issue from previous field officer's assigned issues
-        const updatedPrevIssues = prevFO.assignedIssueIds.filter((id) => id !== args.issueId);
+        const updatedPrevIssues = prevFO.assignedIssueIds.filter(
+          (id) => id !== args.issueId,
+        );
 
         await ctx.db.patch(prevFO._id, {
           assignedIssueIds: updatedPrevIssues,
@@ -561,7 +744,7 @@ export const assignIssueToFieldOfficer = mutation({
     // Updates the assigned status of the issue
     if (args.isSlaReassign) {
       await ctx.db.patch(args.issueId, {
-        status: 'assigned',
+        status: "assigned",
         // store current FO userId
         assignedFieldOfficer: fieldOfficer.userId,
         slaDeadline: args.newSLADeadline,
@@ -577,7 +760,7 @@ export const assignIssueToFieldOfficer = mutation({
       });
     } else {
       await ctx.db.patch(args.issueId, {
-        status: 'assigned',
+        status: "assigned",
         // store current FO userId
         assignedFieldOfficer: fieldOfficer.userId,
       });
@@ -600,59 +783,123 @@ export const assignIssueToFieldOfficer = mutation({
     // Custom Issue Update Comment for assigned issue
     const comment = args.isReassign
       ? `Issue reassigned from ${
-          args.previousFieldOfficerName ?? 'previous field officer'
+          args.previousFieldOfficerName ?? "previous field officer"
         } to ${fieldOfficer.fullName}.${
-          args.reassignmentReason ? `\nReason: ${args.reassignmentReason}.` : ''
-        }${args.reassignmentComment ? `\nComment: ${args.reassignmentComment}` : ''}${
+          args.reassignmentReason ? `\nReason: ${args.reassignmentReason}.` : ""
+        }${args.reassignmentComment ? `\nComment: ${args.reassignmentComment}` : ""}${
           args.isSlaReassign
             ? `\nThe issue was reassigned due to SLA non-adherence.\nWe are very sorry for the inconvenience caused due to the delay in handling the issue.`
-            : ''
+            : ""
         }`
       : `Issue assigned to Field Officer ${fieldOfficer.fullName}.`;
 
     // Add the Issue Timeline Update for assigned issue
-    await ctx.db.insert('issueUpdates', {
+    await ctx.db.insert("issueUpdates", {
       issueId: args.issueId,
-      status: 'assigned',
+      status: "assigned",
       comment,
-      role: 'unit_officer',
+      role: "unit_officer",
       attachments: [],
       updatedBy: args.assignedBy,
-      scope: 'officer_and_citizen',
+      scope: "officer_and_citizen",
       createdAt: now,
     });
 
     // Notification to Field Officer
-    await ctx.db.insert('notifications', {
+    await ctx.db.insert("notifications", {
       userId: fieldOfficer.userId,
       issueId: args.issueId,
       title: `Issue Assigned to You - "${args.issueTitle} (${args.issueCode})"`,
-      message: `You have been assigned issue "${args.issueTitle}" with Issue Code "${args.issueCode}" by Unit Officer ${unitOfficer.fullName}.${args.isSlaReassign ? `\nThe issue was reassigned due to SLA non-adherence.\nThe new SLA Deadline is ${new Date(args.newSLADeadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}.` : ''}`,
-      type: 'assigned',
+      message: `You have been assigned issue "${args.issueTitle}" with Issue Code "${args.issueCode}" by Unit Officer ${unitOfficer.fullName}.${args.isSlaReassign ? `\nThe issue was reassigned due to SLA non-adherence.\nThe new SLA Deadline is ${new Date(args.newSLADeadline).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.` : ""}`,
+      type: "assigned",
       read: false,
       createdAt: now,
     });
 
     // Notification to Unit Officer
-    await ctx.db.insert('notifications', {
+    await ctx.db.insert("notifications", {
       userId: args.assignedBy,
       issueId: args.issueId,
       title: `Issue Assigned to FO ${fieldOfficer.fullName} - "${args.issueTitle} (${args.issueCode})"`,
-      message: `You assigned issue "${args.issueTitle}" with Issue Code "${args.issueCode}" to ${fieldOfficer.fullName}.${args.isSlaReassign ? `\nThe issue was reassigned due to SLA non-adherence.\nThe new SLA Deadline is ${new Date(args.newSLADeadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}.` : ''}`,
-      type: 'assigned',
+      message: `You assigned issue "${args.issueTitle}" with Issue Code "${args.issueCode}" to ${fieldOfficer.fullName}.${args.isSlaReassign ? `\nThe issue was reassigned due to SLA non-adherence.\nThe new SLA Deadline is ${new Date(args.newSLADeadline).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.` : ""}`,
+      type: "assigned",
       read: false,
       createdAt: now,
     });
 
     // Notification to Citizen
-    await ctx.db.insert('notifications', {
+    await ctx.db.insert("notifications", {
       userId: issue.reportedBy,
       issueId: args.issueId,
       title: `Issue Assigned to Field Officer - "${args.issueTitle} (${args.issueCode})"`,
-      message: `Your issue "${args.issueTitle}" with Issue Code "${args.issueCode}" has been assigned to a Field Officer ${fieldOfficer.fullName} for further actions.${args.isSlaReassign ? `\nThe issue was reassigned due to SLA non-adherence.\nWe are very sorry for the inconvenience caused due to the delay in handling the issue.` : ''}`,
-      type: 'assigned',
+      message: `Your issue "${args.issueTitle}" with Issue Code "${args.issueCode}" has been assigned to a Field Officer ${fieldOfficer.fullName} for further actions.${args.isSlaReassign ? `\nThe issue was reassigned due to SLA non-adherence.\nWe are very sorry for the inconvenience caused due to the delay in handling the issue.` : ""}`,
+      type: "assigned",
       read: false,
       createdAt: now,
+    });
+
+    // Assigned Issue Gamification Reward
+    const citizen = await ctx.db
+      .query("citizens")
+      .withIndex("by_user", (q) => q.eq("userId", issue.reportedBy))
+      .first();
+
+    if (citizen) {
+      const existingAssignedReward = await ctx.db
+        .query("citizenPointTransactions")
+        .withIndex("by_issue", (q) => q.eq("relatedIssueId", args.issueId))
+        .filter((q) => q.eq(q.field("type"), "issue_assigned"))
+        .first();
+
+      if (!existingAssignedReward) {
+        await awardCitizenPoints(ctx, {
+          citizenId: citizen._id,
+          userId: citizen.userId,
+          type: "issue_assigned",
+          points: 5,
+          reason: "Issue assigned to Field Officer",
+          relatedIssueId: args.issueId,
+          metadata: {
+            source: args.isSlaReassign
+              ? "sla_field_officer_reassignment"
+              : args.isReassign
+                ? "field_officer_reassignment"
+                : "field_officer_assignment",
+            officerId: fieldOfficer.userId,
+          },
+        });
+
+        await checkAndAwardCitizenBadges(ctx, {
+          citizenId: citizen._id,
+          userId: citizen.userId,
+          relatedIssueId: args.issueId,
+        });
+      }
+    }
+
+    await auditIssueActionMobile(ctx, {
+      issue,
+      performedByUserId: args.assignedBy,
+      performerRole: "unit_officer",
+      action: args.isReassign
+        ? "reassign_field_officer"
+        : "assign_field_officer",
+      actionCategory: "assignment",
+      oldValue: {
+        assignedFieldOfficer: issue.assignedFieldOfficer ?? null,
+        slaDeadline: issue.slaDeadline ?? null,
+      },
+      newValue: {
+        assignedFieldOfficer: fieldOfficer.userId,
+        slaDeadline: args.newSLADeadline ?? issue.slaDeadline ?? null,
+      },
+      reason:
+        args.reassignmentReason ??
+        args.reassignmentComment ??
+        (args.isReassign
+          ? "Field Officer reassigned"
+          : "Field Officer assigned"),
+      description: `Field Officer ${fieldOfficer.fullName} ${args.isReassign ? "reassigned to" : "assigned to"} issue ${issue.issueCode}.`,
     });
 
     return {
@@ -665,32 +912,33 @@ export const assignIssueToFieldOfficer = mutation({
 
 export const approveIssueResolution = mutation({
   args: {
-    issueId: v.id('issues'),
-    updatedBy: v.id('users'),
+    issueId: v.id("issues"),
+    updatedBy: v.id("users"),
     unitOfficerName: v.string(),
   },
 
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.updatedBy);
     const issue = await ctx.db.get(args.issueId);
-    if (!issue) throw new Error('Issue not found');
+    if (!issue) throw new Error("Issue not found");
 
     const now = Date.now();
 
     // Update issue status
     await ctx.db.patch(args.issueId, {
-      status: 'resolved',
+      status: "resolved",
       resolvedAt: now,
     });
 
     // Add issue update
-    await ctx.db.insert('issueUpdates', {
+    await ctx.db.insert("issueUpdates", {
       issueId: args.issueId,
-      status: 'resolved',
+      status: "resolved",
       comment: `Issue resolution of the issue "${issue.title}" (Issue Code: ${issue.issueCode}) has been verified and approved by Unit Officer ${args.unitOfficerName}.`,
       updatedBy: args.updatedBy,
-      role: 'unit_officer',
+      role: "unit_officer",
       attachments: [],
-      scope: 'officer_and_citizen',
+      scope: "officer_and_citizen",
       createdAt: now,
     });
 
@@ -698,12 +946,12 @@ export const approveIssueResolution = mutation({
 
     // For Citizen
     if (issue.reportedBy) {
-      await ctx.db.insert('notifications', {
+      await ctx.db.insert("notifications", {
         userId: issue.reportedBy,
         issueId: args.issueId,
         title: `Issue "${issue.title}" (Issue Code: ${issue.issueCode}) Resolved`,
         message: `Your reported issue "${issue.title}" (Issue Code: ${issue.issueCode}) has been successfully resolved and closed by the Unit Officer ${args.unitOfficerName}.`,
-        type: 'resolution',
+        type: "resolution",
         read: false,
         createdAt: now,
       });
@@ -711,26 +959,78 @@ export const approveIssueResolution = mutation({
 
     // For Field Officer
     if (issue.assignedFieldOfficer) {
-      await ctx.db.insert('notifications', {
+      await ctx.db.insert("notifications", {
         userId: issue.assignedFieldOfficer,
         issueId: args.issueId,
         title: `Issue "${issue.title}" (Issue Code: ${issue.issueCode}) Resolution Verified`,
         message: `Your submitted work has been verified by the Unit Officer ${args.unitOfficerName} and marked as resolved.`,
-        type: 'resolution',
+        type: "resolution",
         read: false,
         createdAt: now,
       });
     }
 
     // For Unit Officer
-    await ctx.db.insert('notifications', {
+    await ctx.db.insert("notifications", {
       userId: args.updatedBy,
       issueId: args.issueId,
       title: `Issue "${issue.title}" (Issue Code: ${issue.issueCode}) Resolved`,
       message: `You have successfully marked the issue as resolved.`,
-      type: 'resolution',
+      type: "resolution",
       read: false,
       createdAt: now,
+    });
+
+    // Resolved Issue Gamification Reward
+    if (issue.reportedBy) {
+      const citizen = await ctx.db
+        .query("citizens")
+        .withIndex("by_user", (q) => q.eq("userId", issue.reportedBy))
+        .first();
+
+      if (citizen) {
+        const existingResolvedReward = await ctx.db
+          .query("citizenPointTransactions")
+          .withIndex("by_issue", (q) => q.eq("relatedIssueId", args.issueId))
+          .filter((q) => q.eq(q.field("type"), "issue_resolved"))
+          .first();
+
+        if (!existingResolvedReward) {
+          await awardCitizenPoints(ctx, {
+            citizenId: citizen._id,
+            userId: citizen.userId,
+            type: "issue_resolved",
+            points: 40,
+            reason: "Issue resolved after Unit Officer approval",
+            relatedIssueId: args.issueId,
+            metadata: {
+              source: "issue_resolution_approval",
+              officerId: args.updatedBy,
+            },
+          });
+
+          await checkAndAwardCitizenBadges(ctx, {
+            citizenId: citizen._id,
+            userId: citizen.userId,
+            relatedIssueId: args.issueId,
+          });
+        }
+      }
+    }
+
+    await auditIssueActionMobile(ctx, {
+      issue,
+      performedByUserId: args.updatedBy,
+      performerRole: "unit_officer",
+      action: "resolution_approved",
+      actionCategory: "resolution",
+      oldValue: {
+        status: issue.status,
+      },
+      newValue: {
+        status: "resolved",
+      },
+      description: `Unit Officer approved resolution for issue ${issue.issueCode}.`,
     });
 
     return { success: true };
@@ -739,52 +1039,55 @@ export const approveIssueResolution = mutation({
 
 export const requestRework = mutation({
   args: {
-    issueId: v.id('issues'),
-    updatedBy: v.id('users'),
+    issueId: v.id("issues"),
+    updatedBy: v.id("users"),
     unitOfficerName: v.string(),
     note: v.string(),
     reasons: v.optional(v.array(v.string())),
   },
 
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.updatedBy);
     const issue = await ctx.db.get(args.issueId);
-    if (!issue) throw new Error('Issue not found');
+    if (!issue) throw new Error("Issue not found");
 
     const now = Date.now();
 
     const reasonTags =
-      args.reasons && args.reasons.length > 0 ? `[Issues: ${args.reasons.join(', ')}] ` : '';
+      args.reasons && args.reasons.length > 0
+        ? `[Issues: ${args.reasons.join(", ")}] `
+        : "";
 
-    const fullNote = `Rework Note: ${args.note.trim()}${reasonTags ? `\nReason(s): ${reasonTags}` : ''}`;
+    const fullNote = `Rework Note: ${args.note.trim()}${reasonTags ? `\nReason(s): ${reasonTags}` : ""}`;
 
     // Update issue status with rework details
     await ctx.db.patch(args.issueId, {
-      status: 'rework_required',
+      status: "rework_required",
       reworkNote: args.note.trim(),
       reworkReasons: args.reasons || [],
       lastReworkRequestedAt: now,
     });
 
     // Add issue update in issue timeline
-    await ctx.db.insert('issueUpdates', {
+    await ctx.db.insert("issueUpdates", {
       issueId: args.issueId,
-      status: 'rework_required',
+      status: "rework_required",
       comment: `Rework requested by Unit Officer ${args.unitOfficerName}:\n${fullNote}`,
       updatedBy: args.updatedBy,
-      role: 'unit_officer',
+      role: "unit_officer",
       attachments: [],
-      scope: 'officer_and_citizen',
+      scope: "officer_and_citizen",
       createdAt: now,
     });
 
     // Notify Field Officer
     if (issue.assignedFieldOfficer) {
-      await ctx.db.insert('notifications', {
+      await ctx.db.insert("notifications", {
         userId: issue.assignedFieldOfficer,
         issueId: args.issueId,
         title: `Rework Required for Issue "${issue.title}" (Issue Code: ${issue.issueCode})`,
         message: `Your submitted work requires corrections by Unit Officer ${args.unitOfficerName}.\n\nNote: ${args.note.trim()}\nReason(s): ${reasonTags}`,
-        type: 'rework',
+        type: "rework",
         read: false,
         createdAt: now,
       });
@@ -792,26 +1095,43 @@ export const requestRework = mutation({
 
     // Notify Citizen
     if (issue.reportedBy) {
-      await ctx.db.insert('notifications', {
+      await ctx.db.insert("notifications", {
         userId: issue.reportedBy,
         issueId: args.issueId,
         title: `Issue Update for Issue "${issue.title}" (Issue Code: ${issue.issueCode})`,
         message: `Your reported issue "${issue.title}" has been sent back for correction by Unit Officer ${args.unitOfficerName}.\nWe sincerely apologize for any inconvenience caused due to delay in the resolution of this issue.`,
-        type: 'rework',
+        type: "rework",
         read: false,
         createdAt: now,
       });
     }
 
     // Notify Unit Officer
-    await ctx.db.insert('notifications', {
+    await ctx.db.insert("notifications", {
       userId: args.updatedBy,
       issueId: args.issueId,
       title: `Rework Requested for Issue "${issue.title}" (Issue Code: ${issue.issueCode})`,
       message: `You have requested rework for issue "${issue.title}" with Issue Code "${issue.issueCode}".`,
-      type: 'rework',
+      type: "rework",
       read: false,
       createdAt: now,
+    });
+
+    await auditIssueActionMobile(ctx, {
+      issue,
+      performedByUserId: args.updatedBy,
+      performerRole: "unit_officer",
+      action: "rework_requested",
+      actionCategory: "rework",
+      oldValue: {
+        status: issue.status,
+      },
+      newValue: {
+        status: "rework_required",
+        reworkReasons: args.reasons || [],
+      },
+      reason: args.note,
+      description: `Rework requested by Unit Officer for issue ${issue.issueCode}.`,
     });
 
     return { success: true };
@@ -820,16 +1140,16 @@ export const requestRework = mutation({
 
 export const extendSLADeadline = mutation({
   args: {
-    issueId: v.id('issues'),
+    issueId: v.id("issues"),
     issueCode: v.string(),
     issueName: v.string(),
 
-    extendedBy: v.id('users'),
+    extendedBy: v.id("users"),
     extendedByName: v.string(),
 
-    reporterId: v.id('users'),
+    reporterId: v.id("users"),
 
-    assignedFieldOfficerUserId: v.optional(v.id('users')),
+    assignedFieldOfficerUserId: v.optional(v.id("users")),
     assignedFieldOfficerName: v.optional(v.string()),
 
     reason: v.string(),
@@ -838,16 +1158,19 @@ export const extendSLADeadline = mutation({
   },
 
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.extendedBy);
     const issue = await ctx.db.get(args.issueId);
 
     // Fallback for null values in issue
     if (!issue) {
-      throw new Error('Issue not found');
+      throw new Error("Issue not found");
     }
 
     // Fallback for resolved or rejected issues
-    if (['resolved', 'closed', 'rejected', 'withdrawn'].includes(issue.status)) {
-      throw new Error('Cannot extend SLA for a completed or rejected issue');
+    if (
+      ["resolved", "closed", "rejected", "withdrawn"].includes(issue.status)
+    ) {
+      throw new Error("Cannot extend SLA for a completed or rejected issue");
     }
 
     const now = Date.now();
@@ -867,57 +1190,462 @@ export const extendSLADeadline = mutation({
     });
 
     // Add issue update in the issue timeline
-    await ctx.db.insert('issueUpdates', {
+    await ctx.db.insert("issueUpdates", {
       issueId: args.issueId,
       status: issue.status,
       comment: `SLA deadline extended by Unit Officer ${args.extendedByName}.\nReason: ${
         args.reason
-      }\nNote: ${args.comment}\nNew SLA Deadline: ${new Date(args.newSlaDeadline).toLocaleString(
-        'en-IN',
-        {
-          timeZone: 'Asia/Kolkata',
-        }
-      )}\nWe sincerely apologize for any inconvenience caused due to delay in the resolution of this issue.`,
+      }\nNote: ${args.comment}\nNew SLA Deadline: ${new Date(
+        args.newSlaDeadline,
+      ).toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+      })}\nWe sincerely apologize for any inconvenience caused due to delay in the resolution of this issue.`,
       updatedBy: args.extendedBy,
-      role: 'unit_officer',
+      role: "unit_officer",
       attachments: [],
-      scope: 'officer_and_citizen',
+      scope: "officer_and_citizen",
       createdAt: now,
     });
 
     // Notification to the assigned Field Officer
     if (args.assignedFieldOfficerUserId) {
-      await ctx.db.insert('notifications', {
+      await ctx.db.insert("notifications", {
         userId: args.assignedFieldOfficerUserId,
         issueId: args.issueId,
-        title: 'SLA deadline extended',
+        title: "SLA deadline extended",
         message: `The SLA deadline for issue "${args.issueName}" with Issue Code "${args.issueCode}" has been extended.`,
-        type: 'sla_alert',
+        type: "sla_alert",
         read: false,
         createdAt: now,
       });
     }
 
     // Notification to the Citizen
-    await ctx.db.insert('notifications', {
+    await ctx.db.insert("notifications", {
       userId: args.reporterId,
       issueId: args.issueId,
-      title: 'SLA deadline updated',
+      title: "SLA deadline updated",
       message: `The resolution timeline for your issue "${args.issueName}" with Issue Code "${args.issueCode}" has been extended. We sincerely apologize for any inconvenience caused due to delay in the resolution of this issue.`,
-      type: 'sla_alert',
+      type: "sla_alert",
       read: false,
       createdAt: now,
     });
 
     // Notification to the Unit Officer who extended the SLA deadline
-    await ctx.db.insert('notifications', {
+    await ctx.db.insert("notifications", {
       userId: args.extendedBy,
       issueId: args.issueId,
-      title: 'SLA extension completed',
+      title: "SLA extension completed",
       message: `You extended the SLA deadline for issue "${args.issueName}".`,
-      type: 'sla_alert',
+      type: "sla_alert",
       read: false,
       createdAt: now,
+    });
+
+    await auditIssueActionMobile(ctx, {
+      issue,
+      performedByUserId: args.extendedBy,
+      performerRole: "unit_officer",
+      action: "sla_extended",
+      actionCategory: "sla",
+      oldValue: {
+        slaDeadline: issue.slaDeadline,
+      },
+      newValue: {
+        slaDeadline: args.newSlaDeadline,
+      },
+      reason: args.reason,
+      description: `SLA deadline extended for issue ${issue.issueCode}. Note: ${args.comment}`,
+    });
+
+    return { success: true };
+  },
+});
+
+export const rejectDuplicateIssues = mutation({
+  args: {
+    issueIds: v.array(v.id("issues")),
+
+    reason: v.optional(v.string()),
+    comment: v.optional(v.string()),
+
+    UOName: v.string(),
+    rejectedBy: v.id("users"),
+  },
+
+  handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.rejectedBy);
+    const now = Date.now();
+
+    const rejectionReason = args.reason ?? "Duplicate issue detected";
+    const rejectionComment =
+      args.comment ??
+      "This issue has been rejected because it appears to be a duplicate of another active issue reported by the same citizen.";
+
+    const results = [];
+
+    for (const issueId of args.issueIds) {
+      const issue = await ctx.db.get(issueId);
+
+      if (!issue) {
+        results.push({
+          issueId,
+          success: false,
+          skipped: true,
+          reason: "Issue not found",
+        });
+        continue;
+      }
+
+      if (issue.status === "rejected") {
+        results.push({
+          issueId,
+          success: false,
+          skipped: true,
+          reason: "Issue already rejected",
+        });
+        continue;
+      }
+
+      const previousStatus = issue.status;
+
+      const issueCode = issue.issueCode ?? String(issue._id);
+
+      const issueName = issue.title ?? "Untitled Issue";
+
+      const reporterId = issue.reportedBy;
+
+      if (!reporterId) {
+        results.push({
+          issueId,
+          success: false,
+          skipped: true,
+          reason: "Reporter ID not found",
+        });
+        continue;
+      }
+
+      await ctx.db.patch(issueId, {
+        status: "rejected",
+
+        rejection: {
+          reason: rejectionReason,
+          comment: rejectionComment,
+          rejectedBy: args.rejectedBy,
+          rejectedAt: now,
+        },
+
+        assignedFieldOfficer: null,
+      });
+
+      await ctx.db.insert("issueUpdates", {
+        issueId,
+        status: "rejected",
+        comment:
+          previousStatus === "reopened"
+            ? `The duplicate issue "${issueName}" with Issue Code "${issueCode}" has been rejected again by the Unit Officer ${args.UOName} after being reopened by the citizen.\nReason: ${rejectionReason}\nComment: ${rejectionComment}`
+            : `The duplicate issue "${issueName}" with Issue Code "${issueCode}" has been rejected by the Unit Officer ${args.UOName}.\nReason: ${rejectionReason}\nComment: ${rejectionComment}`,
+        updatedBy: args.rejectedBy,
+        role: "unit_officer",
+        attachments: [],
+        scope: "citizen",
+        createdAt: now,
+      });
+
+      await ctx.db.insert("notifications", {
+        userId: reporterId,
+        issueId,
+        title: `Duplicate Issue Rejected - "${issueName} (${issueCode})"`,
+        message:
+          previousStatus === "reopened"
+            ? `Your reopened issue "${issueName}" with Issue Code "${issueCode}" has been rejected again because it appears to be a duplicate of another active issue.`
+            : `Your issue "${issueName}" with Issue Code "${issueCode}" has been rejected because it appears to be a duplicate of another active issue.`,
+        type: "rejected",
+        read: false,
+        createdAt: now,
+      });
+
+      await ctx.db.insert("notifications", {
+        userId: args.rejectedBy,
+        issueId,
+        title: `Duplicate Issue Rejected - "${issueName} (${issueCode})"`,
+        message: `You have successfully rejected the duplicate issue "${issueName}" with Issue Code "${issueCode}".`,
+        type: "rejected",
+        read: false,
+        createdAt: now,
+      });
+
+      results.push({
+        issueId,
+        success: true,
+        skipped: false,
+        previousStatus,
+        newStatus: "rejected",
+      });
+
+      await auditIssueActionMobile(ctx, {
+        issue,
+        performedByUserId: args.rejectedBy,
+        performerRole: "unit_officer",
+        action: "duplicate_rejected",
+        actionCategory: "issue",
+        oldValue: {
+          status: previousStatus,
+        },
+        newValue: {
+          status: "rejected",
+        },
+        reason: rejectionReason,
+        description: `Duplicate issue ${issueCode} rejected by Unit Officer.`,
+      });
+    }
+
+    const rejectedCount = results.filter((item) => item.success).length;
+    const skippedCount = results.filter((item) => item.skipped).length;
+
+    return {
+      success: true,
+      rejectedCount,
+      skippedCount,
+      totalRequested: args.issueIds.length,
+      results,
+    };
+  },
+});
+
+export const reopenIssue = mutation({
+  args: {
+    issueId: v.id("issues"),
+    userId: v.id("users"),
+    reason: v.string(),
+    category: v.union(
+      v.literal("work_incomplete"),
+      v.literal("quality_issue"),
+      v.literal("recurrence"),
+      v.literal("other"),
+    ),
+  },
+
+  handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.userId);
+    const issue = await ctx.db.get(args.issueId);
+    if (!issue) throw new Error("Issue not found");
+
+    const unitOfficer = await ctx.db
+      .query("unitOfficers")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .unique();
+
+    const UOName = unitOfficer?.fullName || "Unit Officer";
+    const now = Date.now();
+
+    // Changes issue status to "reopened" and logs the reason + category for reopening
+    await ctx.db.patch(args.issueId, {
+      status: "reopened",
+      isReopened: true,
+      reopenCount: (issue.reopenCount || 0) + 1,
+      reopenReason: args.reason,
+      reopenCategory: args.category,
+    });
+
+    // Adds the Issue Update for reopening with reason and category details
+    await ctx.db.insert("issueUpdates", {
+      issueId: args.issueId,
+      status: "reopened",
+      comment: `Issue reopened by Unit Officer ${UOName}.\nCategory: ${args.category.toUpperCase().replace("_", " ")}\nReason: ${args.reason}`,
+      updatedBy: args.userId,
+      role: "unit_officer",
+      attachments: [],
+      scope: "officer_and_citizen",
+      createdAt: now,
+    });
+
+    // Patch status on publicIssues if exists
+    const publicIssue = await ctx.db
+      .query("publicIssues")
+      .withIndex("by_issue", (q) => q.eq("issueId", args.issueId))
+      .unique();
+
+    if (publicIssue) {
+      await ctx.db.patch(publicIssue._id, {
+        status: "reopened",
+      });
+    }
+
+    // Notification for Citizen
+    if (issue.reportedBy) {
+      await ctx.db.insert("notifications", {
+        userId: issue.reportedBy,
+        issueId: args.issueId,
+        title: `Reopened Issue - "${issue.title} (${issue.issueCode})"`,
+        message: `Your issue "${issue.title}" has been reopened by Unit Officer ${UOName}.\nCategory: ${args.category.toUpperCase().replace("_", " ")}\nReason: ${args.reason}`,
+        type: "reopened",
+        read: false,
+        createdAt: now,
+      });
+    }
+
+    // Notification for Unit Officer
+    await ctx.db.insert("notifications", {
+      userId: args.userId,
+      issueId: args.issueId,
+      title: `Reopened Issue - "${issue.title} (${issue.issueCode})"`,
+      message: `You successfully reopened the issue "${issue.title}" with Issue Code "${issue.issueCode}".`,
+      type: "reopened",
+      read: false,
+      createdAt: now,
+    });
+
+    await auditIssueActionMobile(ctx, {
+      issue,
+      performedByUserId: args.userId,
+      performerRole: "unit_officer",
+      action: "issue_reopened",
+      actionCategory: "reopen",
+      oldValue: {
+        status: issue.status,
+        reopenCount: issue.reopenCount ?? 0,
+      },
+      newValue: {
+        status: "reopened",
+        reopenCategory: args.category,
+        reopenCount: (issue.reopenCount || 0) + 1,
+      },
+      reason: args.reason,
+      description: `Issue ${issue.issueCode} reopened by Unit Officer.`,
+    });
+
+    return { success: true };
+  },
+});
+
+export const closeIssue = mutation({
+  args: {
+    issueId: v.id("issues"),
+    userId: v.id("users"),
+    closeReason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.userId);
+    const issue = await ctx.db.get(args.issueId);
+    if (!issue) throw new Error("Issue not found");
+
+    const unitOfficer = await ctx.db
+      .query("unitOfficers")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .unique();
+
+    const UOName = unitOfficer?.fullName || "Unit Officer";
+    const now = Date.now();
+
+    await ctx.db.patch(args.issueId, {
+      status: "closed",
+      closedAt: now,
+      closedBy: args.userId,
+    });
+
+    // Add Issue Timeline Update
+    await ctx.db.insert("issueUpdates", {
+      issueId: args.issueId,
+      status: "closed",
+      comment: args.closeReason
+        ? `Issue officially closed by Unit Officer ${UOName}.\nReason: ${args.closeReason}`
+        : `Issue officially closed by Unit Officer ${UOName}.`,
+      updatedBy: args.userId,
+      role: "unit_officer",
+      attachments: [],
+      scope: "officer_and_citizen",
+      createdAt: now,
+    });
+
+    // Notification for Citizen
+    if (issue.reportedBy) {
+      await ctx.db.insert("notifications", {
+        userId: issue.reportedBy,
+        issueId: args.issueId,
+        title: `Issue Closed - "${issue.title} (${issue.issueCode})"`,
+        message: `Your issue "${issue.title}" (${issue.issueCode}) has been officially closed by Unit Officer ${UOName}.`,
+        type: "status_change",
+        read: false,
+        createdAt: now,
+      });
+    }
+
+    // Notification for Field Officer
+    if (issue.assignedFieldOfficer) {
+      await ctx.db.insert("notifications", {
+        userId: issue.assignedFieldOfficer,
+        issueId: args.issueId,
+        title: `Issue Closed - "${issue.title} (${issue.issueCode})"`,
+        message: `Issue "${issue.title}" (${issue.issueCode}) has been officially closed by Unit Officer ${UOName}.`,
+        type: "status_change",
+        read: false,
+        createdAt: now,
+      });
+    }
+
+    // Notification for Unit Officer
+    await ctx.db.insert("notifications", {
+      userId: args.userId,
+      issueId: args.issueId,
+      title: `Issue Closed - "${issue.title} (${issue.issueCode})"`,
+      message: `You successfully closed the issue "${issue.title}" (${issue.issueCode}).`,
+      type: "status_change",
+      read: false,
+      createdAt: now,
+    });
+
+    // Award Citizen Points for Closed Issue
+    if (issue.reportedBy) {
+      const citizen = await ctx.db
+        .query("citizens")
+        .withIndex("by_user", (q) => q.eq("userId", issue.reportedBy))
+        .first();
+
+      if (citizen) {
+        const existingClosedReward = await ctx.db
+          .query("citizenPointTransactions")
+          .withIndex("by_issue", (q) => q.eq("relatedIssueId", args.issueId))
+          .filter((q) => q.eq(q.field("type"), "issue_closed"))
+          .first();
+
+        if (!existingClosedReward) {
+          await awardCitizenPoints(ctx, {
+            citizenId: citizen._id,
+            userId: citizen.userId,
+            type: "issue_closed",
+            points: 10,
+            reason: "Issue officially closed by Unit Officer",
+            relatedIssueId: args.issueId,
+            metadata: {
+              source: "issue_closed",
+              officerId: args.userId,
+            },
+          });
+
+          await checkAndAwardCitizenBadges(ctx, {
+            citizenId: citizen._id,
+            userId: citizen.userId,
+            relatedIssueId: args.issueId,
+          });
+        }
+      }
+    }
+
+    await auditIssueActionMobile(ctx, {
+      issue,
+      performedByUserId: args.userId,
+      performerRole: "unit_officer",
+      action: "issue_closed",
+      actionCategory: "resolution",
+      oldValue: {
+        status: issue.status,
+      },
+      newValue: {
+        status: "closed",
+      },
+      reason: args.closeReason,
+      description: `Issue ${issue.issueCode} officially closed by Unit Officer.`,
     });
 
     return { success: true };

@@ -46,20 +46,28 @@ export function MessagesCenter({ user, profile }) {
 
   const CURRENT_USER_ID = dbUser?._id;
 
-  const rawConvs = useQuery(
-    api.directMessages.getUserConversations,
-    CURRENT_USER_ID ? { userId: CURRENT_USER_ID } : "skip"
-  ) || [];
+  const rawConvs =
+    useQuery(
+      api.directMessages.getUserConversations,
+      CURRENT_USER_ID ? { userId: CURRENT_USER_ID } : "skip",
+    ) || [];
 
-  const rawOfficials = useQuery(
-    api.directMessages.getAllOfficials,
-    CURRENT_USER_ID ? { userId: CURRENT_USER_ID } : "skip"
-  ) || [];
+  const rawOfficials =
+    useQuery(
+      api.directMessages.getAllOfficials,
+      CURRENT_USER_ID ? { userId: CURRENT_USER_ID } : "skip",
+    ) || [];
 
-  const startConversationMutation = useMutation(api.directMessages.startConversation);
+  const startConversationMutation = useMutation(
+    api.directMessages.startConversation,
+  );
   const sendMessageMutation = useMutation(api.directMessages.sendMessage);
-  const markMessagesAsReadMutation = useMutation(api.directMessages.markMessagesAsRead);
-  const updateConversationIssueMutation = useMutation(api.directMessages.updateConversationIssue);
+  const markMessagesAsReadMutation = useMutation(
+    api.directMessages.markMessagesAsRead,
+  );
+  const updateConversationIssueMutation = useMutation(
+    api.directMessages.updateConversationIssue,
+  );
   const seedCityAdminIfNeeded = useMutation(api.users.seedCityAdminIfNeeded);
 
   // States
@@ -85,13 +93,15 @@ export function MessagesCenter({ user, profile }) {
   // Map Convex raw conversations to local thread format
   const conversations = rawConvs.map((conv) => {
     const otherUser = rawOfficials.find(
-      (o) => o.id !== CURRENT_USER_ID && conv.participantIds.includes(o.id)
+      (o) => o.id !== CURRENT_USER_ID && conv.participantIds.includes(o.id),
     );
     return {
       ...conv,
       id: conv._id,
       otherUser,
-      unreadCount: conv.unreadCountMap ? conv.unreadCountMap[CURRENT_USER_ID] || 0 : 0,
+      unreadCount: conv.unreadCountMap
+        ? conv.unreadCountMap[CURRENT_USER_ID] || 0
+        : 0,
       lastMessage: conv.lastMessage || "",
       lastMessageTime: conv.lastMessageTime || Date.now(),
     };
@@ -113,26 +123,33 @@ export function MessagesCenter({ user, profile }) {
   }
 
   // Sort conversations by lastMessageTime descending
-  const sortedConversations = [...conversations].sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+  const sortedConversations = [...conversations].sort(
+    (a, b) => b.lastMessageTime - a.lastMessageTime,
+  );
 
   const selectedThread = conversations.find((c) => c.id === selectedThreadId);
 
   // Fetch messages for active conversation
-  const rawMessages = useQuery(
-    api.directMessages.getMessagesByConversation,
-    selectedThreadId && selectedThreadId !== "draft" ? { conversationId: selectedThreadId } : "skip"
-  ) || [];
+  const rawMessages =
+    useQuery(
+      api.directMessages.getMessagesByConversation,
+      selectedThreadId && selectedThreadId !== "draft"
+        ? { conversationId: selectedThreadId }
+        : "skip",
+    ) || [];
 
   // Fetch available issues to reference
-  const availableIssues = useQuery(
-    api.directMessages.getLinkableIssues,
-    CURRENT_USER_ID
-      ? {
-          userId: CURRENT_USER_ID,
-          otherUserId: selectedThread?.otherUser?.id || activeRecipientId || undefined,
-        }
-      : "skip"
-  ) || [];
+  const availableIssues =
+    useQuery(
+      api.directMessages.getLinkableIssues,
+      CURRENT_USER_ID
+        ? {
+            userId: CURRENT_USER_ID,
+            otherUserId:
+              selectedThread?.otherUser?.id || activeRecipientId || undefined,
+          }
+        : "skip",
+    ) || [];
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -152,18 +169,23 @@ export function MessagesCenter({ user, profile }) {
   }, [rawMessages.length]);
 
   useEffect(() => {
-    if (selectedThreadId && CURRENT_USER_ID) {
+    if (selectedThreadId && selectedThreadId !== "draft" && CURRENT_USER_ID) {
       markMessagesAsReadMutation({
         conversationId: selectedThreadId,
         userId: CURRENT_USER_ID,
       }).catch((err) => console.error("Error marking messages as read:", err));
     }
-  }, [selectedThreadId, rawMessages.length, CURRENT_USER_ID]);
+  }, [
+    selectedThreadId,
+    rawMessages.length,
+    CURRENT_USER_ID,
+    markMessagesAsReadMutation,
+  ]);
 
   useEffect(() => {
     if (CURRENT_USER_ID && dbUser?.role === "city_admin") {
       seedCityAdminIfNeeded({ userId: CURRENT_USER_ID }).catch((err) =>
-        console.error("Error seeding city admin profile:", err)
+        console.error("Error seeding city admin profile:", err),
       );
     }
   }, [CURRENT_USER_ID, dbUser]);
@@ -174,7 +196,11 @@ export function MessagesCenter({ user, profile }) {
 
   function handleSelectThread(thread) {
     setSelectedThreadId(thread.id);
-    setActiveRecipientId(thread.id === "draft" ? thread.participantIds.find(id => id !== CURRENT_USER_ID) : null);
+    setActiveRecipientId(
+      thread.id === "draft"
+        ? thread.participantIds.find((id) => id !== CURRENT_USER_ID)
+        : null,
+    );
     setShowThreadList(false);
     if (thread.id !== "draft") {
       markMessagesAsReadMutation({
@@ -230,7 +256,7 @@ export function MessagesCenter({ user, profile }) {
 
     // Check if conversation already exists
     const existing = conversations.find(
-      (c) => c.participantIds.includes(recipientId) && c.id !== "draft"
+      (c) => c.participantIds.includes(recipientId) && c.id !== "draft",
     );
     if (existing) {
       setSelectedThreadId(existing.id);
@@ -246,7 +272,7 @@ export function MessagesCenter({ user, profile }) {
   // Get available colleagues matching filter/search criteria
   function getFilteredColleagues() {
     if (!CURRENT_USER_ID) return [];
-    
+
     let list = rawOfficials.filter((u) => u.id !== CURRENT_USER_ID);
 
     // Apply Search Term
@@ -257,24 +283,31 @@ export function MessagesCenter({ user, profile }) {
           c.name.toLowerCase().includes(q) ||
           c.role.toLowerCase().includes(q) ||
           (c.department && c.department.toLowerCase().includes(q)) ||
-          (c.city && c.city.toLowerCase().includes(q))
+          (c.city && c.city.toLowerCase().includes(q)),
       );
     }
 
     // Apply Role Filter
     if (selectedRoleFilter !== "all") {
-      list = list.filter((c) => c.role.toLowerCase() === selectedRoleFilter.toLowerCase());
+      list = list.filter(
+        (c) => c.role.toLowerCase() === selectedRoleFilter.toLowerCase(),
+      );
     }
 
     // Apply City Filter
     if (selectedCityFilter !== "all") {
-      list = list.filter((c) => c.city && c.city.toLowerCase() === selectedCityFilter.toLowerCase());
+      list = list.filter(
+        (c) =>
+          c.city && c.city.toLowerCase() === selectedCityFilter.toLowerCase(),
+      );
     }
 
     // Apply Department Filter
     if (selectedDeptFilter !== "all") {
       list = list.filter(
-        (c) => c.department && c.department.toLowerCase() === selectedDeptFilter.toLowerCase()
+        (c) =>
+          c.department &&
+          c.department.toLowerCase() === selectedDeptFilter.toLowerCase(),
       );
     }
 
@@ -283,11 +316,11 @@ export function MessagesCenter({ user, profile }) {
 
   // Dynamic filter values
   const availableCities = Array.from(
-    new Set(rawOfficials.map((o) => o.city).filter(Boolean))
+    new Set(rawOfficials.map((o) => o.city).filter(Boolean)),
   ).sort();
-  
+
   const availableDepts = Array.from(
-    new Set(rawOfficials.map((o) => o.department).filter(Boolean))
+    new Set(rawOfficials.map((o) => o.department).filter(Boolean)),
   ).sort();
 
   const filteredColleagues = getFilteredColleagues();
@@ -321,7 +354,7 @@ export function MessagesCenter({ user, profile }) {
       (issue) =>
         issue.ticket.toLowerCase().includes(searchLower) ||
         issue.title.toLowerCase().includes(searchLower) ||
-        issue.description.toLowerCase().includes(searchLower)
+        issue.description.toLowerCase().includes(searchLower),
     );
   }
 
@@ -357,14 +390,19 @@ export function MessagesCenter({ user, profile }) {
 
   const totalUnread = conversations.reduce((sum, t) => sum + t.unreadCount, 0);
   const filteredIssues = getFilteredIssues();
-  const selectedIssue = availableIssues.find((issue) => issue.id === selectedIssueId);
+  const selectedIssue = availableIssues.find(
+    (issue) => issue.id === selectedIssueId,
+  );
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function roleGradient(role) {
     const r = (role || "").toLowerCase();
-    if (r === "admin" || r === "administrator") return "from-rose-500 to-red-600";
-    if (r === "cityadmin" || r === "city_admin") return "from-violet-500 to-purple-600";
-    if (r === "unitofficer" || r === "unit_officer") return "from-teal-500 to-emerald-600";
+    if (r === "admin" || r === "administrator")
+      return "from-rose-500 to-red-600";
+    if (r === "cityadmin" || r === "city_admin")
+      return "from-violet-500 to-purple-600";
+    if (r === "unitofficer" || r === "unit_officer")
+      return "from-teal-500 to-emerald-600";
     return "from-cyan-500 to-blue-600";
   }
 
@@ -372,7 +410,7 @@ export function MessagesCenter({ user, profile }) {
     const r = (role || "").toLowerCase();
     if (r === "admin" || r === "administrator") return "Admin";
     if (r === "cityadmin" || r === "city_admin") return "City Admin";
-    if (r === "unitofficer" || r === "unit_officer") return "Unit Officer";
+    if (r === "unitofficer" || r === "unit_officer") return "Ward Officer";
     return "Field Officer";
   }
 
@@ -388,7 +426,9 @@ export function MessagesCenter({ user, profile }) {
       <div className="flex items-center justify-center h-[calc(100vh-12rem)] bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-blue-500/30 rounded-full animate-spin border-t-blue-500"></div>
-          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading profile...</p>
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+            Loading profile...
+          </p>
         </div>
       </div>
     );
@@ -396,7 +436,6 @@ export function MessagesCenter({ user, profile }) {
 
   return (
     <div className="flex flex-col md:flex-row h-[calc(100vh-12rem)] bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-      
       {/* ══ SIDEBAR ══════════════════════════════════════════════════════════ */}
       <div
         className={`${showThreadList ? "flex" : "hidden"} md:flex w-full md:w-72 lg:w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col shrink-0`}
@@ -404,9 +443,14 @@ export function MessagesCenter({ user, profile }) {
         <div className="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 bg-blue-50 dark:bg-blue-500/10 rounded-lg">
-              <MessageSquare size={15} className="text-blue-600 dark:text-blue-400" />
+              <MessageSquare
+                size={15}
+                className="text-blue-600 dark:text-blue-400"
+              />
             </div>
-            <span className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">Messages</span>
+            <span className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
+              Messages
+            </span>
             {totalUnread > 0 && (
               <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full animate-pulse leading-none">
                 {totalUnread}
@@ -418,7 +462,10 @@ export function MessagesCenter({ user, profile }) {
             className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-all duration-150 active:scale-95 group"
             title="Start new conversation"
           >
-            <UserPlus size={14} className="text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
+            <UserPlus
+              size={14}
+              className="text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+            />
           </button>
         </div>
 
@@ -426,10 +473,17 @@ export function MessagesCenter({ user, profile }) {
           {sortedConversations.length === 0 ? (
             <div className="px-5 py-12 text-center">
               <div className="w-11 h-11 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <MessageSquare size={20} className="text-slate-300 dark:text-slate-600" />
+                <MessageSquare
+                  size={20}
+                  className="text-slate-300 dark:text-slate-600"
+                />
               </div>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">No conversations yet</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Start one with the button above</p>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                No conversations yet
+              </p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                Start one with the button above
+              </p>
             </div>
           ) : (
             <div className="px-2 space-y-0.5">
@@ -460,11 +514,16 @@ export function MessagesCenter({ user, profile }) {
                           <div
                             className={`w-8 h-8 rounded-full bg-gradient-to-br ${roleGradient(other.role)} flex items-center justify-center text-white text-[11px] font-bold ring-2 ring-white dark:ring-slate-900 shadow-sm shrink-0`}
                           >
-                            {other.name.split(" ").map((n) => n[0]).join("")}
+                            {other.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
                           </div>
                         )}
                         <div>
-                          <p className={`text-sm font-semibold leading-tight ${isActive ? "text-blue-700 dark:text-blue-300" : "text-slate-800 dark:text-slate-200"}`}>
+                          <p
+                            className={`text-sm font-semibold leading-tight ${isActive ? "text-blue-700 dark:text-blue-300" : "text-slate-800 dark:text-slate-200"}`}
+                          >
                             {other.name}
                           </p>
                           <p className="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold mt-0.5">
@@ -480,14 +539,18 @@ export function MessagesCenter({ user, profile }) {
                     </div>
                     <p className="text-xs text-slate-450 dark:text-slate-500 truncate leading-relaxed pl-[40px]">
                       {thread.lastMessageSenderId === CURRENT_USER_ID && (
-                        <span className="text-slate-400 dark:text-slate-600 font-medium">You: </span>
+                        <span className="text-slate-400 dark:text-slate-600 font-medium">
+                          You:{" "}
+                        </span>
                       )}
                       {thread.lastMessage}
                     </p>
                     {thread.lastMessageTime && (
                       <div className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 mt-1 pl-[40px]">
                         <Clock size={9} />
-                        <span>{new Date(thread.lastMessageTime).toLocaleString()}</span>
+                        <span>
+                          {new Date(thread.lastMessageTime).toLocaleString()}
+                        </span>
                       </div>
                     )}
                   </button>
@@ -508,10 +571,16 @@ export function MessagesCenter({ user, profile }) {
             <div className="px-5 py-3 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => { setSelectedThreadId(null); setShowThreadList(true); }}
+                  onClick={() => {
+                    setSelectedThreadId(null);
+                    setShowThreadList(true);
+                  }}
                   className="md:hidden p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                 >
-                  <ChevronRight size={17} className="text-slate-500 rotate-180" />
+                  <ChevronRight
+                    size={17}
+                    className="text-slate-500 rotate-180"
+                  />
                 </button>
                 {selectedThread.otherUser?.avatar ? (
                   <img
@@ -523,7 +592,10 @@ export function MessagesCenter({ user, profile }) {
                   <div
                     className={`w-9 h-9 rounded-full bg-gradient-to-br ${roleGradient(selectedThread.otherUser?.role)} flex items-center justify-center text-white text-[11px] font-bold shadow-sm`}
                   >
-                    {selectedThread.otherUser?.name.split(" ").map((n) => n[0]).join("")}
+                    {selectedThread.otherUser?.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </div>
                 )}
                 <div>
@@ -536,15 +608,22 @@ export function MessagesCenter({ user, profile }) {
                     </span>
                     {selectedThread.otherUser?.department && (
                       <>
-                        <span className="text-slate-300 dark:text-slate-700">•</span>
+                        <span className="text-slate-300 dark:text-slate-700">
+                          •
+                        </span>
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium capitalize">
-                          {selectedThread.otherUser.department.replace("_", " ")}
+                          {selectedThread.otherUser.department.replace(
+                            "_",
+                            " ",
+                          )}
                         </span>
                       </>
                     )}
                     {selectedThread.otherUser?.city && (
                       <>
-                        <span className="text-slate-300 dark:text-slate-700">•</span>
+                        <span className="text-slate-300 dark:text-slate-700">
+                          •
+                        </span>
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
                           {selectedThread.otherUser.city}
                         </span>
@@ -555,15 +634,25 @@ export function MessagesCenter({ user, profile }) {
               </div>
               <div className="flex items-center gap-2">
                 {selectedThread.issueRef ? (
-                  <div 
+                  <div
                     style={{
-                      backgroundColor: statusDot(selectedThread.issueRef.status).replace("bg-", "rgba(") + ", 0.1)",
-                      borderColor: statusDot(selectedThread.issueRef.status).replace("bg-", "rgba(") + ", 0.2)",
+                      backgroundColor:
+                        statusDot(selectedThread.issueRef.status).replace(
+                          "bg-",
+                          "rgba(",
+                        ) + ", 0.1)",
+                      borderColor:
+                        statusDot(selectedThread.issueRef.status).replace(
+                          "bg-",
+                          "rgba(",
+                        ) + ", 0.2)",
                     }}
                     className="flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800"
                   >
                     <Tag size={12} className="text-blue-500" />
-                    <span className="max-w-[120px] truncate">{selectedThread.issueRef.issueTitle}</span>
+                    <span className="max-w-[120px] truncate">
+                      {selectedThread.issueRef.issueTitle}
+                    </span>
                     <button
                       onClick={() => handleLinkConversationIssue(null)}
                       className="ml-1 text-[10px] hover:text-red-500 font-bold"
@@ -582,7 +671,10 @@ export function MessagesCenter({ user, profile }) {
                   </button>
                 )}
                 <button
-                  onClick={() => { setSelectedThreadId(null); setShowThreadList(true); }}
+                  onClick={() => {
+                    setSelectedThreadId(null);
+                    setShowThreadList(true);
+                  }}
                   className="hidden md:flex p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                 >
                   <X size={15} className="text-slate-400" />
@@ -595,7 +687,10 @@ export function MessagesCenter({ user, profile }) {
               {rawMessages.length === 0 && (
                 <div className="flex flex-col items-center justify-center h-full text-center py-16">
                   <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                    <MessageSquare size={22} className="text-slate-300 dark:text-slate-600" />
+                    <MessageSquare
+                      size={22}
+                      className="text-slate-300 dark:text-slate-600"
+                    />
                   </div>
                   <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
                     No messages yet
@@ -608,7 +703,9 @@ export function MessagesCenter({ user, profile }) {
               {rawMessages.map((msg, index) => {
                 const isFromMe = msg.fromId === CURRENT_USER_ID;
                 const referencedIssues = msg.issueIds
-                  ? availableIssues.filter((issue) => msg.issueIds.includes(issue.id || issue._id))
+                  ? availableIssues.filter((issue) =>
+                      msg.issueIds.includes(issue.id || issue._id),
+                    )
                   : [];
 
                 return (
@@ -616,7 +713,9 @@ export function MessagesCenter({ user, profile }) {
                     key={msg._id}
                     className={`flex ${isFromMe ? "justify-end" : "justify-start"}`}
                   >
-                    <div className={`max-w-[75%] md:max-w-[62%] ${isFromMe ? "order-2" : "order-1"}`}>
+                    <div
+                      className={`max-w-[75%] md:max-w-[62%] ${isFromMe ? "order-2" : "order-1"}`}
+                    >
                       <div
                         className={`px-4 py-3 shadow-sm ${
                           isFromMe
@@ -630,11 +729,17 @@ export function MessagesCenter({ user, profile }) {
 
                         {/* Issue references */}
                         {msg.issueIds && msg.issueIds.length > 0 && (
-                          <div className={`mt-3 pt-3 border-t ${isFromMe ? "border-white/20" : "border-slate-100 dark:border-slate-700"} space-y-1.5`}>
-                            <div className={`flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider mb-2 ${isFromMe ? "text-white/60" : "text-slate-400 dark:text-slate-500"}`}>
+                          <div
+                            className={`mt-3 pt-3 border-t ${isFromMe ? "border-white/20" : "border-slate-100 dark:border-slate-700"} space-y-1.5`}
+                          >
+                            <div
+                              className={`flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider mb-2 ${isFromMe ? "text-white/60" : "text-slate-400 dark:text-slate-500"}`}
+                            >
                               <FileText size={10} />
                               <span>
-                                {msg.issueIds.length === 1 ? "Linked Issue" : `${msg.issueIds.length} Linked Issues`}
+                                {msg.issueIds.length === 1
+                                  ? "Linked Issue"
+                                  : `${msg.issueIds.length} Linked Issues`}
                               </span>
                             </div>
                             {referencedIssues.map((issue) => (
@@ -646,28 +751,44 @@ export function MessagesCenter({ user, profile }) {
                                     : "bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-650"
                                 }`}
                               >
-                                <div className={`w-1 shrink-0 ${statusDot(issue.status)}`} />
+                                <div
+                                  className={`w-1 shrink-0 ${statusDot(issue.status)}`}
+                                />
                                 <div className="px-2.5 py-1.5 flex-1 min-w-0 flex items-center gap-2">
-                                  <span className={`font-mono text-[10px] font-bold shrink-0 ${isFromMe ? "text-white/70" : "text-slate-400"}`}>
+                                  <span
+                                    className={`font-mono text-[10px] font-bold shrink-0 ${isFromMe ? "text-white/70" : "text-slate-400"}`}
+                                  >
                                     {issue.ticket}
                                   </span>
-                                  <span className={`text-xs font-semibold truncate ${isFromMe ? "text-white/95" : "text-slate-700 dark:text-slate-300"}`}>
+                                  <span
+                                    className={`text-xs font-semibold truncate ${isFromMe ? "text-white/95" : "text-slate-700 dark:text-slate-300"}`}
+                                  >
                                     {issue.title}
                                   </span>
                                 </div>
                                 {/* Hover tooltip */}
                                 <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-50 w-72 pointer-events-none transition-all duration-150">
                                   <div className="bg-slate-950 text-white text-xs rounded-xl p-3.5 shadow-2xl border border-slate-800">
-                                    <p className="font-semibold mb-1 text-teal-400">{issue.ticket}: {issue.title}</p>
-                                    <p className="text-slate-400 mb-2.5 leading-relaxed line-clamp-3 text-wrap">{issue.description}</p>
+                                    <p className="font-semibold mb-1 text-teal-400">
+                                      {issue.ticket}: {issue.title}
+                                    </p>
+                                    <p className="text-slate-400 mb-2.5 leading-relaxed line-clamp-3 text-wrap">
+                                      {issue.description}
+                                    </p>
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${issue.severity === "high" ? "bg-red-500/20 text-red-350" : issue.severity === "medium" ? "bg-amber-500/20 text-amber-350" : "bg-blue-500/20 text-blue-350"}`}>
+                                      <span
+                                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${issue.severity === "high" ? "bg-red-500/20 text-red-350" : issue.severity === "medium" ? "bg-amber-500/20 text-amber-350" : "bg-blue-500/20 text-blue-350"}`}
+                                      >
                                         {issue.severity}
                                       </span>
                                       <span className="text-slate-600">·</span>
-                                      <span className="text-slate-400 capitalize">{issue.category}</span>
+                                      <span className="text-slate-400 capitalize">
+                                        {issue.category}
+                                      </span>
                                       <span className="text-slate-600">·</span>
-                                      <span className="text-slate-400 capitalize">{issue.status.replace("_", " ")}</span>
+                                      <span className="text-slate-400 capitalize">
+                                        {issue.status.replace("_", " ")}
+                                      </span>
                                     </div>
                                   </div>
                                 </div>
@@ -676,15 +797,18 @@ export function MessagesCenter({ user, profile }) {
                           </div>
                         )}
                       </div>
-                      <div className={`flex items-center gap-1.5 text-[10px] text-slate-400 mt-1 ${isFromMe ? "justify-end" : "justify-start"}`}>
-                        <span>{new Date(msg.createdAt).toLocaleTimeString()}</span>
-                        {isFromMe && (
-                          msg.read ? (
+                      <div
+                        className={`flex items-center gap-1.5 text-[10px] text-slate-400 mt-1 ${isFromMe ? "justify-end" : "justify-start"}`}
+                      >
+                        <span>
+                          {new Date(msg.createdAt).toLocaleTimeString()}
+                        </span>
+                        {isFromMe &&
+                          (msg.read ? (
                             <CheckCheck size={12} className="text-amber-500" />
                           ) : (
                             <Check size={12} className="text-slate-400" />
-                          )
-                        )}
+                          ))}
                       </div>
                     </div>
                   </div>
@@ -707,7 +831,12 @@ export function MessagesCenter({ user, profile }) {
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <FileText size={12} className={selectedIssue ? "text-blue-500" : "text-slate-450"} />
+                    <FileText
+                      size={12}
+                      className={
+                        selectedIssue ? "text-blue-500" : "text-slate-450"
+                      }
+                    />
                     <span className="truncate">
                       {selectedIssue
                         ? `${selectedIssue.ticket} — ${selectedIssue.title}`
@@ -724,7 +853,10 @@ export function MessagesCenter({ user, profile }) {
                   <div className="absolute z-50 w-full bottom-full mb-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-64 overflow-hidden flex flex-col">
                     <div className="p-2.5 border-b border-slate-100 dark:border-slate-700 shrink-0">
                       <div className="relative">
-                        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-405" />
+                        <Search
+                          size={12}
+                          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-405"
+                        />
                         <input
                           type="text"
                           value={issueSearchTerm}
@@ -743,7 +875,9 @@ export function MessagesCenter({ user, profile }) {
                         No issue reference
                       </button>
                       {filteredIssues.length === 0 ? (
-                        <div className="p-4 text-center text-xs text-slate-400">No issues found</div>
+                        <div className="p-4 text-center text-xs text-slate-400">
+                          No issues found
+                        </div>
                       ) : (
                         filteredIssues.map((issue) => (
                           <button
@@ -755,11 +889,19 @@ export function MessagesCenter({ user, profile }) {
                             className={`w-full px-3 py-2.5 text-left text-xs border-b border-slate-100 dark:border-slate-700/40 transition-all hover:bg-slate-50 dark:hover:bg-slate-700/50 ${selectedIssueId === issue.id ? "bg-blue-50 dark:bg-blue-500/10" : ""}`}
                           >
                             <div className="flex items-center gap-2 mb-0.5">
-                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot(issue.status)}`} />
-                              <span className="font-mono text-[10px] text-slate-400 shrink-0">{issue.ticket}</span>
-                              <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">{issue.title}</span>
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot(issue.status)}`}
+                              />
+                              <span className="font-mono text-[10px] text-slate-400 shrink-0">
+                                {issue.ticket}
+                              </span>
+                              <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                                {issue.title}
+                              </span>
                             </div>
-                            <p className="text-slate-405 line-clamp-1 pl-4 text-[11px]">{issue.description}</p>
+                            <p className="text-slate-405 line-clamp-1 pl-4 text-[11px]">
+                              {issue.description}
+                            </p>
                           </button>
                         ))
                       )}
@@ -800,10 +942,17 @@ export function MessagesCenter({ user, profile }) {
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
-                <MessageSquare size={24} className="text-slate-350 dark:text-slate-600" />
+                <MessageSquare
+                  size={24}
+                  className="text-slate-350 dark:text-slate-600"
+                />
               </div>
-              <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">No conversation selected</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-medium">Pick a thread from the sidebar</p>
+              <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
+                No conversation selected
+              </p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-medium">
+                Pick a thread from the sidebar
+              </p>
             </div>
           </div>
         )}
@@ -820,7 +969,9 @@ export function MessagesCenter({ user, profile }) {
                   <UserPlus size={18} className="text-blue-500" />
                   New Secure Conversation
                 </h3>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Start a direct messaging thread with an official</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                  Start a direct messaging thread with an official
+                </p>
               </div>
               <button
                 onClick={() => {
@@ -839,7 +990,10 @@ export function MessagesCenter({ user, profile }) {
             {/* Advanced Search & Filtering Controls */}
             <div className="p-4 border-b border-slate-100 dark:border-slate-800 shrink-0 bg-slate-50/50 dark:bg-slate-900/50 space-y-3">
               <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-450" />
+                <Search
+                  size={14}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-450"
+                />
                 <input
                   type="text"
                   value={colleagueSearchTerm}
@@ -869,7 +1023,10 @@ export function MessagesCenter({ user, profile }) {
                         </option>
                       ))}
                     </select>
-                    <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <ChevronDown
+                      size={11}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                    />
                   </div>
                 </div>
 
@@ -891,7 +1048,10 @@ export function MessagesCenter({ user, profile }) {
                         </option>
                       ))}
                     </select>
-                    <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <ChevronDown
+                      size={11}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                    />
                   </div>
                 </div>
 
@@ -912,7 +1072,10 @@ export function MessagesCenter({ user, profile }) {
                       <option value="unit_officer">Unit Officers</option>
                       <option value="field_officer">Field Officers</option>
                     </select>
-                    <ChevronDown size={11} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <ChevronDown
+                      size={11}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                    />
                   </div>
                 </div>
               </div>
@@ -928,11 +1091,16 @@ export function MessagesCenter({ user, profile }) {
                   <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
                     No colleagues match your filters
                   </p>
-                  <p className="text-xs text-slate-400 mt-1">Try relaxing your search terms or filters.</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Try relaxing your search terms or filters.
+                  </p>
                 </div>
               ) : (
                 Object.entries(groupedColleagues).map(([city, depts]) => (
-                  <div key={city} className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div
+                    key={city}
+                    className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-200"
+                  >
                     <h4 className="text-xs font-black uppercase tracking-wider text-teal-650 dark:text-teal-405 border-b border-teal-100 dark:border-teal-900 pb-1.5 flex items-center gap-1.5">
                       <MapPin size={12} className="text-teal-500" />
                       {city}
@@ -966,7 +1134,10 @@ export function MessagesCenter({ user, profile }) {
                                   <div
                                     className={`w-10 h-10 rounded-full bg-gradient-to-br ${roleGradient(colleague.role)} flex items-center justify-center text-white text-[11px] font-bold ring-2 ring-white dark:ring-slate-900 shadow-sm shrink-0`}
                                   >
-                                    {colleague.name.split(" ").map((n) => n[0]).join("")}
+                                    {colleague.name
+                                      .split(" ")
+                                      .map((n) => n[0])
+                                      .join("")}
                                   </div>
                                 )}
                                 <div className="flex-1 min-w-0">
@@ -980,7 +1151,10 @@ export function MessagesCenter({ user, profile }) {
                                     {colleague.email}
                                   </p>
                                 </div>
-                                <ChevronRight size={14} className="text-slate-355 dark:text-slate-700 group-hover:text-blue-500 transition-colors shrink-0" />
+                                <ChevronRight
+                                  size={14}
+                                  className="text-slate-355 dark:text-slate-700 group-hover:text-blue-500 transition-colors shrink-0"
+                                />
                               </button>
                             ))}
                           </div>

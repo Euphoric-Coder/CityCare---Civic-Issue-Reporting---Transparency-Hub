@@ -18,9 +18,7 @@ export function safePercentage(numerator, denominator) {
 
   const value = (safeNumerator / safeDenominator) * 100;
 
-  return Number.isFinite(value)
-    ? Math.max(0, Math.min(100, value))
-    : 0;
+  return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
 }
 
 export function normalizeStatus(value) {
@@ -37,12 +35,7 @@ export function getRangeCutoff(range) {
     return null;
   }
 
-  const days =
-    selectedRange === "7d"
-      ? 7
-      : selectedRange === "90d"
-        ? 90
-        : 30;
+  const days = selectedRange === "7d" ? 7 : selectedRange === "90d" ? 90 : 30;
 
   return Date.now() - days * 24 * 60 * 60 * 1000;
 }
@@ -77,7 +70,7 @@ export function calculateAvgResolutionTime(resolvedIssues) {
   let totalMs = 0;
   for (const issue of resolvedIssues) {
     const endTime = issue.resolvedAt ?? issue.closedAt ?? Date.now();
-    totalMs += (endTime - issue.createdAt);
+    totalMs += endTime - issue.createdAt;
   }
   return Math.round(totalMs / (3600 * 1000 * resolvedIssues.length));
 }
@@ -103,16 +96,19 @@ export async function getFieldResolutionDurations(ctx, issues, cache) {
   const completedIssues = issues.filter(
     (issue) =>
       ["resolved", "closed"].includes(normalizeStatus(issue.status)) &&
-      (issue.resolvedAt || issue.closedAt)
+      (issue.resolvedAt || issue.closedAt),
   );
 
-  if (completedIssues.length === 0) return { totalMs: 0, count: 0, avgHours: 0 };
+  if (completedIssues.length === 0)
+    return { totalMs: 0, count: 0, avgHours: 0 };
 
   const durations = await Promise.all(
     completedIssues.map(async (issue) => {
       const updates = await getIssueUpdatesCached(ctx, issue._id, cache);
 
-      const assignedUpdate = updates.find((u) => normalizeStatus(u.status) === "assigned");
+      const assignedUpdate = updates.find(
+        (u) => normalizeStatus(u.status) === "assigned",
+      );
 
       const startTime = assignedUpdate?.createdAt ?? issue.createdAt;
       const endTime = issue.resolvedAt ?? issue.closedAt;
@@ -120,12 +116,10 @@ export async function getFieldResolutionDurations(ctx, issues, cache) {
       if (!endTime || endTime <= startTime) return null;
 
       return endTime - startTime;
-    })
+    }),
   );
 
-  const validDurations = durations.filter(
-    (duration) => duration !== null
-  );
+  const validDurations = durations.filter((duration) => duration !== null);
 
   if (validDurations.length === 0) return { totalMs: 0, count: 0, avgHours: 0 };
 
@@ -144,8 +138,8 @@ export async function calculateAvgFieldExecutionTime(ctx, issues, cache) {
 export async function calculateAvgAssignmentTime(ctx, issues, cache) {
   const assignedIssues = issues.filter(
     (issue) =>
-      (!["pending", "verified"].includes(normalizeStatus(issue.status))) ||
-      issue.assignedFieldOfficer
+      !["pending", "verified"].includes(normalizeStatus(issue.status)) ||
+      issue.assignedFieldOfficer,
   );
 
   if (assignedIssues.length === 0) return 0;
@@ -154,8 +148,12 @@ export async function calculateAvgAssignmentTime(ctx, issues, cache) {
     assignedIssues.map(async (issue) => {
       const updates = await getIssueUpdatesCached(ctx, issue._id, cache);
 
-      const verifiedUpdate = updates.find((u) => normalizeStatus(u.status) === "verified");
-      const assignedUpdate = updates.find((u) => normalizeStatus(u.status) === "assigned");
+      const verifiedUpdate = updates.find(
+        (u) => normalizeStatus(u.status) === "verified",
+      );
+      const assignedUpdate = updates.find(
+        (u) => normalizeStatus(u.status) === "assigned",
+      );
 
       const startTime = verifiedUpdate?.createdAt ?? issue.createdAt;
       const endTime = assignedUpdate?.createdAt;
@@ -163,19 +161,17 @@ export async function calculateAvgAssignmentTime(ctx, issues, cache) {
       if (!endTime || endTime <= startTime) return null;
 
       return endTime - startTime;
-    })
+    }),
   );
 
-  const validDurations = durations.filter(
-    (duration) => duration !== null
-  );
+  const validDurations = durations.filter((duration) => duration !== null);
 
   if (validDurations.length === 0) return 0;
 
   return Math.round(
     validDurations.reduce((sum, duration) => sum + duration, 0) /
       validDurations.length /
-      (1000 * 60 * 60)
+      (1000 * 60 * 60),
   );
 }
 
@@ -205,7 +201,10 @@ export function getStatusBreakdown(issues) {
       counts.assigned++;
     } else if (status === "in_progress") {
       counts.in_progress++;
-    } else if (status === "submitted_for_review" || status === "pending_uo_verification") {
+    } else if (
+      status === "submitted_for_review" ||
+      status === "pending_uo_verification"
+    ) {
       counts.submitted_for_review++;
     } else if (status === "rework_required" || status === "rework_requested") {
       counts.rework_required++;
@@ -272,7 +271,10 @@ export function getQualityMetrics(issues, totalAssigned) {
   const totalResolved = resolved.length;
 
   const reworkCount = issues.filter(
-    (i) => normalizeStatus(i.status) === "rework_required" || i.reworkNote || (i.reworkReasons && i.reworkReasons.length > 0)
+    (i) =>
+      normalizeStatus(i.status) === "rework_required" ||
+      i.reworkNote ||
+      (i.reworkReasons && i.reworkReasons.length > 0),
   ).length;
   const reworkRate = safePercentage(reworkCount, totalResolved);
 
@@ -283,15 +285,26 @@ export function getQualityMetrics(issues, totalAssigned) {
   const escalationRate = safePercentage(escalatedCount, totalAssigned);
 
   const ftfIssues = resolved.filter(
-    (i) => (i.reopenCount ?? 0) === 0 && !i.reworkNote && (!i.reworkReasons || i.reworkReasons.length === 0) && normalizeStatus(i.status) !== "rework_required"
+    (i) =>
+      (i.reopenCount ?? 0) === 0 &&
+      !i.reworkNote &&
+      (!i.reworkReasons || i.reworkReasons.length === 0) &&
+      normalizeStatus(i.status) !== "rework_required",
   ).length;
-  const firstTimeFixRate = totalResolved > 0 ? safePercentage(ftfIssues, totalResolved) : 0;
+  const firstTimeFixRate =
+    totalResolved > 0 ? safePercentage(ftfIssues, totalResolved) : 0;
 
-  const ratedIssues = resolved.filter((i) => typeof i.citizenRating === "number");
-  const ratingSum = ratedIssues.reduce((sum, i) => sum + (i.citizenRating ?? 0), 0);
-  const citizenSatisfaction = ratedIssues.length > 0
-    ? safePercentage(ratingSum, ratedIssues.length * 5)
-    : 0;
+  const ratedIssues = resolved.filter(
+    (i) => typeof i.citizenRating === "number",
+  );
+  const ratingSum = ratedIssues.reduce(
+    (sum, i) => sum + (i.citizenRating ?? 0),
+    0,
+  );
+  const citizenSatisfaction =
+    ratedIssues.length > 0
+      ? safePercentage(ratingSum, ratedIssues.length * 5)
+      : 0;
 
   return {
     reworkRate,
@@ -307,17 +320,25 @@ export async function calculateFieldOfficerSummary(
   officer,
   issues,
   range,
-  cache
+  cache,
 ) {
   const cutoff = getRangeCutoff(range);
   const totalAssigned = issues.length;
 
   const activeIssuesList = issues.filter((i) =>
-    ["assigned", "in_progress", "submitted_for_review", "pending_uo_verification", "rework_required", "rework_requested"].includes(normalizeStatus(i.status))
+    [
+      "assigned",
+      "in_progress",
+      "submitted_for_review",
+      "pending_uo_verification",
+      "rework_required",
+      "rework_requested",
+    ].includes(normalizeStatus(i.status)),
   );
   const activeIssues = activeIssuesList.length;
   const maxCapacity = officer.maxIssueCapacity || 10;
-  const capacityUsage = maxCapacity > 0 ? Math.round((activeIssues / maxCapacity) * 100) : 0;
+  const capacityUsage =
+    maxCapacity > 0 ? Math.round((activeIssues / maxCapacity) * 100) : 0;
 
   // Resolved in selected range window
   const resolved = issues.filter((i) => {
@@ -328,7 +349,11 @@ export async function calculateFieldOfficerSummary(
   });
   const totalResolved = resolved.length;
 
-  const durationsResult = await getFieldResolutionDurations(ctx, resolved, cache);
+  const durationsResult = await getFieldResolutionDurations(
+    ctx,
+    resolved,
+    cache,
+  );
   const avgResolutionTime = durationsResult.avgHours;
   const totalResolutionDurationMs = durationsResult.totalMs;
   const validResolutionDurationCount = durationsResult.count;
@@ -336,29 +361,31 @@ export async function calculateFieldOfficerSummary(
   // SLA Compliance from range resolved issues
   const slaApplicableResolvedIssues = resolved.filter(
     (issue) =>
-      Boolean(issue.slaDeadline) &&
-      Boolean(issue.resolvedAt ?? issue.closedAt)
+      Boolean(issue.slaDeadline) && Boolean(issue.resolvedAt ?? issue.closedAt),
   );
 
   const slaCompliantResolvedIssues = slaApplicableResolvedIssues.filter(
     (issue) => {
       const completedAt = issue.resolvedAt ?? issue.closedAt;
       return safeNumber(completedAt) <= safeNumber(issue.slaDeadline);
-    }
+    },
   );
 
   const hasSlaData = slaApplicableResolvedIssues.length > 0;
   const slaComplianceRate = hasSlaData
     ? safePercentage(
         slaCompliantResolvedIssues.length,
-        slaApplicableResolvedIssues.length
+        slaApplicableResolvedIssues.length,
       )
     : 0;
 
   const slaBreaches = issues.filter((i) => i.slaBreached).length;
 
   const reworkCount = issues.filter(
-    (i) => normalizeStatus(i.status) === "rework_required" || i.reworkNote || (i.reworkReasons && i.reworkReasons.length > 0)
+    (i) =>
+      normalizeStatus(i.status) === "rework_required" ||
+      i.reworkNote ||
+      (i.reworkReasons && i.reworkReasons.length > 0),
   ).length;
 
   const reopenCount = issues.reduce((sum, i) => sum + (i.reopenCount ?? 0), 0);
@@ -374,12 +401,9 @@ export async function calculateFieldOfficerSummary(
       0,
       Math.min(
         100,
-        100 -
-          reworkRate * 0.40 -
-          reopenRate * 0.35 -
-          escalationRate * 0.25
-      )
-    )
+        100 - reworkRate * 0.4 - reopenRate * 0.35 - escalationRate * 0.25,
+      ),
+    ),
   );
   const qualityScore = totalResolved > 0 ? qualityScoreCalculated : 0;
 
@@ -388,19 +412,17 @@ export async function calculateFieldOfficerSummary(
     const hasRework =
       safeNumber(issue.reworkCount) > 0 ||
       Boolean(issue.reworkNote) ||
-      (
-        Array.isArray(issue.reworkReasons) &&
-        issue.reworkReasons.length > 0
-      );
+      (Array.isArray(issue.reworkReasons) && issue.reworkReasons.length > 0);
 
     const hasReopen = safeNumber(issue.reopenCount) > 0;
 
     return !hasRework && !hasReopen;
   });
 
-  const firstTimeFixRate = totalResolved > 0
-    ? safePercentage(firstTimeFixIssues.length, totalResolved)
-    : 0;
+  const firstTimeFixRate =
+    totalResolved > 0
+      ? safePercentage(firstTimeFixIssues.length, totalResolved)
+      : 0;
 
   // Citizen Rating Calculations
   const ratings = resolved
@@ -410,9 +432,8 @@ export async function calculateFieldOfficerSummary(
   const ratedIssueCount = ratings.length;
   const ratingSum = ratings.reduce((sum, val) => sum + val, 0);
 
-  const rating = ratedIssueCount > 0
-    ? Number((ratingSum / ratedIssueCount).toFixed(1))
-    : 0;
+  const rating =
+    ratedIssueCount > 0 ? Number((ratingSum / ratedIssueCount).toFixed(1)) : 0;
 
   const hasCitizenRatings = ratedIssueCount > 0;
   const ratingScore = hasCitizenRatings ? safePercentage(rating, 5) : 50;
@@ -420,35 +441,34 @@ export async function calculateFieldOfficerSummary(
   const resolutionRate = safePercentage(totalResolved, totalAssigned);
 
   const targetResolutionHours = 72;
-  const resolutionSpeedScore = totalResolved > 0 && avgResolutionTime > 0
-    ? Math.max(
-        0,
-        Math.min(
-          100,
-          (targetResolutionHours / avgResolutionTime) * 100
+  const resolutionSpeedScore =
+    totalResolved > 0 && avgResolutionTime > 0
+      ? Math.max(
+          0,
+          Math.min(100, (targetResolutionHours / avgResolutionTime) * 100),
         )
-      )
-    : 0;
+      : 0;
 
   const rawPerformanceScore =
-    resolutionRate * 0.30 +
+    resolutionRate * 0.3 +
     slaComplianceRate * 0.25 +
-    firstTimeFixRate * 0.20 +
+    firstTimeFixRate * 0.2 +
     ratingScore * 0.15 +
-    resolutionSpeedScore * 0.10;
+    resolutionSpeedScore * 0.1;
 
   // Sample size confidence factor
   const MIN_COMPLETED_FOR_FULL_CONFIDENCE = 5;
-  const confidenceFactor = totalResolved <= 0
-    ? 0
-    : Math.min(1, totalResolved / MIN_COMPLETED_FOR_FULL_CONFIDENCE);
+  const confidenceFactor =
+    totalResolved <= 0
+      ? 0
+      : Math.min(1, totalResolved / MIN_COMPLETED_FOR_FULL_CONFIDENCE);
 
-  const efficiencyScore = totalResolved <= 0
-    ? 0
-    : Math.round(
-        rawPerformanceScore * confidenceFactor +
-        50 * (1 - confidenceFactor)
-      );
+  const efficiencyScore =
+    totalResolved <= 0
+      ? 0
+      : Math.round(
+          rawPerformanceScore * confidenceFactor + 50 * (1 - confidenceFactor),
+        );
 
   return {
     totalAssigned,
@@ -503,41 +523,61 @@ export async function calculateUnitOfficerPersonalSummary(
   officer,
   uoIssues,
   range,
-  cache
+  cache,
 ) {
   const cutoff = getRangeCutoff(range);
 
   const verifiedIssues = uoIssues.filter((i) => {
     const verifiedAt = i.verificationChecklist?.verifiedAt;
-    return i.verificationChecklist?.verifiedBy === officer.userId &&
-           (cutoff === null || safeNumber(verifiedAt) >= cutoff);
+    return (
+      i.verificationChecklist?.verifiedBy === officer.userId &&
+      (cutoff === null || safeNumber(verifiedAt) >= cutoff)
+    );
   });
   const totalVerified = verifiedIssues.length;
 
   const rejectedIssues = uoIssues.filter((i) => {
     const rejectedAt = i.rejection?.rejectedAt;
-    return i.rejection?.rejectedBy === officer.userId &&
-           (cutoff === null || safeNumber(rejectedAt) >= cutoff);
+    return (
+      i.rejection?.rejectedBy === officer.userId &&
+      (cutoff === null || safeNumber(rejectedAt) >= cutoff)
+    );
   });
   const totalRejected = rejectedIssues.length;
 
   const totalReviewed = totalVerified + totalRejected;
-  const verificationRate = totalReviewed > 0 ? Math.round((totalVerified / totalReviewed) * 100) : 0;
+  const verificationRate =
+    totalReviewed > 0 ? Math.round((totalVerified / totalReviewed) * 100) : 0;
 
   let totalVerTimeMs = 0;
   for (const issue of verifiedIssues) {
     if (issue.verificationChecklist?.verifiedAt) {
-      totalVerTimeMs += (issue.verificationChecklist.verifiedAt - issue.createdAt);
+      totalVerTimeMs +=
+        issue.verificationChecklist.verifiedAt - issue.createdAt;
     }
   }
-  const avgVerificationTime = totalVerified > 0
-    ? Math.round(totalVerTimeMs / (totalVerified * 3600 * 1000))
-    : 0;
+  const avgVerificationTime =
+    totalVerified > 0
+      ? Math.round(totalVerTimeMs / (totalVerified * 3600 * 1000))
+      : 0;
 
-  const avgAssignmentTime = await calculateAvgAssignmentTime(ctx, uoIssues, cache);
+  const avgAssignmentTime = await calculateAvgAssignmentTime(
+    ctx,
+    uoIssues,
+    cache,
+  );
 
   const activeIssues = uoIssues.filter((i) =>
-    ["pending", "verified", "assigned", "in_progress", "submitted_for_review", "pending_uo_verification", "rework_required", "rework_requested"].includes(normalizeStatus(i.status))
+    [
+      "pending",
+      "verified",
+      "assigned",
+      "in_progress",
+      "submitted_for_review",
+      "pending_uo_verification",
+      "rework_required",
+      "rework_requested",
+    ].includes(normalizeStatus(i.status)),
   ).length;
 
   const resolved = uoIssues.filter((i) => {
@@ -550,23 +590,37 @@ export async function calculateUnitOfficerPersonalSummary(
 
   const overallAvgResolutionTime = calculateAvgResolutionTime(resolved);
 
-  const ratedIssues = resolved.filter((i) => typeof i.citizenRating === "number");
-  const rating = ratedIssues.length > 0
-    ? Number((ratedIssues.reduce((sum, i) => sum + i.citizenRating, 0) / ratedIssues.length).toFixed(1))
-    : 0;
+  const ratedIssues = resolved.filter(
+    (i) => typeof i.citizenRating === "number",
+  );
+  const rating =
+    ratedIssues.length > 0
+      ? Number(
+          (
+            ratedIssues.reduce((sum, i) => sum + i.citizenRating, 0) /
+            ratedIssues.length
+          ).toFixed(1),
+        )
+      : 0;
 
   const verificationScore = verificationRate;
   const assignmentTargetHours = 24;
-  const assignmentScore = avgAssignmentTime > 0
-    ? Math.max(0, Math.min(100, (assignmentTargetHours / avgAssignmentTime) * 100))
-    : totalReviewed > 0 ? 50 : 0;
+  const assignmentScore =
+    avgAssignmentTime > 0
+      ? Math.max(
+          0,
+          Math.min(100, (assignmentTargetHours / avgAssignmentTime) * 100),
+        )
+      : totalReviewed > 0
+        ? 50
+        : 0;
 
   const efficiencyScore = Math.round(
     verificationScore * 0.25 +
-    assignmentScore * 0.20 +
-    100 * 0.25 + // default team SLA score fallback
-    100 * 0.20 + // default team resolution score fallback
-    100 * 0.10 // default citizen satisfaction fallback
+      assignmentScore * 0.2 +
+      100 * 0.25 + // default team SLA score fallback
+      100 * 0.2 + // default team resolution score fallback
+      100 * 0.1, // default citizen satisfaction fallback
   );
 
   return {
@@ -598,32 +652,61 @@ export function calculateUnitOfficerTeamSummary(foSummaries) {
     };
   }
 
-  const teamResolvedIssues = foSummaries.reduce((sum, s) => sum + s.totalResolved, 0);
-  const teamActiveIssues = foSummaries.reduce((sum, s) => sum + s.activeIssues, 0);
+  const teamResolvedIssues = foSummaries.reduce(
+    (sum, s) => sum + s.totalResolved,
+    0,
+  );
+  const teamActiveIssues = foSummaries.reduce(
+    (sum, s) => sum + s.activeIssues,
+    0,
+  );
 
   // Issue-weighted team SLA Compliance
-  const totalSlaApplicable = foSummaries.reduce((sum, s) => sum + s.slaApplicableCount, 0);
-  const totalSlaCompliant = foSummaries.reduce((sum, s) => sum + s.slaCompliantCount, 0);
-  const teamSlaCompliance = totalSlaApplicable > 0
-    ? safePercentage(totalSlaCompliant, totalSlaApplicable)
-    : 0;
+  const totalSlaApplicable = foSummaries.reduce(
+    (sum, s) => sum + s.slaApplicableCount,
+    0,
+  );
+  const totalSlaCompliant = foSummaries.reduce(
+    (sum, s) => sum + s.slaCompliantCount,
+    0,
+  );
+  const teamSlaCompliance =
+    totalSlaApplicable > 0
+      ? safePercentage(totalSlaCompliant, totalSlaApplicable)
+      : 0;
 
   // Issue-weighted team Avg Resolution Time
-  const teamResolutionDurationMs = foSummaries.reduce((sum, s) => sum + s.totalResolutionDurationMs, 0);
-  const teamResolutionSampleCount = foSummaries.reduce((sum, s) => sum + s.validResolutionDurationCount, 0);
-  const teamAvgResolutionTime = teamResolutionSampleCount > 0
-    ? Math.round(teamResolutionDurationMs / teamResolutionSampleCount / (1000 * 60 * 60))
-    : 0;
+  const teamResolutionDurationMs = foSummaries.reduce(
+    (sum, s) => sum + s.totalResolutionDurationMs,
+    0,
+  );
+  const teamResolutionSampleCount = foSummaries.reduce(
+    (sum, s) => sum + s.validResolutionDurationCount,
+    0,
+  );
+  const teamAvgResolutionTime =
+    teamResolutionSampleCount > 0
+      ? Math.round(
+          teamResolutionDurationMs /
+            teamResolutionSampleCount /
+            (1000 * 60 * 60),
+        )
+      : 0;
 
   // Issue-weighted team Citizen Rating
-  const totalRatingCount = foSummaries.reduce((sum, s) => sum + s.ratedIssueCount, 0);
+  const totalRatingCount = foSummaries.reduce(
+    (sum, s) => sum + s.ratedIssueCount,
+    0,
+  );
   const totalRatingSum = foSummaries.reduce((sum, s) => sum + s.ratingSum, 0);
-  const teamCitizenRating = totalRatingCount > 0
-    ? Number((totalRatingSum / totalRatingCount).toFixed(1))
-    : 0;
+  const teamCitizenRating =
+    totalRatingCount > 0
+      ? Number((totalRatingSum / totalRatingCount).toFixed(1))
+      : 0;
 
   const teamEfficiencyScore = Math.round(
-    foSummaries.reduce((sum, s) => sum + s.efficiencyScore, 0) / assignedFieldOfficerCount
+    foSummaries.reduce((sum, s) => sum + s.efficiencyScore, 0) /
+      assignedFieldOfficerCount,
   );
 
   return {
@@ -638,7 +721,20 @@ export function calculateUnitOfficerTeamSummary(foSummaries) {
 }
 
 export function getMonthlyResolutionTrend(issues) {
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   const counts = {};
 
   const now = new Date();
@@ -651,12 +747,12 @@ export function getMonthlyResolutionTrend(issues) {
     counts[key] = 0;
   }
 
-  const resolved = issues.filter(
-    (i) => {
-      const st = normalizeStatus(i.status);
-      return (st === "resolved" || st === "closed") && (i.resolvedAt || i.closedAt);
-    }
-  );
+  const resolved = issues.filter((i) => {
+    const st = normalizeStatus(i.status);
+    return (
+      (st === "resolved" || st === "closed") && (i.resolvedAt || i.closedAt)
+    );
+  });
 
   for (const issue of resolved) {
     const resolvedTime = issue.resolvedAt ?? issue.closedAt;

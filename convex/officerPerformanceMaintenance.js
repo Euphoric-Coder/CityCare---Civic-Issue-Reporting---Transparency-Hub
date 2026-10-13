@@ -40,30 +40,47 @@ export const refreshAllOfficerPerformance = internalMutation({
       try {
         const issues = await ctx.db
           .query("issues")
-          .withIndex("by_assigned_field_officer", (q) => q.eq("assignedFieldOfficer", fo.userId))
+          .withIndex("by_assigned_field_officer", (q) =>
+            q.eq("assignedFieldOfficer", fo.userId),
+          )
           .collect();
 
-        const summary = await calculateFieldOfficerSummary(ctx, fo, issues, "all", issueUpdateCache);
+        const summary = await calculateFieldOfficerSummary(
+          ctx,
+          fo,
+          issues,
+          "all",
+          issueUpdateCache,
+        );
 
         // Active issues assigned to this FO
         const activeIssuesList = issues
           .filter((i) =>
-            ["assigned", "in_progress", "submitted_for_review", "pending_uo_verification", "rework_required", "rework_requested"].includes(
-              normalizeStatus(i.status)
-            )
+            [
+              "assigned",
+              "in_progress",
+              "submitted_for_review",
+              "pending_uo_verification",
+              "rework_required",
+              "rework_requested",
+            ].includes(normalizeStatus(i.status)),
           )
           .sort((a, b) => a._creationTime - b._creationTime);
 
         // Completed issues assigned to this FO
         const completedIssuesList = issues
-          .filter((i) => ["resolved", "closed"].includes(normalizeStatus(i.status)))
+          .filter((i) =>
+            ["resolved", "closed"].includes(normalizeStatus(i.status)),
+          )
           .sort((a, b) => a._creationTime - b._creationTime);
 
         const assignedIssueIds = Array.from(
-          new Map(activeIssuesList.map((i) => [String(i._id), i._id])).values()
+          new Map(activeIssuesList.map((i) => [String(i._id), i._id])).values(),
         );
         const completedIssueIds = Array.from(
-          new Map(completedIssuesList.map((i) => [String(i._id), i._id])).values()
+          new Map(
+            completedIssuesList.map((i) => [String(i._id), i._id]),
+          ).values(),
         );
 
         const newActiveCount = summary.activeIssues;
@@ -101,7 +118,10 @@ export const refreshAllOfficerPerformance = internalMutation({
       } catch (err) {
         foFailed++;
         const errorMessage = err instanceof Error ? err.message : String(err);
-        console.error(`[Cron Performance Sync] Field Officer ${fo._id} sync failed:`, errorMessage);
+        console.error(
+          `[Cron Performance Sync] Field Officer ${fo._id} sync failed:`,
+          errorMessage,
+        );
         failures.push({
           role: "field_officer",
           officerId: String(fo._id),
@@ -115,53 +135,82 @@ export const refreshAllOfficerPerformance = internalMutation({
       try {
         const uoIssues = await ctx.db
           .query("issues")
-          .withIndex("by_assigned_unit_officer", (q) => q.eq("assignedUnitOfficer", uo.userId))
+          .withIndex("by_assigned_unit_officer", (q) =>
+            q.eq("assignedUnitOfficer", uo.userId),
+          )
           .collect();
 
-        const personal = await calculateUnitOfficerPersonalSummary(ctx, uo, uoIssues, "all", issueUpdateCache);
+        const personal = await calculateUnitOfficerPersonalSummary(
+          ctx,
+          uo,
+          uoIssues,
+          "all",
+          issueUpdateCache,
+        );
 
         // Active issue IDs for UO
         const activeIssuesList = uoIssues
           .filter((i) =>
-            ["pending", "verified", "assigned", "in_progress", "submitted_for_review", "pending_uo_verification", "rework_required", "rework_requested"].includes(
-              normalizeStatus(i.status)
-            )
+            [
+              "pending",
+              "verified",
+              "assigned",
+              "in_progress",
+              "submitted_for_review",
+              "pending_uo_verification",
+              "rework_required",
+              "rework_requested",
+            ].includes(normalizeStatus(i.status)),
           )
           .sort((a, b) => a._creationTime - b._creationTime);
 
         // Resolved issue IDs for UO
         const completedIssuesList = uoIssues
-          .filter((i) => ["resolved", "closed"].includes(normalizeStatus(i.status)))
+          .filter((i) =>
+            ["resolved", "closed"].includes(normalizeStatus(i.status)),
+          )
           .sort((a, b) => a._creationTime - b._creationTime);
 
         const activeIssueIds = Array.from(
-          new Map(activeIssuesList.map((i) => [String(i._id), i._id])).values()
+          new Map(activeIssuesList.map((i) => [String(i._id), i._id])).values(),
         );
         const resolvedIssueIds = Array.from(
-          new Map(completedIssuesList.map((i) => [String(i._id), i._id])).values()
+          new Map(
+            completedIssuesList.map((i) => [String(i._id), i._id]),
+          ).values(),
         );
 
         // UO Team calculation
         const teamFieldOfficers = await ctx.db
           .query("fieldOfficers")
-          .withIndex("by_unit_officer", (q) => q.eq("reportingUnitOfficerId", uo._id))
+          .withIndex("by_unit_officer", (q) =>
+            q.eq("reportingUnitOfficerId", uo._id),
+          )
           .collect();
 
         const filteredFos = teamFieldOfficers.filter(
           (fo) =>
             fo.city === uo.city &&
             fo.department === uo.department &&
-            fo.accountApproved === true
+            fo.accountApproved === true,
         );
 
         const foSummaries = [];
         for (const fo of filteredFos) {
           const foIssues = await ctx.db
             .query("issues")
-            .withIndex("by_assigned_field_officer", (q) => q.eq("assignedFieldOfficer", fo.userId))
+            .withIndex("by_assigned_field_officer", (q) =>
+              q.eq("assignedFieldOfficer", fo.userId),
+            )
             .collect();
 
-          const foSum = await calculateFieldOfficerSummary(ctx, fo, foIssues, "all", issueUpdateCache);
+          const foSum = await calculateFieldOfficerSummary(
+            ctx,
+            fo,
+            foIssues,
+            "all",
+            issueUpdateCache,
+          );
           foSummaries.push(foSum);
         }
 
@@ -169,13 +218,21 @@ export const refreshAllOfficerPerformance = internalMutation({
 
         const teamResolutionRate =
           team.teamResolvedIssues + team.teamActiveIssues > 0
-            ? (team.teamResolvedIssues / (team.teamResolvedIssues + team.teamActiveIssues)) * 100
+            ? (team.teamResolvedIssues /
+                (team.teamResolvedIssues + team.teamActiveIssues)) *
+              100
             : 0;
 
         const assignmentTargetHours = 24;
         const assignmentScore =
           personal.avgAssignmentTime > 0
-            ? Math.max(0, Math.min(100, (assignmentTargetHours / personal.avgAssignmentTime) * 100))
+            ? Math.max(
+                0,
+                Math.min(
+                  100,
+                  (assignmentTargetHours / personal.avgAssignmentTime) * 100,
+                ),
+              )
             : personal.totalReviewed > 0
               ? 50
               : 0;
@@ -186,12 +243,12 @@ export const refreshAllOfficerPerformance = internalMutation({
             100,
             Math.round(
               personal.verificationRate * 0.25 +
-                assignmentScore * 0.20 +
+                assignmentScore * 0.2 +
                 team.teamSlaCompliance * 0.25 +
-                teamResolutionRate * 0.20 +
-                (team.teamCitizenRating / 5 * 100) * 0.10
-            )
-          )
+                teamResolutionRate * 0.2 +
+                (team.teamCitizenRating / 5) * 100 * 0.1,
+            ),
+          ),
         );
 
         const newVerifiedCount = personal.totalVerified;
@@ -225,7 +282,10 @@ export const refreshAllOfficerPerformance = internalMutation({
       } catch (err) {
         uoFailed++;
         const errorMessage = err instanceof Error ? err.message : String(err);
-        console.error(`[Cron Performance Sync] Unit Officer ${uo._id} sync failed:`, errorMessage);
+        console.error(
+          `[Cron Performance Sync] Unit Officer ${uo._id} sync failed:`,
+          errorMessage,
+        );
         failures.push({
           role: "unit_officer",
           officerId: String(uo._id),
@@ -266,16 +326,23 @@ export const refreshFieldOfficerPerformanceInternal = internalMutation({
 
     const issues = await ctx.db
       .query("issues")
-      .withIndex("by_assigned_field_officer", (q) => q.eq("assignedFieldOfficer", fo.userId))
+      .withIndex("by_assigned_field_officer", (q) =>
+        q.eq("assignedFieldOfficer", fo.userId),
+      )
       .collect();
 
     const summary = await calculateFieldOfficerSummary(ctx, fo, issues, "all");
 
     const activeIssuesList = issues
       .filter((i) =>
-        ["assigned", "in_progress", "submitted_for_review", "pending_uo_verification", "rework_required", "rework_requested"].includes(
-          normalizeStatus(i.status)
-        )
+        [
+          "assigned",
+          "in_progress",
+          "submitted_for_review",
+          "pending_uo_verification",
+          "rework_required",
+          "rework_requested",
+        ].includes(normalizeStatus(i.status)),
       )
       .sort((a, b) => a._creationTime - b._creationTime);
 
@@ -284,10 +351,10 @@ export const refreshFieldOfficerPerformanceInternal = internalMutation({
       .sort((a, b) => a._creationTime - b._creationTime);
 
     const assignedIssueIds = Array.from(
-      new Map(activeIssuesList.map((i) => [String(i._id), i._id])).values()
+      new Map(activeIssuesList.map((i) => [String(i._id), i._id])).values(),
     );
     const completedIssueIds = Array.from(
-      new Map(completedIssuesList.map((i) => [String(i._id), i._id])).values()
+      new Map(completedIssuesList.map((i) => [String(i._id), i._id])).values(),
     );
 
     await ctx.db.patch(fo._id, {
@@ -315,16 +382,30 @@ export const refreshUnitOfficerPerformanceInternal = internalMutation({
 
     const uoIssues = await ctx.db
       .query("issues")
-      .withIndex("by_assigned_unit_officer", (q) => q.eq("assignedUnitOfficer", uo.userId))
+      .withIndex("by_assigned_unit_officer", (q) =>
+        q.eq("assignedUnitOfficer", uo.userId),
+      )
       .collect();
 
-    const personal = await calculateUnitOfficerPersonalSummary(ctx, uo, uoIssues, "all");
+    const personal = await calculateUnitOfficerPersonalSummary(
+      ctx,
+      uo,
+      uoIssues,
+      "all",
+    );
 
     const activeIssuesList = uoIssues
       .filter((i) =>
-        ["pending", "verified", "assigned", "in_progress", "submitted_for_review", "pending_uo_verification", "rework_required", "rework_requested"].includes(
-          normalizeStatus(i.status)
-        )
+        [
+          "pending",
+          "verified",
+          "assigned",
+          "in_progress",
+          "submitted_for_review",
+          "pending_uo_verification",
+          "rework_required",
+          "rework_requested",
+        ].includes(normalizeStatus(i.status)),
       )
       .sort((a, b) => a._creationTime - b._creationTime);
 
@@ -333,32 +414,41 @@ export const refreshUnitOfficerPerformanceInternal = internalMutation({
       .sort((a, b) => a._creationTime - b._creationTime);
 
     const activeIssueIds = Array.from(
-      new Map(activeIssuesList.map((i) => [String(i._id), i._id])).values()
+      new Map(activeIssuesList.map((i) => [String(i._id), i._id])).values(),
     );
     const resolvedIssueIds = Array.from(
-      new Map(completedIssuesList.map((i) => [String(i._id), i._id])).values()
+      new Map(completedIssuesList.map((i) => [String(i._id), i._id])).values(),
     );
 
     const teamFieldOfficers = await ctx.db
       .query("fieldOfficers")
-      .withIndex("by_unit_officer", (q) => q.eq("reportingUnitOfficerId", uo._id))
+      .withIndex("by_unit_officer", (q) =>
+        q.eq("reportingUnitOfficerId", uo._id),
+      )
       .collect();
 
     const filteredFos = teamFieldOfficers.filter(
       (fo) =>
         fo.city === uo.city &&
         fo.department === uo.department &&
-        fo.accountApproved === true
+        fo.accountApproved === true,
     );
 
     const foSummaries = [];
     for (const fo of filteredFos) {
       const foIssues = await ctx.db
         .query("issues")
-        .withIndex("by_assigned_field_officer", (q) => q.eq("assignedFieldOfficer", fo.userId))
+        .withIndex("by_assigned_field_officer", (q) =>
+          q.eq("assignedFieldOfficer", fo.userId),
+        )
         .collect();
 
-      const foSum = await calculateFieldOfficerSummary(ctx, fo, foIssues, "all");
+      const foSum = await calculateFieldOfficerSummary(
+        ctx,
+        fo,
+        foIssues,
+        "all",
+      );
       foSummaries.push(foSum);
     }
 
@@ -366,13 +456,21 @@ export const refreshUnitOfficerPerformanceInternal = internalMutation({
 
     const teamResolutionRate =
       team.teamResolvedIssues + team.teamActiveIssues > 0
-        ? (team.teamResolvedIssues / (team.teamResolvedIssues + team.teamActiveIssues)) * 100
+        ? (team.teamResolvedIssues /
+            (team.teamResolvedIssues + team.teamActiveIssues)) *
+          100
         : 0;
 
     const assignmentTargetHours = 24;
     const assignmentScore =
       personal.avgAssignmentTime > 0
-        ? Math.max(0, Math.min(100, (assignmentTargetHours / personal.avgAssignmentTime) * 100))
+        ? Math.max(
+            0,
+            Math.min(
+              100,
+              (assignmentTargetHours / personal.avgAssignmentTime) * 100,
+            ),
+          )
         : personal.totalReviewed > 0
           ? 50
           : 0;
@@ -383,12 +481,12 @@ export const refreshUnitOfficerPerformanceInternal = internalMutation({
         100,
         Math.round(
           personal.verificationRate * 0.25 +
-            assignmentScore * 0.20 +
+            assignmentScore * 0.2 +
             team.teamSlaCompliance * 0.25 +
-            teamResolutionRate * 0.20 +
-            (team.teamCitizenRating / 5 * 100) * 0.10
-        )
-      )
+            teamResolutionRate * 0.2 +
+            (team.teamCitizenRating / 5) * 100 * 0.1,
+        ),
+      ),
     );
 
     await ctx.db.patch(uo._id, {
@@ -401,6 +499,12 @@ export const refreshUnitOfficerPerformanceInternal = internalMutation({
       resolvedIssueIds,
     });
 
-    return { success: true, officerId: uo._id, personal, team, finalEfficiencyScore };
+    return {
+      success: true,
+      officerId: uo._id,
+      personal,
+      team,
+      finalEfficiencyScore,
+    };
   },
 });

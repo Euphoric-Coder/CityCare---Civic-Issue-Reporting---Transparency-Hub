@@ -1,3 +1,7 @@
+import {
+  requireApprovedUnitOfficer,
+  requireApprovedFieldOfficer,
+} from "./officerAuth";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 
@@ -6,9 +10,78 @@ const rangeValidation = v.optional(
     v.literal("7d"),
     v.literal("30d"),
     v.literal("90d"),
-    v.literal("all")
-  )
+    v.literal("all"),
+  ),
 );
+
+// --- Status Sets & Canonical Normalization ---
+
+function normalizeStatus(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
+
+function isCompletedStatus(status) {
+  const normalized = normalizeStatus(status);
+  return normalized === "resolved" || normalized === "closed";
+}
+
+const FO_ACTIVE_STATUSES = new Set([
+  "assigned",
+  "in_progress",
+  "submitted_for_review",
+  "pending_uo_verification",
+  "rework_required",
+  "rework_requested",
+  "reopened",
+]);
+
+const UO_ACTIVE_STATUSES = new Set([
+  "pending",
+  "verified",
+  "assigned",
+  "in_progress",
+  "submitted_for_review",
+  "pending_uo_verification",
+  "rework_required",
+  "rework_requested",
+  "reopened",
+  "escalated",
+]);
+
+// --- Citizen Feedback Extractor ---
+
+function getIssueCitizenFeedback(issue) {
+  if (!issue) {
+    return {
+      hasFeedback: false,
+      rating: null,
+      comment: null,
+      submittedAt: null,
+    };
+  }
+
+  const rawRating = issue.citizenRating;
+  const ratingVal =
+    rawRating !== undefined && rawRating !== null
+      ? safeNumber(rawRating, -1)
+      : -1;
+
+  // Supports 0.5 to 5 stars
+  const validRating = ratingVal >= 0.5 && ratingVal <= 5 ? ratingVal : null;
+  const comment = issue.citizenFeedback ?? null;
+  const submittedAt =
+    issue.citizenFeedbackAt ?? issue.closedAt ?? issue.resolvedAt ?? null;
+
+  return {
+    hasFeedback: validRating !== null,
+    rating: validRating,
+    comment,
+    submittedAt,
+  };
+}
 
 // --- Safe Math & Calculation Helpers ---
 
@@ -27,9 +100,7 @@ function safePercentage(numerator, denominator) {
 
   const value = (safeNumerator / safeDenominator) * 100;
 
-  return Number.isFinite(value)
-    ? Math.max(0, Math.min(100, value))
-    : 0;
+  return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : 0;
 }
 
 function getRangeCutoff(range) {
@@ -39,12 +110,7 @@ function getRangeCutoff(range) {
     return null;
   }
 
-  const days =
-    selectedRange === "7d"
-      ? 7
-      : selectedRange === "90d"
-        ? 90
-        : 30;
+  const days = selectedRange === "7d" ? 7 : selectedRange === "90d" ? 90 : 30;
 
   return Date.now() - days * 24 * 60 * 60 * 1000;
 }
@@ -54,6 +120,8 @@ function issueHasActivityInRange(issue, cutoff) {
     return true;
   }
 
+  const feedback = getIssueCitizenFeedback(issue);
+
   const activityTimes = [
     issue.createdAt,
     issue.assignedAt,
@@ -61,7 +129,17 @@ function issueHasActivityInRange(issue, cutoff) {
     issue.resolvedAt,
     issue.closedAt,
     issue.verificationChecklist?.verifiedAt,
+    issue.rejection?.rejectedAt,
+    issue.slaRejection?.rejectedAt,
+    issue.lastReworkRequestedAt,
+    issue.withdrawnAt,
+    feedback.submittedAt,
     issue.citizenFeedbackAt,
+    issue.escalation?.escalatedAt,
+    issue.escalation?.resolvedAt,
+    issue.lastSlaExtensionAt,
+    issue.slaExtension?.extendedAt,
+    issue.slaReassignment?.reassignedAt,
   ]
     .map((value) => safeNumber(value))
     .filter((value) => value > 0);
@@ -74,24 +152,171 @@ function filterByRange(issues, range) {
   return issues.filter((issue) => issueHasActivityInRange(issue, cutoff));
 }
 
-function calculateAvgResolutionTime(resolvedIssues) {
-  if (resolvedIssues.length === 0) return 0;
+function calculateAvgResolutionTime(completedIssues) {
+  if (completedIssues.length === 0) return 0;
   let totalMs = 0;
-  for (const issue of resolvedIssues) {
-    const endTime = issue.resolvedAt ?? issue.closedAt ?? Date.now();
-    totalMs += (endTime - issue.createdAt);
+  let count = 0;
+  for (const issue of completedIssues) {
+    const endTime = issue.resolvedAt ?? issue.closedAt;
+    if (endTime && issue.createdAt && endTime > issue.createdAt) {
+      totalMs += endTime - issue.createdAt;
+      count++;
+    }
   }
-  return Math.round(totalMs / (3600 * 1000 * resolvedIssues.length));
+  if (count === 0) return 0;
+  return Math.round(totalMs / (3600 * 1000 * count));
 }
 
-async function getFieldResolutionDurations(ctx, issues) {
-  const completedIssues = issues.filter(
-    (issue) =>
-      ["resolved", "closed"].includes(issue.status) &&
-      (issue.resolvedAt || issue.closedAt)
+/**
+ * Reusable Helper: Retrieves all relevant issues for a Field Officer.
+ * Separates current workload (assignedFieldOfficer === fo.userId) from
+ * historical involvement (via issueUpdates or reassignment history).
+ */
+async function getFieldOfficerRelevantIssues(ctx, fieldOfficer) {
+  const foUserId = fieldOfficer.userId;
+
+  // 1. Current Issues
+  const currentIssues = await ctx.db
+    .query("issues")
+    .withIndex("by_assigned_field_officer", (q) =>
+      q.eq("assignedFieldOfficer", foUserId),
+    )
+    .collect();
+
+  const issueMap = new Map();
+  const currentIssueIds = new Set();
+
+  for (const issue of currentIssues) {
+    if (issue) {
+      const idStr = String(issue._id);
+      issueMap.set(idStr, issue);
+      currentIssueIds.add(idStr);
+    }
+  }
+
+  // 2. Historical Issues via issueUpdates where updatedBy === foUserId
+  const updatesByFo = await ctx.db
+    .query("issueUpdates")
+    .withIndex("by_updated_by", (q) => q.eq("updatedBy", foUserId))
+    .collect();
+
+  const historicalIssueIds = new Set();
+  for (const update of updatesByFo) {
+    if (update?.issueId) {
+      historicalIssueIds.add(String(update.issueId));
+    }
+  }
+
+  // Batch fetch any historical issues not already in currentIssues
+  for (const issueIdStr of historicalIssueIds) {
+    if (!issueMap.has(issueIdStr)) {
+      const fetchedIssue = await ctx.db.get(issueIdStr);
+      if (fetchedIssue) {
+        issueMap.set(issueIdStr, fetchedIssue);
+      }
+    }
+  }
+
+  const allRelevantIssues = Array.from(issueMap.values());
+  const historicalIssues = allRelevantIssues.filter(
+    (issue) => !currentIssueIds.has(String(issue._id)),
   );
 
-  if (completedIssues.length === 0) return { totalMs: 0, count: 0, avgHours: 0 };
+  return {
+    currentIssues,
+    historicalIssues,
+    allRelevantIssues,
+  };
+}
+
+/**
+ * Robust Multi-Strategy Helper to find all Team Field Officers for a Unit Officer.
+ * Ensures provisioned officers, assigned officers, and matching city/department FOs are included.
+ */
+async function getTeamFieldOfficersForUnitOfficer(ctx, unitOfficer) {
+  const foMap = new Map();
+
+  // 1. Query by reportingUnitOfficerId index
+  if (unitOfficer._id) {
+    const byReporting = await ctx.db
+      .query("fieldOfficers")
+      .withIndex("by_unit_officer", (q) =>
+        q.eq("reportingUnitOfficerId", unitOfficer._id),
+      )
+      .collect();
+
+    for (const fo of byReporting) {
+      if (fo) foMap.set(String(fo._id), fo);
+    }
+  }
+
+  // 2. Check unitOfficer.assignedFieldOfficers array if present
+  if (Array.isArray(unitOfficer.assignedFieldOfficers)) {
+    for (const foId of unitOfficer.assignedFieldOfficers) {
+      if (foId) {
+        const fo = await ctx.db.get(foId);
+        if (fo) foMap.set(String(fo._id), fo);
+      }
+    }
+  }
+
+  // 3. Check issues assigned to this Unit Officer to find assigned Field Officers
+  const uoIssues = await ctx.db
+    .query("issues")
+    .withIndex("by_assigned_unit_officer", (q) =>
+      q.eq("assignedUnitOfficer", unitOfficer.userId),
+    )
+    .collect();
+
+  for (const issue of uoIssues) {
+    if (issue?.assignedFieldOfficer) {
+      const fo = await ctx.db
+        .query("fieldOfficers")
+        .withIndex("by_user", (q) => q.eq("userId", issue.assignedFieldOfficer))
+        .first();
+      if (fo) foMap.set(String(fo._id), fo);
+    }
+  }
+
+  // 4. Query all fieldOfficers matching city & department (case-insensitive string match)
+  const allFos = await ctx.db.query("fieldOfficers").collect();
+  const uoCityNorm = normalizeStatus(unitOfficer.city);
+  const uoDeptNorm = normalizeStatus(unitOfficer.department);
+
+  for (const fo of allFos) {
+    if (fo) {
+      const foCityNorm = normalizeStatus(fo.city);
+      const foDeptNorm = normalizeStatus(fo.department);
+
+      const cityMatch =
+        !unitOfficer.city ||
+        foCityNorm === uoCityNorm ||
+        fo.city === unitOfficer.city;
+
+      const deptMatch =
+        !unitOfficer.department ||
+        foDeptNorm === uoDeptNorm ||
+        fo.department === unitOfficer.department;
+
+      if (cityMatch && deptMatch) {
+        foMap.set(String(fo._id), fo);
+      }
+    }
+  }
+
+  const teamFieldOfficers = Array.from(foMap.values());
+
+  // Filter out accounts explicitly rejected (accept boolean true, undefined, or null)
+  return teamFieldOfficers.filter((fo) => fo.accountApproved !== false);
+}
+
+async function getFieldResolutionDurations(
+  ctx,
+  officerUserId,
+  completedIssues,
+) {
+  if (completedIssues.length === 0)
+    return { totalMs: 0, count: 0, avgHours: 0 };
 
   const durations = await Promise.all(
     completedIssues.map(async (issue) => {
@@ -100,20 +325,47 @@ async function getFieldResolutionDurations(ctx, issues) {
         .withIndex("by_issue", (q) => q.eq("issueId", issue._id))
         .collect();
 
-      const assignedUpdate = updates.find((u) => u.status === "assigned");
+      let startTime = issue.assignedAt;
 
-      const startTime = assignedUpdate?.createdAt ?? issue.createdAt;
+      if (
+        issue.slaReassignment &&
+        String(issue.slaReassignment.newFieldOfficer) === String(officerUserId)
+      ) {
+        startTime = issue.slaReassignment.reassignedAt;
+      } else {
+        const foAssignmentUpdate = updates.find(
+          (u) =>
+            normalizeStatus(u.status) === "assigned" &&
+            (String(u.updatedBy) === String(officerUserId) ||
+              String(u.assignedTo) === String(officerUserId)),
+        );
+        if (foAssignmentUpdate?.createdAt) {
+          startTime = foAssignmentUpdate.createdAt;
+        } else {
+          const firstFoWorkUpdate = updates.find(
+            (u) =>
+              String(u.updatedBy) === String(officerUserId) ||
+              u.role === "field_officer",
+          );
+          if (firstFoWorkUpdate?.createdAt) {
+            startTime = firstFoWorkUpdate.createdAt;
+          }
+        }
+      }
+
+      if (!startTime) {
+        startTime = issue.createdAt;
+      }
+
       const endTime = issue.resolvedAt ?? issue.closedAt;
 
       if (!endTime || endTime <= startTime) return null;
 
       return endTime - startTime;
-    })
+    }),
   );
 
-  const validDurations = durations.filter(
-    (duration) => duration !== null
-  );
+  const validDurations = durations.filter((duration) => duration !== null);
 
   if (validDurations.length === 0) return { totalMs: 0, count: 0, avgHours: 0 };
 
@@ -124,16 +376,11 @@ async function getFieldResolutionDurations(ctx, issues) {
   return { totalMs, count, avgHours };
 }
 
-async function calculateAvgFieldExecutionTime(ctx, issues) {
-  const res = await getFieldResolutionDurations(ctx, issues);
-  return res.avgHours;
-}
-
 async function calculateAvgAssignmentTime(ctx, issues) {
   const assignedIssues = issues.filter(
     (issue) =>
-      (issue.status !== "pending" && issue.status !== "verified") ||
-      issue.assignedFieldOfficer
+      !["pending", "verified"].includes(normalizeStatus(issue.status)) ||
+      issue.assignedFieldOfficer,
   );
 
   if (assignedIssues.length === 0) return 0;
@@ -145,28 +392,30 @@ async function calculateAvgAssignmentTime(ctx, issues) {
         .withIndex("by_issue", (q) => q.eq("issueId", issue._id))
         .collect();
 
-      const verifiedUpdate = updates.find((u) => u.status === "verified");
-      const assignedUpdate = updates.find((u) => u.status === "assigned");
+      const verifiedUpdate = updates.find(
+        (u) => normalizeStatus(u.status) === "verified",
+      );
+      const assignedUpdate = updates.find(
+        (u) => normalizeStatus(u.status) === "assigned",
+      );
 
       const startTime = verifiedUpdate?.createdAt ?? issue.createdAt;
-      const endTime = assignedUpdate?.createdAt;
+      const endTime = assignedUpdate?.createdAt ?? issue.assignedAt;
 
       if (!endTime || endTime <= startTime) return null;
 
       return endTime - startTime;
-    })
+    }),
   );
 
-  const validDurations = durations.filter(
-    (duration) => duration !== null
-  );
+  const validDurations = durations.filter((duration) => duration !== null);
 
   if (validDurations.length === 0) return 0;
 
   return Math.round(
     validDurations.reduce((sum, duration) => sum + duration, 0) /
       validDurations.length /
-      (1000 * 60 * 60)
+      (1000 * 60 * 60),
   );
 }
 
@@ -186,10 +435,7 @@ function getStatusBreakdown(issues) {
   };
 
   for (const issue of issues) {
-    const status = String(issue.status ?? "")
-      .trim()
-      .toLowerCase()
-      .replace(/[\s-]+/g, "_");
+    const status = normalizeStatus(issue.status);
 
     if (status === "pending") {
       counts.pending++;
@@ -199,21 +445,22 @@ function getStatusBreakdown(issues) {
       counts.assigned++;
     } else if (status === "in_progress") {
       counts.in_progress++;
-    } else if (status === "submitted_for_review" || status === "pending_uo_verification") {
+    } else if (
+      status === "submitted_for_review" ||
+      status === "pending_uo_verification"
+    ) {
       counts.submitted_for_review++;
     } else if (status === "rework_required" || status === "rework_requested") {
       counts.rework_required++;
-    } else if (status === "resolved") {
+    } else if (isCompletedStatus(status)) {
       counts.resolved++;
-    } else if (status === "closed") {
-      counts.closed++;
     } else if (status === "reopened") {
       counts.reopened++;
     } else if (status === "rejected") {
       counts.rejected++;
     }
 
-    if (issue.escalatedToAdmin) {
+    if (issue.escalatedToAdmin || status === "escalated") {
       counts.escalated++;
     }
   }
@@ -259,12 +506,18 @@ function getSlaBreakdown(issues) {
 }
 
 function getQualityMetrics(issues, totalAssigned) {
-  const resolved = issues.filter((i) => i.status === "resolved" || i.status === "closed");
+  const resolved = issues.filter((i) => isCompletedStatus(i.status));
   const totalResolved = resolved.length;
 
-  const reworkCount = issues.filter(
-    (i) => i.status === "rework_required" || i.reworkNote || (i.reworkReasons && i.reworkReasons.length > 0)
-  ).length;
+  const reworkCount = issues.filter((i) => {
+    const status = normalizeStatus(i.status);
+    return (
+      status === "rework_required" ||
+      status === "rework_requested" ||
+      Boolean(i.reworkNote) ||
+      (Array.isArray(i.reworkReasons) && i.reworkReasons.length > 0)
+    );
+  }).length;
   const reworkRate = safePercentage(reworkCount, totalResolved);
 
   const reopenCount = issues.reduce((sum, i) => sum + (i.reopenCount ?? 0), 0);
@@ -273,16 +526,30 @@ function getQualityMetrics(issues, totalAssigned) {
   const escalatedCount = issues.filter((i) => i.escalatedToAdmin).length;
   const escalationRate = safePercentage(escalatedCount, totalAssigned);
 
-  const ftfIssues = resolved.filter(
-    (i) => (i.reopenCount ?? 0) === 0 && !i.reworkNote && (!i.reworkReasons || i.reworkReasons.length === 0) && i.status !== "rework_required"
-  ).length;
-  const firstTimeFixRate = totalResolved > 0 ? safePercentage(ftfIssues, totalResolved) : 0;
+  const ftfIssues = resolved.filter((i) => {
+    const status = normalizeStatus(i.status);
+    return (
+      (i.reopenCount ?? 0) === 0 &&
+      !i.reworkNote &&
+      (!i.reworkReasons || i.reworkReasons.length === 0) &&
+      status !== "rework_required" &&
+      status !== "rework_requested"
+    );
+  }).length;
+  const firstTimeFixRate =
+    totalResolved > 0 ? safePercentage(ftfIssues, totalResolved) : 0;
 
-  const ratedIssues = resolved.filter((i) => typeof i.citizenRating === "number");
-  const ratingSum = ratedIssues.reduce((sum, i) => sum + (i.citizenRating ?? 0), 0);
-  const citizenSatisfaction = ratedIssues.length > 0
-    ? safePercentage(ratingSum, ratedIssues.length * 5)
-    : 0;
+  const ratedIssues = resolved.filter(
+    (i) => getIssueCitizenFeedback(i).hasFeedback,
+  );
+  const ratingSum = ratedIssues.reduce(
+    (sum, i) => sum + (getIssueCitizenFeedback(i).rating ?? 0),
+    0,
+  );
+  const citizenSatisfaction =
+    ratedIssues.length > 0
+      ? safePercentage(ratingSum, ratedIssues.length * 5)
+      : 0;
 
   return {
     reworkRate,
@@ -293,62 +560,90 @@ function getQualityMetrics(issues, totalAssigned) {
   };
 }
 
-async function calculateFieldOfficerSummary(ctx, officer, issues, range) {
+async function calculateFieldOfficerSummary(
+  ctx,
+  officer,
+  allRelevantIssues,
+  currentIssues,
+  range,
+) {
   const cutoff = getRangeCutoff(range);
-  const totalAssigned = issues.length;
+  const foUserId = officer.userId;
 
-  const activeIssuesList = issues.filter((i) =>
-    ["assigned", "in_progress", "submitted_for_review", "pending_uo_verification", "rework_required"].includes(i.status)
+  const rangeAllIssues = filterByRange(allRelevantIssues, range);
+  const totalAssigned = rangeAllIssues.length;
+
+  const activeIssuesList = currentIssues.filter((i) =>
+    FO_ACTIVE_STATUSES.has(normalizeStatus(i.status)),
   );
   const activeIssues = activeIssuesList.length;
   const maxCapacity = officer.maxIssueCapacity || 10;
-  const capacityUsage = maxCapacity > 0 ? Math.round((activeIssues / maxCapacity) * 100) : 0;
+  const capacityUsage =
+    maxCapacity > 0 ? Math.round((activeIssues / maxCapacity) * 100) : 0;
 
-  // Resolved in selected range window
-  const resolved = issues.filter((i) => {
-    if (i.status !== "resolved" && i.status !== "closed") return false;
+  const resolved = rangeAllIssues.filter((i) => {
+    if (!isCompletedStatus(i.status)) return false;
+
     const completedAt = i.resolvedAt ?? i.closedAt;
-    return cutoff === null || safeNumber(completedAt) >= cutoff;
+    if (!completedAt) return false;
+    if (cutoff !== null && safeNumber(completedAt) < cutoff) return false;
+
+    const isCurrentlyAssignedFO =
+      String(i.assignedFieldOfficer) === String(foUserId);
+    return isCurrentlyAssignedFO;
   });
+
   const totalResolved = resolved.length;
 
-  const durationsResult = await getFieldResolutionDurations(ctx, resolved);
+  const durationsResult = await getFieldResolutionDurations(
+    ctx,
+    foUserId,
+    resolved,
+  );
   const avgResolutionTime = durationsResult.avgHours;
   const totalResolutionDurationMs = durationsResult.totalMs;
   const validResolutionDurationCount = durationsResult.count;
 
-  // SLA Compliance from range resolved issues
   const slaApplicableResolvedIssues = resolved.filter(
     (issue) =>
-      Boolean(issue.slaDeadline) &&
-      Boolean(issue.resolvedAt ?? issue.closedAt)
+      Boolean(issue.slaDeadline) && Boolean(issue.resolvedAt ?? issue.closedAt),
   );
 
   const slaCompliantResolvedIssues = slaApplicableResolvedIssues.filter(
     (issue) => {
       const completedAt = issue.resolvedAt ?? issue.closedAt;
       return safeNumber(completedAt) <= safeNumber(issue.slaDeadline);
-    }
+    },
   );
 
   const hasSlaData = slaApplicableResolvedIssues.length > 0;
   const slaComplianceRate = hasSlaData
     ? safePercentage(
         slaCompliantResolvedIssues.length,
-        slaApplicableResolvedIssues.length
+        slaApplicableResolvedIssues.length,
       )
     : 0;
 
-  const slaBreaches = issues.filter((i) => i.slaBreached).length;
+  const slaBreaches = rangeAllIssues.filter((i) => i.slaBreached).length;
 
-  const reworkCount = issues.filter(
-    (i) => i.status === "rework_required" || i.reworkNote || (i.reworkReasons && i.reworkReasons.length > 0)
+  const reworkCount = rangeAllIssues.filter((i) => {
+    const status = normalizeStatus(i.status);
+    return (
+      status === "rework_required" ||
+      status === "rework_requested" ||
+      Boolean(i.reworkNote) ||
+      (Array.isArray(i.reworkReasons) && i.reworkReasons.length > 0)
+    );
+  }).length;
+
+  const reopenCount = rangeAllIssues.reduce(
+    (sum, i) => sum + (i.reopenCount ?? 0),
+    0,
+  );
+  const escalatedCount = rangeAllIssues.filter(
+    (i) => i.escalatedToAdmin,
   ).length;
 
-  const reopenCount = issues.reduce((sum, i) => sum + (i.reopenCount ?? 0), 0);
-  const escalatedCount = issues.filter((i) => i.escalatedToAdmin).length;
-
-  // Rates instead of fixed counts
   const reworkRate = safePercentage(reworkCount, totalResolved);
   const reopenRate = safePercentage(reopenCount, totalResolved);
   const escalationRate = safePercentage(escalatedCount, totalAssigned);
@@ -358,45 +653,43 @@ async function calculateFieldOfficerSummary(ctx, officer, issues, range) {
       0,
       Math.min(
         100,
-        100 -
-          reworkRate * 0.40 -
-          reopenRate * 0.35 -
-          escalationRate * 0.25
-      )
-    )
+        100 - reworkRate * 0.4 - reopenRate * 0.35 - escalationRate * 0.25,
+      ),
+    ),
   );
   const qualityScore = totalResolved > 0 ? qualityScoreCalculated : 0;
 
-  // First time fix using only completed issues
   const firstTimeFixIssues = resolved.filter((issue) => {
+    const status = normalizeStatus(issue.status);
     const hasRework =
       safeNumber(issue.reworkCount) > 0 ||
+      status === "rework_required" ||
+      status === "rework_requested" ||
       Boolean(issue.reworkNote) ||
-      (
-        Array.isArray(issue.reworkReasons) &&
-        issue.reworkReasons.length > 0
-      );
+      (Array.isArray(issue.reworkReasons) && issue.reworkReasons.length > 0);
 
     const hasReopen = safeNumber(issue.reopenCount) > 0;
 
     return !hasRework && !hasReopen;
   });
 
-  const firstTimeFixRate = totalResolved > 0
-    ? safePercentage(firstTimeFixIssues.length, totalResolved)
-    : 0;
+  const firstTimeFixRate =
+    totalResolved > 0
+      ? safePercentage(firstTimeFixIssues.length, totalResolved)
+      : 0;
 
-  // Citizen Rating Calculations
-  const ratings = resolved
-    .map((issue) => safeNumber(issue.citizenRating, -1))
-    .filter((rating) => rating >= 1 && rating <= 5);
+  const ratedIssues = resolved.filter(
+    (issue) => getIssueCitizenFeedback(issue).hasFeedback,
+  );
 
-  const ratedIssueCount = ratings.length;
-  const ratingSum = ratings.reduce((sum, val) => sum + val, 0);
+  const ratedIssueCount = ratedIssues.length;
+  const ratingSum = ratedIssues.reduce(
+    (sum, issue) => sum + (getIssueCitizenFeedback(issue).rating ?? 0),
+    0,
+  );
 
-  const rating = ratedIssueCount > 0
-    ? Number((ratingSum / ratedIssueCount).toFixed(1))
-    : 0;
+  const rating =
+    ratedIssueCount > 0 ? Number((ratingSum / ratedIssueCount).toFixed(1)) : 0;
 
   const hasCitizenRatings = ratedIssueCount > 0;
   const ratingScore = hasCitizenRatings ? safePercentage(rating, 5) : 50;
@@ -404,35 +697,33 @@ async function calculateFieldOfficerSummary(ctx, officer, issues, range) {
   const resolutionRate = safePercentage(totalResolved, totalAssigned);
 
   const targetResolutionHours = 72;
-  const resolutionSpeedScore = totalResolved > 0 && avgResolutionTime > 0
-    ? Math.max(
-        0,
-        Math.min(
-          100,
-          (targetResolutionHours / avgResolutionTime) * 100
+  const resolutionSpeedScore =
+    totalResolved > 0 && avgResolutionTime > 0
+      ? Math.max(
+          0,
+          Math.min(100, (targetResolutionHours / avgResolutionTime) * 100),
         )
-      )
-    : 0;
+      : 0;
 
   const rawPerformanceScore =
-    resolutionRate * 0.30 +
+    resolutionRate * 0.3 +
     slaComplianceRate * 0.25 +
-    firstTimeFixRate * 0.20 +
+    firstTimeFixRate * 0.2 +
     ratingScore * 0.15 +
-    resolutionSpeedScore * 0.10;
+    resolutionSpeedScore * 0.1;
 
-  // Sample size confidence factor
   const MIN_COMPLETED_FOR_FULL_CONFIDENCE = 5;
-  const confidenceFactor = totalResolved <= 0
-    ? 0
-    : Math.min(1, totalResolved / MIN_COMPLETED_FOR_FULL_CONFIDENCE);
+  const confidenceFactor =
+    totalResolved <= 0
+      ? 0
+      : Math.min(1, totalResolved / MIN_COMPLETED_FOR_FULL_CONFIDENCE);
 
-  const efficiencyScore = totalResolved <= 0
-    ? 0
-    : Math.round(
-        rawPerformanceScore * confidenceFactor +
-        50 * (1 - confidenceFactor)
-      );
+  const efficiencyScore =
+    totalResolved <= 0
+      ? 0
+      : Math.round(
+          rawPerformanceScore * confidenceFactor + 50 * (1 - confidenceFactor),
+        );
 
   return {
     totalAssigned,
@@ -482,44 +773,61 @@ async function calculateFieldOfficerSummary(ctx, officer, issues, range) {
   };
 }
 
-async function calculateUnitOfficerPersonalSummary(ctx, officer, uoIssues, range) {
+async function calculateUnitOfficerPersonalSummary(
+  ctx,
+  officer,
+  uoIssues,
+  range,
+) {
   const cutoff = getRangeCutoff(range);
 
   const verifiedIssues = uoIssues.filter((i) => {
     const verifiedAt = i.verificationChecklist?.verifiedAt;
-    return i.verificationChecklist?.verifiedBy === officer.userId &&
-           (cutoff === null || safeNumber(verifiedAt) >= cutoff);
+    return (
+      String(i.verificationChecklist?.verifiedBy) === String(officer.userId) &&
+      (cutoff === null || safeNumber(verifiedAt) >= cutoff)
+    );
   });
   const totalVerified = verifiedIssues.length;
 
   const rejectedIssues = uoIssues.filter((i) => {
     const rejectedAt = i.rejection?.rejectedAt;
-    return i.rejection?.rejectedBy === officer.userId &&
-           (cutoff === null || safeNumber(rejectedAt) >= cutoff);
+    return (
+      String(i.rejection?.rejectedBy) === String(officer.userId) &&
+      (cutoff === null || safeNumber(rejectedAt) >= cutoff)
+    );
   });
   const totalRejected = rejectedIssues.length;
 
   const totalReviewed = totalVerified + totalRejected;
-  const verificationRate = totalReviewed > 0 ? Math.round((totalVerified / totalReviewed) * 100) : 0;
+  const verificationRate =
+    totalReviewed > 0 ? Math.round((totalVerified / totalReviewed) * 100) : 0;
 
   let totalVerTimeMs = 0;
   for (const issue of verifiedIssues) {
     if (issue.verificationChecklist?.verifiedAt) {
-      totalVerTimeMs += (issue.verificationChecklist.verifiedAt - issue.createdAt);
+      totalVerTimeMs +=
+        issue.verificationChecklist.verifiedAt - issue.createdAt;
     }
   }
-  const avgVerificationTime = totalVerified > 0
-    ? Math.round(totalVerTimeMs / (totalVerified * 3600 * 1000))
-    : 0;
+  const avgVerificationTime =
+    totalVerified > 0
+      ? Math.round(totalVerTimeMs / (totalVerified * 3600 * 1000))
+      : 0;
 
-  const avgAssignmentTime = await calculateAvgAssignmentTime(ctx, uoIssues);
+  const rangeUoIssues = filterByRange(uoIssues, range);
 
-  const activeIssues = uoIssues.filter((i) =>
-    ["pending", "verified", "assigned", "in_progress", "submitted_for_review", "pending_uo_verification", "rework_required"].includes(i.status)
+  const avgAssignmentTime = await calculateAvgAssignmentTime(
+    ctx,
+    rangeUoIssues,
+  );
+
+  const activeIssues = rangeUoIssues.filter((i) =>
+    UO_ACTIVE_STATUSES.has(normalizeStatus(i.status)),
   ).length;
 
-  const resolved = uoIssues.filter((i) => {
-    if (i.status !== "resolved" && i.status !== "closed") return false;
+  const resolved = rangeUoIssues.filter((i) => {
+    if (!isCompletedStatus(i.status)) return false;
     const completedAt = i.resolvedAt ?? i.closedAt;
     return cutoff === null || safeNumber(completedAt) >= cutoff;
   });
@@ -527,23 +835,36 @@ async function calculateUnitOfficerPersonalSummary(ctx, officer, uoIssues, range
 
   const overallAvgResolutionTime = calculateAvgResolutionTime(resolved);
 
-  const ratedIssues = resolved.filter((i) => typeof i.citizenRating === "number");
-  const rating = ratedIssues.length > 0
-    ? Number((ratedIssues.reduce((sum, i) => sum + i.citizenRating, 0) / ratedIssues.length).toFixed(1))
-    : 0;
+  const ratedIssues = resolved.filter(
+    (i) => getIssueCitizenFeedback(i).hasFeedback,
+  );
+  const ratingSum = ratedIssues.reduce(
+    (sum, i) => sum + (getIssueCitizenFeedback(i).rating ?? 0),
+    0,
+  );
+  const rating =
+    ratedIssues.length > 0
+      ? Number((ratingSum / ratedIssues.length).toFixed(1))
+      : 0;
 
   const verificationScore = verificationRate;
   const assignmentTargetHours = 24;
-  const assignmentScore = avgAssignmentTime > 0
-    ? Math.max(0, Math.min(100, (assignmentTargetHours / avgAssignmentTime) * 100))
-    : totalReviewed > 0 ? 50 : 0;
+  const assignmentScore =
+    avgAssignmentTime > 0
+      ? Math.max(
+          0,
+          Math.min(100, (assignmentTargetHours / avgAssignmentTime) * 100),
+        )
+      : totalReviewed > 0
+        ? 50
+        : 0;
 
   const efficiencyScore = Math.round(
     verificationScore * 0.25 +
-    assignmentScore * 0.20 +
-    100 * 0.25 + // default team SLA score fallback
-    100 * 0.20 + // default team resolution score fallback
-    100 * 0.10 // default citizen satisfaction fallback
+      assignmentScore * 0.2 +
+      100 * 0.25 +
+      100 * 0.2 +
+      100 * 0.1,
   );
 
   return {
@@ -575,32 +896,58 @@ function calculateUnitOfficerTeamSummary(foSummaries) {
     };
   }
 
-  const teamResolvedIssues = foSummaries.reduce((sum, s) => sum + s.totalResolved, 0);
-  const teamActiveIssues = foSummaries.reduce((sum, s) => sum + s.activeIssues, 0);
+  const teamResolvedIssues = foSummaries.reduce(
+    (sum, s) => sum + s.totalResolved,
+    0,
+  );
+  const teamActiveIssues = foSummaries.reduce(
+    (sum, s) => sum + s.activeIssues,
+    0,
+  );
 
-  // Issue-weighted team SLA Compliance
-  const totalSlaApplicable = foSummaries.reduce((sum, s) => sum + s.slaApplicableCount, 0);
-  const totalSlaCompliant = foSummaries.reduce((sum, s) => sum + s.slaCompliantCount, 0);
-  const teamSlaCompliance = totalSlaApplicable > 0
-    ? safePercentage(totalSlaCompliant, totalSlaApplicable)
-    : 0;
+  const totalSlaApplicable = foSummaries.reduce(
+    (sum, s) => sum + s.slaApplicableCount,
+    0,
+  );
+  const totalSlaCompliant = foSummaries.reduce(
+    (sum, s) => sum + s.slaCompliantCount,
+    0,
+  );
+  const teamSlaCompliance =
+    totalSlaApplicable > 0
+      ? safePercentage(totalSlaCompliant, totalSlaApplicable)
+      : 0;
 
-  // Issue-weighted team Avg Resolution Time
-  const teamResolutionDurationMs = foSummaries.reduce((sum, s) => sum + s.totalResolutionDurationMs, 0);
-  const teamResolutionSampleCount = foSummaries.reduce((sum, s) => sum + s.validResolutionDurationCount, 0);
-  const teamAvgResolutionTime = teamResolutionSampleCount > 0
-    ? Math.round(teamResolutionDurationMs / teamResolutionSampleCount / (1000 * 60 * 60))
-    : 0;
+  const teamResolutionDurationMs = foSummaries.reduce(
+    (sum, s) => sum + s.totalResolutionDurationMs,
+    0,
+  );
+  const teamResolutionSampleCount = foSummaries.reduce(
+    (sum, s) => sum + s.validResolutionDurationCount,
+    0,
+  );
+  const teamAvgResolutionTime =
+    teamResolutionSampleCount > 0
+      ? Math.round(
+          teamResolutionDurationMs /
+            teamResolutionSampleCount /
+            (1000 * 60 * 60),
+        )
+      : 0;
 
-  // Issue-weighted team Citizen Rating
-  const totalRatingCount = foSummaries.reduce((sum, s) => sum + s.ratedIssueCount, 0);
+  const totalRatingCount = foSummaries.reduce(
+    (sum, s) => sum + s.ratedIssueCount,
+    0,
+  );
   const totalRatingSum = foSummaries.reduce((sum, s) => sum + s.ratingSum, 0);
-  const teamCitizenRating = totalRatingCount > 0
-    ? Number((totalRatingSum / totalRatingCount).toFixed(1))
-    : 0;
+  const teamCitizenRating =
+    totalRatingCount > 0
+      ? Number((totalRatingSum / totalRatingCount).toFixed(1))
+      : 0;
 
   const teamEfficiencyScore = Math.round(
-    foSummaries.reduce((sum, s) => sum + s.efficiencyScore, 0) / assignedFieldOfficerCount
+    foSummaries.reduce((sum, s) => sum + s.efficiencyScore, 0) /
+      assignedFieldOfficerCount,
   );
 
   return {
@@ -615,7 +962,20 @@ function calculateUnitOfficerTeamSummary(foSummaries) {
 }
 
 function getMonthlyResolutionTrend(issues) {
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   const counts = {};
 
   const now = new Date();
@@ -628,9 +988,9 @@ function getMonthlyResolutionTrend(issues) {
     counts[key] = 0;
   }
 
-  const resolved = issues.filter(
-    (i) => (i.status === "resolved" || i.status === "closed") && (i.resolvedAt || i.closedAt)
-  );
+  const resolved = issues.filter((i) => {
+    return isCompletedStatus(i.status) && (i.resolvedAt || i.closedAt);
+  });
 
   for (const issue of resolved) {
     const resolvedTime = issue.resolvedAt ?? issue.closedAt;
@@ -657,6 +1017,7 @@ export const getFieldOfficerPerformanceByUserId = query({
     range: rangeValidation,
   },
   handler: async (ctx, args) => {
+    await requireApprovedFieldOfficer(ctx, args.userId);
     const fieldOfficer = await ctx.db
       .query("fieldOfficers")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
@@ -666,17 +1027,21 @@ export const getFieldOfficerPerformanceByUserId = query({
       return null;
     }
 
-    const allIssues = await ctx.db
-      .query("issues")
-      .withIndex("by_assigned_field_officer", (q) => q.eq("assignedFieldOfficer", fieldOfficer.userId))
-      .collect();
+    const { currentIssues, historicalIssues, allRelevantIssues } =
+      await getFieldOfficerRelevantIssues(ctx, fieldOfficer);
 
-    const rangeIssues = filterByRange(allIssues, args.range);
-    const summary = await calculateFieldOfficerSummary(ctx, fieldOfficer, rangeIssues, args.range);
+    const rangeIssues = filterByRange(allRelevantIssues, args.range);
+    const summary = await calculateFieldOfficerSummary(
+      ctx,
+      fieldOfficer,
+      allRelevantIssues,
+      currentIssues,
+      args.range,
+    );
 
     const cutoff = getRangeCutoff(args.range);
     const resolvedIssues = rangeIssues.filter((i) => {
-      if (i.status !== "resolved" && i.status !== "closed") return false;
+      if (!isCompletedStatus(i.status)) return false;
       const completedAt = i.resolvedAt ?? i.closedAt;
       return cutoff === null || safeNumber(completedAt) >= cutoff;
     });
@@ -685,22 +1050,28 @@ export const getFieldOfficerPerformanceByUserId = query({
       statusBreakdown: getStatusBreakdown(rangeIssues),
       priorityDistribution: getPriorityDistribution(rangeIssues),
       slaBreakdown: getSlaBreakdown(rangeIssues),
-      monthlyResolutionTrend: getMonthlyResolutionTrend(allIssues), // trend over all time for history
+      monthlyResolutionTrend: getMonthlyResolutionTrend(allRelevantIssues),
       qualityMetrics: getQualityMetrics(rangeIssues, summary.totalAssigned),
     };
 
-    // recent completed issues
     const recentIssues = resolvedIssues
-      .sort((a, b) => (b.resolvedAt ?? b.closedAt ?? 0) - (a.resolvedAt ?? a.closedAt ?? 0))
+      .sort(
+        (a, b) =>
+          (b.resolvedAt ?? b.closedAt ?? 0) - (a.resolvedAt ?? a.closedAt ?? 0),
+      )
       .slice(0, 5)
-      .map((i) => ({
-        _id: i._id,
-        issueCode: i.issueCode,
-        title: i.title,
-        status: i.status,
-        completedAt: i.resolvedAt ?? i.closedAt ?? i.createdAt,
-        citizenRating: i.citizenRating,
-      }));
+      .map((i) => {
+        const feedback = getIssueCitizenFeedback(i);
+        return {
+          _id: i._id,
+          issueCode: i.issueCode,
+          title: i.title,
+          status: i.status,
+          completedAt: i.resolvedAt ?? i.closedAt ?? i.createdAt,
+          citizenRating: feedback.rating,
+          citizenFeedbackComment: feedback.comment,
+        };
+      });
 
     return {
       officer: fieldOfficer,
@@ -717,6 +1088,7 @@ export const getUnitOfficerProfilePerformance = query({
     range: rangeValidation,
   },
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.userId);
     const unitOfficer = await ctx.db
       .query("unitOfficers")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
@@ -726,66 +1098,82 @@ export const getUnitOfficerProfilePerformance = query({
       return null;
     }
 
-    // Fetch all issues assigned to this unit officer
     const allUoIssues = await ctx.db
       .query("issues")
-      .withIndex("by_assigned_unit_officer", (q) => q.eq("assignedUnitOfficer", unitOfficer.userId))
+      .withIndex("by_assigned_unit_officer", (q) =>
+        q.eq("assignedUnitOfficer", unitOfficer.userId),
+      )
       .collect();
 
     const rangeUoIssues = filterByRange(allUoIssues, args.range);
-    const personal = await calculateUnitOfficerPersonalSummary(ctx, unitOfficer, rangeUoIssues, args.range);
+    const personal = await calculateUnitOfficerPersonalSummary(
+      ctx,
+      unitOfficer,
+      allUoIssues,
+      args.range,
+    );
 
-    // Fetch team field officers
-    const teamFieldOfficers = await ctx.db
-      .query("fieldOfficers")
-      .withIndex("by_unit_officer", (q) => q.eq("reportingUnitOfficerId", unitOfficer._id))
-      .collect();
-
-    const filteredFos = teamFieldOfficers.filter(
-      (fo) =>
-        fo.city === unitOfficer.city &&
-        fo.department === unitOfficer.department &&
-        fo.accountApproved === true
+    const filteredFos = await getTeamFieldOfficersForUnitOfficer(
+      ctx,
+      unitOfficer,
     );
 
     const foSummaries = [];
-    let allTeamIssues = [];
+    const allTeamIssueMap = new Map();
 
     for (const fo of filteredFos) {
-      const foIssues = await ctx.db
-        .query("issues")
-        .withIndex("by_assigned_field_officer", (q) => q.eq("assignedFieldOfficer", fo.userId))
-        .collect();
+      const { currentIssues, allRelevantIssues } =
+        await getFieldOfficerRelevantIssues(ctx, fo);
 
-      const rangeFoIssues = filterByRange(foIssues, args.range);
-      allTeamIssues = allTeamIssues.concat(rangeFoIssues);
+      for (const issue of allRelevantIssues) {
+        if (issue) allTeamIssueMap.set(String(issue._id), issue);
+      }
 
-      const foSum = await calculateFieldOfficerSummary(ctx, fo, rangeFoIssues, args.range);
+      const foSum = await calculateFieldOfficerSummary(
+        ctx,
+        fo,
+        allRelevantIssues,
+        currentIssues,
+        args.range,
+      );
       foSummaries.push(foSum);
     }
 
+    const allTeamIssues = Array.from(allTeamIssueMap.values());
+    const rangeTeamIssues = filterByRange(allTeamIssues, args.range);
     const team = calculateUnitOfficerTeamSummary(foSummaries);
 
-    // Dynamic verification & assignment rates
-    const teamResolutionRate = (team.teamResolvedIssues + team.teamActiveIssues) > 0
-      ? (team.teamResolvedIssues / (team.teamResolvedIssues + team.teamActiveIssues)) * 100
-      : 0;
+    const teamResolutionRate =
+      team.teamResolvedIssues + team.teamActiveIssues > 0
+        ? (team.teamResolvedIssues /
+            (team.teamResolvedIssues + team.teamActiveIssues)) *
+          100
+        : 0;
 
     const assignmentTargetHours = 24;
-    const assignmentScore = personal.avgAssignmentTime > 0
-      ? Math.max(0, Math.min(100, (assignmentTargetHours / personal.avgAssignmentTime) * 100))
-      : personal.totalReviewed > 0 ? 50 : 0;
+    const assignmentScore =
+      personal.avgAssignmentTime > 0
+        ? Math.max(
+            0,
+            Math.min(
+              100,
+              (assignmentTargetHours / personal.avgAssignmentTime) * 100,
+            ),
+          )
+        : personal.totalReviewed > 0
+          ? 50
+          : 0;
 
     personal.efficiencyScore = Math.round(
       personal.verificationRate * 0.25 +
-      assignmentScore * 0.20 +
-      team.teamSlaCompliance * 0.25 +
-      teamResolutionRate * 0.20 +
-      (team.teamCitizenRating / 5 * 100) * 0.10
+        assignmentScore * 0.2 +
+        team.teamSlaCompliance * 0.25 +
+        teamResolutionRate * 0.2 +
+        (team.teamCitizenRating / 5) * 100 * 0.1,
     );
 
     const charts = {
-      verificationTrend: getMonthlyResolutionTrend(allUoIssues), // Using monthly resolution trend logic for verifications
+      verificationTrend: getMonthlyResolutionTrend(allUoIssues),
       teamResolutionTrend: getMonthlyResolutionTrend(allTeamIssues),
       statusBreakdown: getStatusBreakdown(rangeUoIssues),
       qualityMetrics: getQualityMetrics(rangeUoIssues, rangeUoIssues.length),
@@ -806,6 +1194,7 @@ export const getUnitOfficerTeamAnalytics = query({
     range: rangeValidation,
   },
   handler: async (ctx, args) => {
+    await requireApprovedUnitOfficer(ctx, args.userId);
     const unitOfficer = await ctx.db
       .query("unitOfficers")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
@@ -815,32 +1204,30 @@ export const getUnitOfficerTeamAnalytics = query({
       return null;
     }
 
-    const teamFieldOfficers = await ctx.db
-      .query("fieldOfficers")
-      .withIndex("by_unit_officer", (q) => q.eq("reportingUnitOfficerId", unitOfficer._id))
-      .collect();
-
-    const filteredFos = teamFieldOfficers.filter(
-      (fo) =>
-        fo.city === unitOfficer.city &&
-        fo.department === unitOfficer.department &&
-        fo.accountApproved === true
+    const filteredFos = await getTeamFieldOfficersForUnitOfficer(
+      ctx,
+      unitOfficer,
     );
 
-    let allTeamIssues = [];
+    const allTeamIssueMap = new Map();
     const foDataList = [];
     const foSummaries = [];
 
     for (const fo of filteredFos) {
-      const foIssues = await ctx.db
-        .query("issues")
-        .withIndex("by_assigned_field_officer", (q) => q.eq("assignedFieldOfficer", fo.userId))
-        .collect();
+      const { currentIssues, allRelevantIssues } =
+        await getFieldOfficerRelevantIssues(ctx, fo);
 
-      const rangeFoIssues = filterByRange(foIssues, args.range);
-      allTeamIssues = allTeamIssues.concat(rangeFoIssues);
+      for (const issue of allRelevantIssues) {
+        if (issue) allTeamIssueMap.set(String(issue._id), issue);
+      }
 
-      const foSum = await calculateFieldOfficerSummary(ctx, fo, rangeFoIssues, args.range);
+      const foSum = await calculateFieldOfficerSummary(
+        ctx,
+        fo,
+        allRelevantIssues,
+        currentIssues,
+        args.range,
+      );
       foSummaries.push(foSum);
 
       let riskLevel = "Good";
@@ -872,7 +1259,6 @@ export const getUnitOfficerTeamAnalytics = query({
         isSampleSufficient: foSum.isSampleSufficient,
         confidenceFactor: foSum.confidenceFactor,
         riskLevel,
-        // all remaining fields as per Part 12:
         resolutionSpeedScore: foSum.resolutionSpeedScore,
         resolutionRate: foSum.resolutionRate,
         slaApplicableCount: foSum.slaApplicableCount,
@@ -890,10 +1276,16 @@ export const getUnitOfficerTeamAnalytics = query({
       });
     }
 
-    // Top Performer & leaderboard calculations (tie-breakers and zero-resolved exclusion)
-    const eligiblePerformers = foDataList.filter((officer) => officer.resolvedIssues > 0);
+    const allTeamIssues = Array.from(allTeamIssueMap.values());
 
-    const leaderboard = [...eligiblePerformers].sort((a, b) => {
+    // Top Performer & leaderboard calculations
+    const eligiblePerformers = foDataList.filter(
+      (officer) => officer.resolvedIssues > 0,
+    );
+    const poolForRanking =
+      eligiblePerformers.length > 0 ? eligiblePerformers : foDataList;
+
+    const leaderboard = [...poolForRanking].sort((a, b) => {
       if (b.efficiencyScore !== a.efficiencyScore) {
         return b.efficiencyScore - a.efficiencyScore;
       }
@@ -930,29 +1322,41 @@ export const getUnitOfficerTeamAnalytics = query({
     }));
 
     const needsAttention = foDataList.filter(
-      (fo) => fo.riskLevel === "High Risk" || fo.riskLevel === "Needs Attention"
+      (fo) =>
+        fo.riskLevel === "High Risk" || fo.riskLevel === "Needs Attention",
     );
 
-    // Dynamic Team Summary using corrected weighted sums
     const team = calculateUnitOfficerTeamSummary(foSummaries);
     const totalIssues = allTeamIssues.length;
-    const resolvedIssues = allTeamIssues.filter((i) => i.status === "resolved" || i.status === "closed").length;
+    const resolvedIssues = allTeamIssues.filter((i) =>
+      isCompletedStatus(i.status),
+    ).length;
     const activeIssues = allTeamIssues.filter((i) =>
-      ["assigned", "in_progress", "submitted_for_review", "pending_uo_verification", "rework_required"].includes(i.status)
+      UO_ACTIVE_STATUSES.has(normalizeStatus(i.status)),
     ).length;
 
-    const escalatedIssues = allTeamIssues.filter((i) => i.escalatedToAdmin).length;
-    const reworkIssues = allTeamIssues.filter(
-      (i) => i.status === "rework_required" || i.reworkNote || (i.reworkReasons && i.reworkReasons.length > 0)
+    const escalatedIssues = allTeamIssues.filter(
+      (i) => i.escalatedToAdmin,
     ).length;
-    const reopenedIssues = allTeamIssues.reduce((sum, i) => sum + (i.reopenCount ?? 0), 0);
+    const reworkIssues = allTeamIssues.filter((i) => {
+      const status = normalizeStatus(i.status);
+      return (
+        status === "rework_required" ||
+        status === "rework_requested" ||
+        Boolean(i.reworkNote) ||
+        (Array.isArray(i.reworkReasons) && i.reworkReasons.length > 0)
+      );
+    }).length;
+    const reopenedIssues = allTeamIssues.reduce(
+      (sum, i) => sum + (i.reopenCount ?? 0),
+      0,
+    );
 
     const avgResolutionTime = team.teamAvgResolutionTime;
     const slaComplianceRate = team.teamSlaCompliance;
     const citizenSatisfaction = team.teamCitizenRating;
     const teamEfficiencyScore = team.teamEfficiencyScore;
 
-    // Generate insights
     const insights = [];
     if (topPerformers.length > 0) {
       insights.push({
@@ -1011,21 +1415,6 @@ export const getUnitOfficerTeamAnalytics = query({
         needsAttention,
       },
       insights,
-      // Debug Rankings as requested:
-      debugRanking: leaderboard.map((officer) => ({
-        officerId: officer.officerId,
-        fullName: officer.fullName,
-        totalAssigned: officer.totalAssigned,
-        resolvedIssues: officer.resolvedIssues,
-        resolutionRate: officer.resolutionRate,
-        slaComplianceRate: officer.slaComplianceRate,
-        firstTimeFixRate: officer.firstTimeFixRate,
-        ratingScore: officer.ratingScore,
-        resolutionSpeedScore: officer.resolutionSpeedScore,
-        performanceScore: officer.efficiencyScore,
-        completedSampleSize: officer.completedSampleSize,
-        isSampleSufficient: officer.isSampleSufficient,
-      })),
     };
   },
 });
