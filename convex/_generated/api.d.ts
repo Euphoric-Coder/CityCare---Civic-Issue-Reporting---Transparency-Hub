@@ -35,6 +35,7 @@ import type * as issuesMedia from "../issuesMedia.js";
 import type * as lib_auditLogger from "../lib/auditLogger.js";
 import type * as lib_cityIssueAnalytics from "../lib/cityIssueAnalytics.js";
 import type * as lib_officerPerformanceCalculations from "../lib/officerPerformanceCalculations.js";
+import type * as lib_provisioningEmails from "../lib/provisioningEmails.js";
 import type * as messages from "../messages.js";
 import type * as mobileAuditLogger from "../mobileAuditLogger.js";
 import type * as notifications from "../notifications.js";
@@ -86,6 +87,7 @@ declare const fullApi: ApiFromModules<{
   "lib/auditLogger": typeof lib_auditLogger;
   "lib/cityIssueAnalytics": typeof lib_cityIssueAnalytics;
   "lib/officerPerformanceCalculations": typeof lib_officerPerformanceCalculations;
+  "lib/provisioningEmails": typeof lib_provisioningEmails;
   messages: typeof messages;
   mobileAuditLogger: typeof mobileAuditLogger;
   notifications: typeof notifications;

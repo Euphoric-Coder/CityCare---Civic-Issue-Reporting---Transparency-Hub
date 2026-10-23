@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import {
   X,
   FileCheck2,
@@ -24,9 +26,14 @@ export function CSVPreviewDialog({
   onClearAll,
   onConfirmProvision,
   isProvisioning,
+  existingUserEmails = [],
 }) {
   const [activeFilter, setActiveFilter] = useState("all"); // "all" | "valid" | "warning" | "invalid"
   const [editingRow, setEditingRow] = useState(null);
+
+  const monthlyUsage = useQuery(api.accountProvisioning.getMonthlyProvisioningUsage);
+  const remainingQuota = monthlyUsage?.remaining ?? 1000;
+  const isMonthlyLimitReached = Boolean(monthlyUsage?.isLimitReached);
 
   if (!isOpen || !validationResult) return null;
 
@@ -123,6 +130,20 @@ export function CSVPreviewDialog({
             </button>
           </div>
         </div>
+
+        {/* Monthly Quota Warning Banner */}
+        {isQuotaExceeded && (
+          <div className="mx-6 p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 flex items-center gap-3 text-xs font-bold shadow-sm">
+            <AlertTriangle size={20} className="shrink-0 text-rose-500" />
+            <div>
+              <p className="font-black text-sm text-rose-800 dark:text-rose-200">Monthly Resend Limit Exceeded</p>
+              <p className="font-semibold text-rose-700 dark:text-rose-300 mt-0.5">
+                Only {remainingQuota} account provisioning slots remain this month out of {monthlyUsage?.limit || 1000}.
+                This batch has {stats.valid} accounts. Please remove rows or wait until next month to stay within Resend email limits.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Staging Rows Table */}
         <div className="flex-1 overflow-y-auto p-6 pt-3">
@@ -241,7 +262,7 @@ export function CSVPreviewDialog({
                 </>
               ) : (
                 <>
-                  <UserPlus size={15} /> Provision {stats.valid} Accounts
+                  {isQuotaExceeded ? `Quota Exceeded (${remainingQuota} Left)` : <><UserPlus size={15} /> Provision {stats.valid} Accounts</>}
                 </>
               )}
             </button>
@@ -253,6 +274,7 @@ export function CSVPreviewDialog({
           <EditOfficerDialog
             isOpen={true}
             rowData={editingRow}
+            existingUserEmails={existingUserEmails}
             onClose={() => setEditingRow(null)}
             onSave={(updated) => {
               onUpdateRow(updated);
@@ -265,6 +287,7 @@ export function CSVPreviewDialog({
           <EditCityAdminDialog
             isOpen={true}
             rowData={editingRow}
+            existingUserEmails={existingUserEmails}
             onClose={() => setEditingRow(null)}
             onSave={(updated) => {
               onUpdateRow(updated);

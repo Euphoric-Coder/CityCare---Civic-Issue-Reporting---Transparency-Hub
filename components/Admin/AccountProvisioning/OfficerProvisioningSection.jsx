@@ -33,9 +33,13 @@ export function OfficerProvisioningSection({
 
   // Handle CSV file parsed
   const handleCSVParsed = ({ fileName, headers, rows }) => {
-    const existingEmails = referenceData?.unitOfficersList
-      ?.map((u) => u.email)
-      .concat(officersData?.allOfficers?.map((o) => o.email) || []);
+    const existingEmails = Array.from(
+      new Set([
+        ...(referenceData?.existingUserEmails || []),
+        ...(referenceData?.unitOfficersList?.map((u) => u.email) || []),
+        ...(officersData?.allOfficers?.map((o) => o.email) || []),
+      ])
+    );
 
     const validationResult = validateOfficerRows(rows, {
       existingUODepartments: referenceData?.existingUODepartments || [],
@@ -94,9 +98,13 @@ export function OfficerProvisioningSection({
       };
     });
 
-    const existingEmails = referenceData?.unitOfficersList
-      ?.map((u) => u.email)
-      .concat(officersData?.allOfficers?.map((o) => o.email) || []);
+    const existingEmails = Array.from(
+      new Set([
+        ...(referenceData?.existingUserEmails || []),
+        ...(referenceData?.unitOfficersList?.map((u) => u.email) || []),
+        ...(officersData?.allOfficers?.map((o) => o.email) || []),
+      ])
+    );
 
     const newValidationResult = validateOfficerRows(updatedRawRows, {
       existingUODepartments: referenceData?.existingUODepartments || [],
@@ -135,9 +143,13 @@ export function OfficerProvisioningSection({
       },
     }));
 
-    const existingEmails = referenceData?.unitOfficersList
-      ?.map((u) => u.email)
-      .concat(officersData?.allOfficers?.map((o) => o.email) || []);
+    const existingEmails = Array.from(
+      new Set([
+        ...(referenceData?.existingUserEmails || []),
+        ...(referenceData?.unitOfficersList?.map((u) => u.email) || []),
+        ...(officersData?.allOfficers?.map((o) => o.email) || []),
+      ])
+    );
 
     const newValidationResult = validateOfficerRows(remainingRawRows, {
       existingUODepartments: referenceData?.existingUODepartments || [],
@@ -256,6 +268,7 @@ export function OfficerProvisioningSection({
         type="officers"
         fileName={stagedCSV?.fileName || ""}
         validationResult={stagedCSV?.validationResult}
+        existingUserEmails={referenceData?.existingUserEmails || []}
         onClose={() => setIsPreviewOpen(false)}
         onUpdateRow={handleUpdateRow}
         onRemoveRow={handleRemoveRow}

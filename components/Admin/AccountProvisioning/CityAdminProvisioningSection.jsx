@@ -33,7 +33,12 @@ export function CityAdminProvisioningSection({
 
   // Handle CSV file parsed
   const handleCSVParsed = ({ fileName, headers, rows }) => {
-    const existingEmails = (cityAdminsData || []).map((ca) => ca.email);
+    const existingEmails = Array.from(
+      new Set([
+        ...(referenceData?.existingUserEmails || []),
+        ...(cityAdminsData || []).map((ca) => ca.email),
+      ])
+    );
 
     const validationResult = validateCityAdminRows(rows, {
       existingCityAdmins: referenceData?.existingCityAdmins || [],
@@ -84,7 +89,12 @@ export function CityAdminProvisioningSection({
       };
     });
 
-    const existingEmails = (cityAdminsData || []).map((ca) => ca.email);
+    const existingEmails = Array.from(
+      new Set([
+        ...(referenceData?.existingUserEmails || []),
+        ...(cityAdminsData || []).map((ca) => ca.email),
+      ])
+    );
     const newValidationResult = validateCityAdminRows(updatedRawRows, {
       existingCityAdmins: referenceData?.existingCityAdmins || [],
       existingEmails,
@@ -118,7 +128,12 @@ export function CityAdminProvisioningSection({
       },
     }));
 
-    const existingEmails = (cityAdminsData || []).map((ca) => ca.email);
+    const existingEmails = Array.from(
+      new Set([
+        ...(referenceData?.existingUserEmails || []),
+        ...(cityAdminsData || []).map((ca) => ca.email),
+      ])
+    );
     const newValidationResult = validateCityAdminRows(remainingRawRows, {
       existingCityAdmins: referenceData?.existingCityAdmins || [],
       existingEmails,
@@ -224,6 +239,7 @@ export function CityAdminProvisioningSection({
         isOpen={isAddDialogOpen}
         onClose={() => setIsAddDialogOpen(false)}
         adminUserId={adminUserId}
+        referenceData={referenceData}
         onSuccess={() => {
           setIsAddDialogOpen(false);
           if (onRefresh) onRefresh();
@@ -236,6 +252,7 @@ export function CityAdminProvisioningSection({
         type="city_admins"
         fileName={stagedCSV?.fileName || ""}
         validationResult={stagedCSV?.validationResult}
+        existingUserEmails={referenceData?.existingUserEmails || []}
         onClose={() => setIsPreviewOpen(false)}
         onUpdateRow={handleUpdateRow}
         onRemoveRow={handleRemoveRow}

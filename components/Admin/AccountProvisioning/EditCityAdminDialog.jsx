@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { X, Edit3 } from "lucide-react";
+import { X, Edit3, AlertCircle } from "lucide-react";
 import {
   INDIAN_STATES,
   COMMON_CITIES,
 } from "../../../lib/accountProvisioning/provisioningConstants";
 
-export function EditCityAdminDialog({ isOpen, rowData, onClose, onSave }) {
+export function EditCityAdminDialog({ isOpen, rowData, existingUserEmails = [], onClose, onSave }) {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -30,12 +30,20 @@ export function EditCityAdminDialog({ isOpen, rowData, onClose, onSave }) {
 
   if (!isOpen || !rowData) return null;
 
+  const emailSet = new Set(existingUserEmails.map((e) => e.toLowerCase().trim()));
+  const initialEmail = (rowData?.email || "").toLowerCase().trim();
+  const currentEmail = formData.email.toLowerCase().trim();
+  const isEmailTaken = Boolean(
+    currentEmail && currentEmail !== initialEmail && emailSet.has(currentEmail)
+  );
+
   const handleChange = (field, val) => {
     setFormData((prev) => ({ ...prev, [field]: val }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (isEmailTaken) return;
     onSave({
       ...rowData,
       ...formData,
@@ -73,7 +81,7 @@ export function EditCityAdminDialog({ isOpen, rowData, onClose, onSave }) {
                 required
                 value={formData.fullName}
                 onChange={(e) => handleChange("fullName", e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white"
               />
             </div>
             <div>
@@ -85,8 +93,18 @@ export function EditCityAdminDialog({ isOpen, rowData, onClose, onSave }) {
                 required
                 value={formData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold"
+                className={`w-full px-3 py-2 rounded-xl border ${
+                  isEmailTaken
+                    ? "border-rose-500 focus:ring-rose-500 bg-rose-50/40 dark:bg-rose-950/20 text-rose-900 dark:text-rose-200"
+                    : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                } text-sm font-semibold focus:outline-none focus:ring-2`}
               />
+              {isEmailTaken && (
+                <p className="text-[11px] font-bold text-rose-600 dark:text-rose-400 mt-1 flex items-center gap-1">
+                  <AlertCircle size={12} className="shrink-0" />
+                  Email is already registered in Convex user database.
+                </p>
+              )}
             </div>
           </div>
 
@@ -99,7 +117,7 @@ export function EditCityAdminDialog({ isOpen, rowData, onClose, onSave }) {
                 type="text"
                 value={formData.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white"
               />
             </div>
             <div>
@@ -110,7 +128,7 @@ export function EditCityAdminDialog({ isOpen, rowData, onClose, onSave }) {
                 type="date"
                 value={formData.dob}
                 onChange={(e) => handleChange("dob", e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white"
               />
             </div>
           </div>
@@ -123,7 +141,7 @@ export function EditCityAdminDialog({ isOpen, rowData, onClose, onSave }) {
               <select
                 value={formData.state}
                 onChange={(e) => handleChange("state", e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white"
               >
                 {INDIAN_STATES.map((s) => (
                   <option key={s} value={s}>
@@ -139,7 +157,7 @@ export function EditCityAdminDialog({ isOpen, rowData, onClose, onSave }) {
               <select
                 value={formData.city}
                 onChange={(e) => handleChange("city", e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-semibold text-slate-900 dark:text-white"
               >
                 {COMMON_CITIES.map((c) => (
                   <option key={c} value={c}>
@@ -154,13 +172,14 @@ export function EditCityAdminDialog({ isOpen, rowData, onClose, onSave }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-extrabold"
+              className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-extrabold text-slate-600 dark:text-slate-400"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs hover:bg-purple-500"
+              disabled={isEmailTaken}
+              className="px-5 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save Changes
             </button>

@@ -1,4 +1,4 @@
-import { CheckCircle2, AlertTriangle, XCircle, FileSpreadsheet, X } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle, FileSpreadsheet, X, Mail } from "lucide-react";
 
 export function BulkImportResultDialog({ isOpen, result, onClose }) {
   if (!isOpen || !result) return null;
@@ -60,6 +60,7 @@ export function BulkImportResultDialog({ isOpen, result, onClose }) {
                       <th className="p-3">Name</th>
                       <th className="p-3">Email</th>
                       <th className="p-3">Status</th>
+                      <th className="p-3">Onboarding Email</th>
                       <th className="p-3">Temp Password / Reason</th>
                     </tr>
                   </thead>
@@ -82,6 +83,21 @@ export function BulkImportResultDialog({ isOpen, result, onClose }) {
                             <span className="inline-flex items-center gap-1 text-rose-600 font-bold bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full text-[10px]">
                               <XCircle size={10} /> Failed
                             </span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          {r.status === "created" ? (
+                            r.emailSent ? (
+                              <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-bold bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-full text-[10px]">
+                                <Mail size={10} /> Sent via Resend
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full text-[10px]">
+                                <Mail size={10} /> Pending
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-slate-400 text-[11px]">-</span>
                           )}
                         </td>
                         <td className="p-3 font-mono text-[11px]">

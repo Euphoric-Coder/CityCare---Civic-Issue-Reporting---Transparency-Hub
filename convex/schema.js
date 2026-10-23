@@ -814,6 +814,13 @@ export default defineSchema({
     .index("by_uploaded_by", ["uploadedBy"])
     .index("by_created_at", ["createdAt"]),
 
+  monthlyProvisioningLimits: defineTable({
+    yearMonth: v.string(), // "YYYY-MM"
+    count: v.number(),      // count of provisioned officers/admins this month
+    limit: v.number(),      // limit (default 1000)
+    lastUpdated: v.number(),
+  }).index("by_year_month", ["yearMonth"]),
+
   auditLogs: defineTable({
     performedByUserId: v.optional(v.id("users")),
 

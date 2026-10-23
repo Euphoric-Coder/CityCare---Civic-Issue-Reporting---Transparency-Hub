@@ -60,6 +60,16 @@ export const getProvisioningOverview = query({
       }
     });
 
+    const currentYm = new Date().toISOString().slice(0, 7);
+    const monthlyRecord = await ctx.db
+      .query("monthlyProvisioningLimits")
+      .withIndex("by_year_month", (q) => q.eq("yearMonth", currentYm))
+      .first();
+
+    const monthlyCount = monthlyRecord?.count ?? 0;
+    const monthlyLimit = monthlyRecord?.limit ?? 1000;
+    const monthlyRemaining = Math.max(0, monthlyLimit - monthlyCount);
+
     return {
       totalProvisioned:
         unitOfficers.length + fieldOfficers.length + cityAdmins.length,
@@ -70,6 +80,13 @@ export const getProvisioningOverview = query({
       activeAccounts,
       disabledAccounts,
       totalImportsCount: imports.length,
+      monthlyQuota: {
+        yearMonth: currentYm,
+        count: monthlyCount,
+        limit: monthlyLimit,
+        remaining: monthlyRemaining,
+        isLimitReached: monthlyCount >= monthlyLimit,
+      },
     };
   },
 });
@@ -156,8 +173,19 @@ export const getProvisionedCityAdmins = query({
 export const getProvisioningReferenceData = query({
   args: {},
   handler: async (ctx) => {
+    const users = await ctx.db.query("users").collect();
     const unitOfficers = await ctx.db.query("unitOfficers").collect();
+    const fieldOfficers = await ctx.db.query("fieldOfficers").collect();
     const cityAdmins = await ctx.db.query("cityAdmins").collect();
+
+    const existingUserEmails = Array.from(
+      new Set([
+        ...users.map((u) => u.email?.toLowerCase().trim()).filter(Boolean),
+        ...unitOfficers.map((u) => u.email?.toLowerCase().trim()).filter(Boolean),
+        ...fieldOfficers.map((f) => f.email?.toLowerCase().trim()).filter(Boolean),
+        ...cityAdmins.map((c) => c.email?.toLowerCase().trim()).filter(Boolean),
+      ])
+    );
 
     const existingUODepartments = unitOfficers.map((uo) => ({
       id: uo._id,
@@ -180,6 +208,7 @@ export const getProvisioningReferenceData = query({
       canonicalDepartments: CANONICAL_DEPARTMENTS,
       existingUODepartments,
       existingCityAdmins,
+      existingUserEmails,
       unitOfficersList: unitOfficers.map((uo) => ({
         id: uo._id,
         userId: uo.userId,
@@ -189,6 +218,22 @@ export const getProvisioningReferenceData = query({
         department: uo.department,
       })),
     };
+  },
+});
+
+/**
+ * Checks whether an email address already exists in the Convex users database
+ */
+export const checkEmailAvailability = query({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    const normalized = args.email.toLowerCase().trim();
+    if (!normalized) return { available: true, exists: false };
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", normalized))
+      .first();
+    return { available: !user, exists: Boolean(user) };
   },
 });
 
@@ -479,5 +524,117 @@ export const updateUserPasswordHash = mutation({
     }
 
     return { success: true };
+  },
+});
+
+/**
+ * Query to get monthly provisioning quota usage
+ */
+export const getMonthlyProvisioningUsage = query({
+  args: {
+    yearMonth: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const ym = args.yearMonth || new Date().toISOString().slice(0, 7);
+    const record = await ctx.db
+      .query("monthlyProvisioningLimits")
+      .withIndex("by_year_month", (q) => q.eq("yearMonth", ym))
+      .first();
+
+    const count = record?.count ?? 0;
+    const limit = record?.limit ?? 1000;
+    const remaining = Math.max(0, limit - count);
+
+    return {
+      yearMonth: ym,
+      count,
+      limit,
+      remaining,
+      isLimitReached: count >= limit,
+    };
+  },
+});
+
+/**
+ * Check if provisioning is allowed within monthly limit
+ */
+export const checkMonthlyProvisioningLimit = query({
+  args: {
+    requestedCount: v.number(),
+    yearMonth: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const ym = args.yearMonth || new Date().toISOString().slice(0, 7);
+    const record = await ctx.db
+      .query("monthlyProvisioningLimits")
+      .withIndex("by_year_month", (q) => q.eq("yearMonth", ym))
+      .first();
+
+    const count = record?.count ?? 0;
+    const limit = record?.limit ?? 1000;
+    const remaining = Math.max(0, limit - count);
+
+    if (count >= limit) {
+      return {
+        allowed: false,
+        reason: `Monthly provisioning limit of ${limit} accounts reached for ${ym}. Provisioning is paused to respect email limitations.`,
+        count,
+        limit,
+        remaining: 0,
+      };
+    }
+
+    if (count + args.requestedCount > limit) {
+      return {
+        allowed: false,
+        reason: `Monthly provisioning limit exceeded. Only ${remaining} slots remaining this month out of ${limit}, but requested ${args.requestedCount}.`,
+        count,
+        limit,
+        remaining,
+      };
+    }
+
+    return {
+      allowed: true,
+      count,
+      limit,
+      remaining,
+    };
+  },
+});
+
+/**
+ * Mutation to increment monthly provisioning counter
+ */
+export const incrementMonthlyProvisioningCount = mutation({
+  args: {
+    incrementBy: v.number(),
+    yearMonth: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const ym = args.yearMonth || new Date().toISOString().slice(0, 7);
+    const record = await ctx.db
+      .query("monthlyProvisioningLimits")
+      .withIndex("by_year_month", (q) => q.eq("yearMonth", ym))
+      .first();
+
+    const now = Date.now();
+    if (record) {
+      const newCount = record.count + args.incrementBy;
+      await ctx.db.patch(record._id, {
+        count: newCount,
+        lastUpdated: now,
+      });
+      return { yearMonth: ym, count: newCount, limit: record.limit };
+    } else {
+      const newCount = args.incrementBy;
+      await ctx.db.insert("monthlyProvisioningLimits", {
+        yearMonth: ym,
+        count: newCount,
+        limit: 1000,
+        lastUpdated: now,
+      });
+      return { yearMonth: ym, count: newCount, limit: 1000 };
+    }
   },
 });

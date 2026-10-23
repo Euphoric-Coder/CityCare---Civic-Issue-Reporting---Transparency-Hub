@@ -4,9 +4,13 @@ import { action } from "./_generated/server";
 import { v } from "convex/values";
 import bcrypt from "bcryptjs";
 import { api } from "./_generated/api";
+import {
+  sendOfficerProvisioningEmail,
+  sendCityAdminProvisioningEmail,
+} from "./lib/provisioningEmails";
 
 /**
- * Action to manually create a single Officer with hashed credential
+ * Action to manually create a single Officer with hashed credential and onboarding email
  */
 export const createPreProvisionedOfficer = action({
   args: {
@@ -25,6 +29,16 @@ export const createPreProvisionedOfficer = action({
     rawPassword: v.string(),
   },
   handler: async (ctx, args) => {
+    // 1. Check monthly provisioning quota (1000 limit)
+    const quotaCheck = await ctx.runQuery(
+      api.accountProvisioning.checkMonthlyProvisioningLimit,
+      { requestedCount: 1 }
+    );
+    if (!quotaCheck.allowed) {
+      throw new Error(quotaCheck.reason);
+    }
+
+    // 2. Hash password & insert database records
     const passwordHash = await bcrypt.hash(args.rawPassword, 10);
 
     const result = await ctx.runMutation(
@@ -45,12 +59,41 @@ export const createPreProvisionedOfficer = action({
       }
     );
 
-    return result;
+    // 3. Send Onboarding Email via Resend
+    let emailSent = false;
+    let emailError = null;
+    try {
+      await sendOfficerProvisioningEmail({
+        role: args.role,
+        fullName: args.fullName,
+        email: args.email,
+        tempPassword: args.rawPassword,
+        city: args.city,
+        department: args.department,
+        specialisations: args.specialisations,
+      });
+      emailSent = true;
+    } catch (err) {
+      console.error("Failed to send officer onboarding email:", err);
+      emailError = err?.message || String(err);
+    }
+
+    // 4. Increment monthly provisioning counter
+    await ctx.runMutation(
+      api.accountProvisioning.incrementMonthlyProvisioningCount,
+      { incrementBy: 1 }
+    );
+
+    return {
+      ...result,
+      emailSent,
+      emailError,
+    };
   },
 });
 
 /**
- * Action to manually create a single City Admin
+ * Action to manually create a single City Admin and send onboarding email
  */
 export const createPreProvisionedCityAdmin = action({
   args: {
@@ -64,6 +107,16 @@ export const createPreProvisionedCityAdmin = action({
     creatorUserId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
+    // 1. Check monthly provisioning quota (1000 limit)
+    const quotaCheck = await ctx.runQuery(
+      api.accountProvisioning.checkMonthlyProvisioningLimit,
+      { requestedCount: 1 }
+    );
+    if (!quotaCheck.allowed) {
+      throw new Error(quotaCheck.reason);
+    }
+
+    // 2. Hash password & insert database record
     const passwordHash = await bcrypt.hash(args.rawPassword, 10);
 
     const result = await ctx.runMutation(
@@ -79,12 +132,39 @@ export const createPreProvisionedCityAdmin = action({
       }
     );
 
-    return result;
+    // 3. Send Onboarding Email via Resend
+    let emailSent = false;
+    let emailError = null;
+    try {
+      await sendCityAdminProvisioningEmail({
+        fullName: args.fullName,
+        email: args.email,
+        tempPassword: args.rawPassword,
+        city: args.city,
+        state: args.state,
+      });
+      emailSent = true;
+    } catch (err) {
+      console.error("Failed to send city admin onboarding email:", err);
+      emailError = err?.message || String(err);
+    }
+
+    // 4. Increment monthly provisioning counter
+    await ctx.runMutation(
+      api.accountProvisioning.incrementMonthlyProvisioningCount,
+      { incrementBy: 1 }
+    );
+
+    return {
+      ...result,
+      emailSent,
+      emailError,
+    };
   },
 });
 
 /**
- * Multi-pass Bulk Officer Provisioning Action
+ * Multi-pass Bulk Officer Provisioning Action with Onboarding Email Dispatch
  */
 export const bulkCreatePreProvisionedOfficers = action({
   args: {
@@ -110,6 +190,16 @@ export const bulkCreatePreProvisionedOfficers = action({
   },
   handler: async (ctx, args) => {
     const totalRows = args.rows.length;
+
+    // Check monthly provisioning quota (1000 limit)
+    const quotaCheck = await ctx.runQuery(
+      api.accountProvisioning.checkMonthlyProvisioningLimit,
+      { requestedCount: totalRows }
+    );
+    if (!quotaCheck.allowed) {
+      throw new Error(quotaCheck.reason);
+    }
+
     let createdRows = 0;
     let skippedRows = 0;
     let failedRows = 0;
@@ -149,6 +239,22 @@ export const bulkCreatePreProvisionedOfficers = action({
         const cityDeptKey = `${row.city.toLowerCase().trim()}_${row.department.toLowerCase().trim()}`;
         uoByCityDept.set(cityDeptKey, res.officerId);
 
+        // Send onboarding email via Resend
+        let emailSent = false;
+        try {
+          await sendOfficerProvisioningEmail({
+            role: "unit_officer",
+            fullName: row.fullName,
+            email: row.email,
+            tempPassword: row.tempPassword,
+            city: row.city,
+            department: row.department,
+          });
+          emailSent = true;
+        } catch (emailErr) {
+          console.error(`Failed to send onboarding email to UO ${row.email}:`, emailErr);
+        }
+
         rowResults.push({
           rowNumber: row.rowNumber,
           email: row.email,
@@ -157,6 +263,7 @@ export const bulkCreatePreProvisionedOfficers = action({
           status: "created",
           userId: res.userId,
           tempPassword: row.tempPassword,
+          emailSent,
         });
       } catch (err) {
         const message = err?.message || String(err);
@@ -227,6 +334,24 @@ export const bulkCreatePreProvisionedOfficers = action({
         );
 
         createdRows++;
+
+        // Send onboarding email via Resend
+        let emailSent = false;
+        try {
+          await sendOfficerProvisioningEmail({
+            role: "field_officer",
+            fullName: row.fullName,
+            email: row.email,
+            tempPassword: row.tempPassword,
+            city: row.city,
+            department: row.department,
+            specialisations: specs,
+          });
+          emailSent = true;
+        } catch (emailErr) {
+          console.error(`Failed to send onboarding email to FO ${row.email}:`, emailErr);
+        }
+
         rowResults.push({
           rowNumber: row.rowNumber,
           email: row.email,
@@ -235,6 +360,7 @@ export const bulkCreatePreProvisionedOfficers = action({
           status: "created",
           userId: res.userId,
           tempPassword: row.tempPassword,
+          emailSent,
         });
       } catch (err) {
         const message = err?.message || String(err);
@@ -260,6 +386,14 @@ export const bulkCreatePreProvisionedOfficers = action({
           });
         }
       }
+    }
+
+    // Increment monthly counter by actual accounts created
+    if (createdRows > 0) {
+      await ctx.runMutation(
+        api.accountProvisioning.incrementMonthlyProvisioningCount,
+        { incrementBy: createdRows }
+      );
     }
 
     const finalStatus =
@@ -295,7 +429,7 @@ export const bulkCreatePreProvisionedOfficers = action({
 });
 
 /**
- * Bulk City Admin Provisioning Action
+ * Bulk City Admin Provisioning Action with Onboarding Email Dispatch
  */
 export const bulkCreatePreProvisionedCityAdmins = action({
   args: {
@@ -317,6 +451,16 @@ export const bulkCreatePreProvisionedCityAdmins = action({
   },
   handler: async (ctx, args) => {
     const totalRows = args.rows.length;
+
+    // Check monthly provisioning quota (1000 limit)
+    const quotaCheck = await ctx.runQuery(
+      api.accountProvisioning.checkMonthlyProvisioningLimit,
+      { requestedCount: totalRows }
+    );
+    if (!quotaCheck.allowed) {
+      throw new Error(quotaCheck.reason);
+    }
+
     let createdRows = 0;
     let skippedRows = 0;
     let failedRows = 0;
@@ -341,6 +485,22 @@ export const bulkCreatePreProvisionedCityAdmins = action({
         );
 
         createdRows++;
+
+        // Send onboarding email via Resend
+        let emailSent = false;
+        try {
+          await sendCityAdminProvisioningEmail({
+            fullName: row.fullName,
+            email: row.email,
+            tempPassword: row.tempPassword,
+            city: row.city,
+            state: row.state,
+          });
+          emailSent = true;
+        } catch (emailErr) {
+          console.error(`Failed to send onboarding email to City Admin ${row.email}:`, emailErr);
+        }
+
         rowResults.push({
           rowNumber: row.rowNumber,
           email: row.email,
@@ -349,6 +509,7 @@ export const bulkCreatePreProvisionedCityAdmins = action({
           status: "created",
           userId: res.userId,
           tempPassword: row.tempPassword,
+          emailSent,
         });
       } catch (err) {
         const message = err?.message || String(err);
@@ -374,6 +535,14 @@ export const bulkCreatePreProvisionedCityAdmins = action({
           });
         }
       }
+    }
+
+    // Increment monthly counter by actual accounts created
+    if (createdRows > 0) {
+      await ctx.runMutation(
+        api.accountProvisioning.incrementMonthlyProvisioningCount,
+        { incrementBy: createdRows }
+      );
     }
 
     const finalStatus =
