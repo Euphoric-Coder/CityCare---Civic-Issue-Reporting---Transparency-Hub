@@ -116,13 +116,13 @@ const PreviewModal = ({
       // Delete all photos
       if (formData.photos?.length > 0) {
         await Promise.all(
-          formData.photos.map((storageId) => deleteMedia({ storageId })),
+          formData.photos.map((storageId) => deleteMedia({ storageId, userId: session?.user?.id, sessionToken: session?.user?.sessionToken })),
         );
       }
 
       // Delete video if exists
       if (formData.videos) {
-        await deleteMedia({ storageId: formData.videos });
+        await deleteMedia({ storageId: formData.videos, userId: session?.user?.id, sessionToken: session?.user?.sessionToken });
       }
 
       // Reset duplicate state

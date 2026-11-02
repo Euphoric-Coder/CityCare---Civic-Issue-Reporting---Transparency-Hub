@@ -1,3 +1,4 @@
+import { requireAuthenticatedUser, assertIdentityMatch, assertIssueOwnership } from "./lib/authorization.js";
 import {
   awardCitizenPoints,
   checkAndAwardCitizenBadges,
@@ -393,22 +394,24 @@ export const getCitizenCityByUserId = query({
 export const withdrawIssue = mutation({
   args: {
     issueId: v.id("issues"),
-    userId: v.id("users"),
+    userId: v.optional(v.id("users")),
     withdrawalReason: v.string(),
     withdrawalCategory: v.string(),
+    sessionToken: v.optional(v.string()),
   },
 
   handler: async (ctx, args) => {
+    const auth = await requireAuthenticatedUser(ctx, args.sessionToken);
+    if (args.userId) {
+      assertIdentityMatch(auth.userId, args.userId);
+    }
     const issue = await ctx.db.get(args.issueId);
 
     if (!issue) {
       throw new Error("Issue not found");
     }
 
-    // Ensure only reporter can withdraw
-    if (issue.reportedBy !== args.userId) {
-      throw new Error("Unauthorized action");
-    }
+    assertIssueOwnership(issue, auth.userId);
 
     // Prevent invalid cases
     if (
@@ -503,14 +506,20 @@ export const withdrawIssue = mutation({
 export const reopenIssue = mutation({
   args: {
     issueId: v.id("issues"),
-    userId: v.id("users"),
+    userId: v.optional(v.id("users")),
     reason: v.string(),
     category: v.string(),
+    sessionToken: v.optional(v.string()),
   },
 
   handler: async (ctx, args) => {
+    const auth = await requireAuthenticatedUser(ctx, args.sessionToken);
+    if (args.userId) {
+      assertIdentityMatch(auth.userId, args.userId);
+    }
     const issue = await ctx.db.get(args.issueId);
     if (!issue) throw new Error("Issue not found");
+    assertIssueOwnership(issue, auth.userId);
 
     // Changes issue status to "reopened" and logs the reason + category for reopening
     await ctx.db.patch(args.issueId, {
@@ -580,21 +589,23 @@ export const reopenIssue = mutation({
 export const submitIssueFeedback = mutation({
   args: {
     issueId: v.id("issues"),
-    userId: v.id("users"),
+    userId: v.optional(v.id("users")),
     rating: v.number(),
     feedback: v.string(),
+    sessionToken: v.optional(v.string()),
   },
 
   handler: async (ctx, args) => {
-    const { issueId, userId, rating, feedback } = args;
+    const auth = await requireAuthenticatedUser(ctx, args.sessionToken);
+    if (args.userId) {
+      assertIdentityMatch(auth.userId, args.userId);
+    }
+    const { issueId, rating, feedback } = args;
 
     const issue = await ctx.db.get(issueId);
     if (!issue) throw new Error("Issue not found");
 
-    // Fallback to ensures only the reporter can give feedback
-    if (issue.reportedBy !== userId) {
-      throw new Error("Unauthorized");
-    }
+    assertIssueOwnership(issue, auth.userId);
 
     const now = Date.now();
 

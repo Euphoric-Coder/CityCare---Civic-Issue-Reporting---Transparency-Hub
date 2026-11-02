@@ -1,3 +1,4 @@
+import { useSession } from "next-auth/react";
 import { AlertTriangle, Home, Trash2, Sparkles, FileText, HelpCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,6 +20,7 @@ import {
 import { useState } from "react";
 
 const Navbar = ({ formData, setFormData, setCurrentStep, setShowTutorial }) => {
+  const { data: session } = useSession();
   const router = useRouter();
   const deleteMedia = useMutation(api.issuesMedia.deleteMedia);
   const [open, setOpen] = useState(false);
@@ -27,11 +29,11 @@ const Navbar = ({ formData, setFormData, setCurrentStep, setShowTutorial }) => {
     try {
       if (formData.photos?.length > 0) {
         await Promise.all(
-          formData.photos.map((storageId) => deleteMedia({ storageId })),
+          formData.photos.map((storageId) => deleteMedia({ storageId, userId: session?.user?.id, sessionToken: session?.user?.sessionToken })),
         );
       }
       if (formData.videos?.length > 0) {
-        await deleteMedia({ storageId: formData.videos });
+        await deleteMedia({ storageId: formData.videos, userId: session?.user?.id, sessionToken: session?.user?.sessionToken });
       }
       setFormData({
         title: "",

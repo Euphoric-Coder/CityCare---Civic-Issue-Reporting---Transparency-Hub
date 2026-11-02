@@ -1,4 +1,4 @@
-import { requireApprovedFieldOfficer } from './officerAuth';
+import { requireApprovedFieldOfficer, assertIdentityMatch, assertFieldOfficerAssignment } from './lib/authorization.js';
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { auditIssueActionMobile } from './mobileAuditLogger';
@@ -29,8 +29,11 @@ export const updateFieldOfficerProfilePicture = mutation({
   args: {
     userId: v.id('users'),
     profilePicture: v.optional(v.id('_storage')),
+    sessionToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const auth = await requireApprovedFieldOfficer(ctx, args.sessionToken);
+    assertIdentityMatch(auth.userId, args.userId);
     const officer = await ctx.db
       .query('fieldOfficers')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -212,15 +215,20 @@ export const getIssueById = query({
 export const startWork = mutation({
   args: {
     issueId: v.id('issues'),
-    userId: v.id('users'),
+    userId: v.optional(v.id('users')),
+    sessionToken: v.optional(v.string()),
   },
 
   handler: async (ctx, args) => {
-    await requireApprovedFieldOfficer(ctx, args.userId);
+    const auth = await requireApprovedFieldOfficer(ctx, args.sessionToken);
+    if (args.userId) {
+      assertIdentityMatch(auth.userId, args.userId);
+    }
     const issue = await ctx.db.get(args.issueId);
     if (!issue) throw new Error('Issue not found');
 
-    const fieldOfficer = await ctx.db.get(args.userId);
+    assertFieldOfficerAssignment(issue, auth.userId);
+    const fieldOfficer = auth.user;
     if (!fieldOfficer) throw new Error('Field Officer not found');
 
     const now = Date.now();
@@ -297,7 +305,7 @@ export const startWork = mutation({
 
 export const submitFieldOfficerWork = mutation({
   args: {
-    userId: v.id('users'),
+    userId: v.optional(v.id('users')),
     issueId: v.id('issues'),
 
     beforePhotos: v.optional(v.array(v.id('_storage'))),
@@ -319,15 +327,23 @@ export const submitFieldOfficerWork = mutation({
 
     notes: v.string(),
 
-    fieldOfficerId: v.id('users'),
+    fieldOfficerId: v.optional(v.id('users')),
+    sessionToken: v.optional(v.string()),
   },
 
   handler: async (ctx, args) => {
-    await requireApprovedFieldOfficer(ctx, args.userId);
+    const auth = await requireApprovedFieldOfficer(ctx, args.sessionToken);
+    if (args.userId) {
+      assertIdentityMatch(auth.userId, args.userId);
+    }
+    if (args.fieldOfficerId) {
+      assertIdentityMatch(auth.userId, args.fieldOfficerId);
+    }
     const issue = await ctx.db.get(args.issueId);
     if (!issue) throw new Error('Issue not found');
 
-    const fieldOfficer = await ctx.db.get(args.fieldOfficerId);
+    assertFieldOfficerAssignment(issue, auth.userId);
+    const fieldOfficer = auth.user;
     if (!fieldOfficer) throw new Error('Field Officer not found');
 
     const now = Date.now();

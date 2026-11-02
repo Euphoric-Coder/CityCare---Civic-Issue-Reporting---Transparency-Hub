@@ -283,12 +283,6 @@ const IssueDetailModal = ({ issue, onClose }) => {
     };
   }, [isPreviewOpen]);
 
-  if (!issue) return null;
-
-  const allPhotos = issue.photo_url
-    ? [issue.photo_url, ...(issue.additional_photos || [])]
-    : issue.additional_photos || [];
-
   const wordCount = useMemo(() => {
     return withdrawReason.trim() === ""
       ? 0
@@ -304,6 +298,12 @@ const IssueDetailModal = ({ issue, onClose }) => {
   }, [reopenReason]);
 
   const isReopenEnabled = reopenCategory !== "" && reopenWordCount >= 10;
+
+  if (!issue) return null;
+
+  const allPhotos = issue.photo_url
+    ? [issue.photo_url, ...(issue.additional_photos || [])]
+    : issue.additional_photos || [];
 
   const currentStepIndex =
     issue.status === "resolved"

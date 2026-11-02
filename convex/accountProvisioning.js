@@ -1,3 +1,5 @@
+import { requireAdminOrCityAdmin, assertIdentityMatch } from "./lib/authorization.js";
+import { ConvexError } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -435,28 +437,54 @@ export const toggleAccountApproval = mutation({
     userId: v.id("users"),
     role: v.string(),
     approved: v.boolean(),
+    adminUserId: v.optional(v.id("users")),
+    sessionToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const auth = await requireAdminOrCityAdmin(ctx, args.sessionToken);
+    if (args.adminUserId) {
+      assertIdentityMatch(auth.userId, args.adminUserId);
+    }
+    if (String(auth.userId) === String(args.userId)) {
+      throw new ConvexError("FORBIDDEN: Self-approval is strictly prohibited");
+    }
+
     if (args.role === "unit_officer") {
       const uo = await ctx.db
         .query("unitOfficers")
         .withIndex("by_user", (q) => q.eq("userId", args.userId))
         .first();
 
-      if (uo) {
-        await ctx.db.patch(uo._id, { accountApproved: args.approved });
-        return { success: true };
+      if (!uo) {
+        return { success: false, error: "Account profile not found" };
       }
+
+      if (auth.role === "city_admin" && auth.profile?.city) {
+        if (uo.city?.trim().toLowerCase() !== auth.profile.city.trim().toLowerCase()) {
+          throw new ConvexError("FORBIDDEN_JURISDICTION: City administrator cannot modify officers in another city");
+        }
+      }
+
+      await ctx.db.patch(uo._id, { accountApproved: args.approved });
+      return { success: true };
     } else if (args.role === "field_officer") {
       const fo = await ctx.db
         .query("fieldOfficers")
         .withIndex("by_user", (q) => q.eq("userId", args.userId))
         .first();
 
-      if (fo) {
-        await ctx.db.patch(fo._id, { accountApproved: args.approved });
-        return { success: true };
+      if (!fo) {
+        return { success: false, error: "Account profile not found" };
       }
+
+      if (auth.role === "city_admin" && auth.profile?.city) {
+        if (fo.city?.trim().toLowerCase() !== auth.profile.city.trim().toLowerCase()) {
+          throw new ConvexError("FORBIDDEN_JURISDICTION: City administrator cannot modify officers in another city");
+        }
+      }
+
+      await ctx.db.patch(fo._id, { accountApproved: args.approved });
+      return { success: true };
     }
 
     return { success: false, error: "Account profile not found" };
