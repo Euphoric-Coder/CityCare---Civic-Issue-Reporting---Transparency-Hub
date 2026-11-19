@@ -1,4 +1,3 @@
-import { useSession } from "next-auth/react";
 import { useState } from "react";
 import {
   Search,
@@ -22,7 +21,6 @@ import { CANONICAL_DEPARTMENTS } from "../../../lib/accountProvisioning/provisio
 import { generateTemporaryPassword } from "../../../lib/accountProvisioning/generateTemporaryPassword";
 
 export function OfficerProvisioningTable({ officers = [], onRefresh }) {
-  const { data: session } = useSession();
   const toggleApprovalMutation = useMutation(
     api.accountProvisioning.toggleAccountApproval
   );
@@ -76,8 +74,6 @@ export function OfficerProvisioningTable({ officers = [], onRefresh }) {
         userId: officer.userId,
         role: officer.role,
         approved: nextState,
-        adminUserId: session?.user?.id,
-        sessionToken: session?.user?.sessionToken,
       });
       toast.success(
         `Account for ${officer.fullName} ${nextState ? "activated" : "disabled"}`

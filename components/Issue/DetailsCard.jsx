@@ -1,4 +1,3 @@
-import { useSession } from "next-auth/react";
 import {
   AlertCircle,
   Camera,
@@ -284,7 +283,7 @@ const DetailsCard = ({ formData, setFormData, errors, setErrors }) => {
   };
 
   const removeMedia = async (id, type) => {
-    await deleteMedia({ storageId: id, userId: session?.user?.id, sessionToken: session?.user?.sessionToken });
+    await deleteMedia({ storageId: id });
     if (type === "image") {
       setImages((p) => p.filter((x) => x !== id));
       setFormData((p) => ({ ...p, photos: (p.photos || []).filter((x) => x !== id) }));

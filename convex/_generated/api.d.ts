@@ -13,7 +13,6 @@ import type * as accountProvisioningActions from "../accountProvisioningActions.
 import type * as admin from "../admin.js";
 import type * as auditLogs from "../auditLogs.js";
 import type * as auth from "../auth.js";
-import type * as authInternal from "../authInternal.js";
 import type * as badges from "../badges.js";
 import type * as cityAdmin from "../cityAdmin.js";
 import type * as cityAdminRewards from "../cityAdminRewards.js";
@@ -34,7 +33,6 @@ import type * as issueUpdates from "../issueUpdates.js";
 import type * as issues from "../issues.js";
 import type * as issuesMedia from "../issuesMedia.js";
 import type * as lib_auditLogger from "../lib/auditLogger.js";
-import type * as lib_authorization from "../lib/authorization.js";
 import type * as lib_cityIssueAnalytics from "../lib/cityIssueAnalytics.js";
 import type * as lib_officerPerformanceCalculations from "../lib/officerPerformanceCalculations.js";
 import type * as lib_provisioningEmails from "../lib/provisioningEmails.js";
@@ -67,7 +65,6 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   auditLogs: typeof auditLogs;
   auth: typeof auth;
-  authInternal: typeof authInternal;
   badges: typeof badges;
   cityAdmin: typeof cityAdmin;
   cityAdminRewards: typeof cityAdminRewards;
@@ -88,7 +85,6 @@ declare const fullApi: ApiFromModules<{
   issues: typeof issues;
   issuesMedia: typeof issuesMedia;
   "lib/auditLogger": typeof lib_auditLogger;
-  "lib/authorization": typeof lib_authorization;
   "lib/cityIssueAnalytics": typeof lib_cityIssueAnalytics;
   "lib/officerPerformanceCalculations": typeof lib_officerPerformanceCalculations;
   "lib/provisioningEmails": typeof lib_provisioningEmails;
