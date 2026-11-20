@@ -11,6 +11,7 @@ import {
   Sparkles,
   ArrowRight,
   Users2,
+  Smartphone,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -127,6 +128,19 @@ export function LandingPage({ onGetStarted }) {
               >
                 <MapPin className="text-teal-600 dark:text-emerald-400" />
                 <span>Public Dashboard</span>
+              </button>
+
+              <button
+                onClick={() => router.push("/uo-fo-app")}
+                className="group px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white 
+                     border-2 border-emerald-300/40 
+                     dark:from-emerald-600 dark:to-teal-700 dark:text-white dark:border-emerald-500/40 
+                     rounded-full font-semibold text-lg 
+                     hover:from-emerald-400 hover:to-teal-500 dark:hover:from-emerald-500 dark:hover:to-teal-600 
+                     transition-all transform hover:scale-105 hover:shadow-xl hover:shadow-emerald-900/30 flex items-center space-x-2"
+              >
+                <Smartphone className="text-white" />
+                <span>Staff App (APK)</span>
               </button>
 
               <button

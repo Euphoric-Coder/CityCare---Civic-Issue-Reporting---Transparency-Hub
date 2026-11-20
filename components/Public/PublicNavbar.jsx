@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, X, LogIn, Shield, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, X, LogIn, Shield, LogOut, LayoutDashboard, Smartphone } from "lucide-react";
 import { ModeToggle } from "../ModeToggle";
 
 export function PublicNavbar() {
@@ -98,8 +98,16 @@ export function PublicNavbar() {
             </Link>
 
             {/* Desktop Buttons */}
-            <div className="hidden md:flex gap-4 items-center">
+            <div className="hidden md:flex gap-3 items-center">
               <ModeToggle />
+              <button
+                className="group flex items-center px-4 py-2.5 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-slate-700/60 rounded-xl hover:shadow-lg hover:shadow-emerald-500/10 hover:border-emerald-200 dark:hover:border-emerald-800 transform hover:-translate-y-0.5 transition-all font-bold text-sm tracking-wide"
+                onClick={() => router.push("/uo-fo-app")}
+              >
+                <Smartphone size={16} className="mr-2 text-emerald-500 group-hover:text-emerald-600 transition-colors" />
+                Staff App (APK)
+              </button>
+
               <button
                 className="group flex items-center px-5 py-2.5 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 text-gray-700 dark:text-gray-200 border border-gray-200/60 dark:border-slate-700/60 rounded-xl hover:shadow-lg hover:shadow-orange-500/10 hover:border-orange-200 dark:hover:border-orange-800 transform hover:-translate-y-0.5 transition-all font-bold text-sm tracking-wide"
                 onClick={() => router.push("/admin")}
@@ -134,6 +142,17 @@ export function PublicNavbar() {
           {mobileMenuOpen && (
             <div className="md:hidden py-4 border-t border-gray-200/60 dark:border-slate-700/60 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl absolute left-0 right-0 px-4 shadow-2xl rounded-b-3xl">
               <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    router.push("/uo-fo-app");
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex justify-center items-center px-6 py-3.5 bg-gray-50 dark:bg-slate-800 text-gray-800 dark:text-white rounded-xl font-bold border border-gray-200 dark:border-slate-700"
+                >
+                  <Smartphone size={18} className="mr-2 text-emerald-500" />
+                  Staff App (APK)
+                </button>
+
                 <button
                   onClick={() => router.push("/admin")}
                   className="w-full flex justify-center items-center px-6 py-3.5 bg-gray-50 dark:bg-slate-800 text-gray-800 dark:text-white rounded-xl font-bold border border-gray-200 dark:border-slate-700"

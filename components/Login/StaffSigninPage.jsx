@@ -18,6 +18,8 @@ import {
   Users,
   Activity,
   HardHat,
+  Smartphone,
+  ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -595,6 +597,21 @@ const StaffSignIn = () => {
             <p className="text-center text-xs text-muted-foreground/50">
               Restricted System • CityCare Administration
             </p>
+
+            {/* Unit / Field Officer App Notice */}
+            <div className="mt-5 pt-4 border-t border-slate-200/80 dark:border-dark-500 text-center">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                Are you a Unit Officer or Field Officer?
+              </p>
+              <Link
+                href="/uo-fo-app"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 hover:underline transition-colors"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Download CityCare Staff Mobile App (APK v1.0.0)</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
         </div>
       </div>

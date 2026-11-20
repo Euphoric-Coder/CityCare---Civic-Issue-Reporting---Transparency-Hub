@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Copy, Check, Shield, MapPin, Users, Wrench, 
-  Briefcase, Lock, Key, Monitor, User
+  Briefcase, Lock, Key, Monitor, User, Smartphone, Download
 } from "lucide-react";
 import { ModeToggle } from "@/components/ModeToggle";
 import Image from "next/image";
@@ -306,6 +306,31 @@ export default function DemoCredentialsPage() {
                     ))}
                   </div>
                 </div>
+
+                {(activeTab === "uo" || activeTab === "fo") && (
+                  <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10 border border-emerald-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <Smartphone size={22} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                          Unit &amp; Field Officers operate on the CityCare Staff Mobile App
+                        </p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                          Use these pre-provisioned demo accounts to log into the Android APK and test on-ground issue workflows.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => router.push("/uo-fo-app")}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold text-xs sm:text-sm shrink-0 shadow-md shadow-emerald-500/20 transition-all transform hover:-translate-y-0.5"
+                    >
+                      <Download size={15} />
+                      <span>Download Staff App</span>
+                    </button>
+                  </div>
+                )}
 
                 {activeTab === "uo" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
